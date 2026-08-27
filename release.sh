@@ -107,6 +107,8 @@ echo "  ✓ 签名完成"
 # ─── 7. 创建 DMG ───
 echo ""
 echo "▶ [7/8] 创建 DMG..."
+# 只保留本次构建的 staging；历史安装包由 GitHub Releases 托管
+find Distribution -maxdepth 1 -type d -name 'dmg-staging-*' -exec rm -rf {} +
 rm -rf "${STAGING_DIR}"
 mkdir -p "${STAGING_DIR}"
 cp -R "${BUNDLE_TEMPLATE}" "${STAGING_DIR}/${APP_NAME}.app"

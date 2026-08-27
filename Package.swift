@@ -10,7 +10,7 @@ let package = Package(
         .executable(name: "FCP-Cleaner", targets: ["FCPLibraryCleanerApp"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/sparkle-project/Sparkle.git", from: "2.9.6"),
+        .package(url: "https://github.com/sparkle-project/Sparkle.git", exact: "2.9.6"),
     ],
     targets: [
         .target(name: "FCPLibraryCleanerCore"),

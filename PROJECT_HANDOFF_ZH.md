@@ -8,15 +8,15 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 产品名称 | FCP Cleaner |
-| 当前版本 | 3.0.1（Build 301） |
+| 当前版本 | 3.6.0（Build 360） |
 | 项目路径 | `/Users/macstudio/Documents/VoxCPM2/FCPLibraryCleaner` |
 | 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager |
 | 最低系统 | macOS 15.0 |
-| 当前架构 | Apple Silicon arm64 |
+| 当前架构 | universal2（arm64 + x86_64） |
 | Bundle ID | `com.fcpcleaner.app` |
-| 更新框架 | Sparkle 2.9.6 |
-| 最新安装包 | `Distribution/FCP-Cleaner-3.0.1-arm64.dmg` |
-| 自动测试 | 22 项 Core 测试 |
+| 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
+| 最新安装包 | `Distribution/FCP-Cleaner-3.6.0-universal.dmg` |
+| 自动测试 | 34 项 Core 测试 |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
 
@@ -317,7 +317,7 @@ swift build
 swift test
 ```
 
-当前基线：22 项测试全部通过。
+当前基线：34 项测试全部通过。
 
 测试重点包括：
 
@@ -371,24 +371,22 @@ codesign --verify --deep --strict --verbose=1 'Distribution/FCP Cleaner.app'
 
 ## 11. Sparkle 状态
 
-- 当前依赖 Sparkle 2.9.6。
-- Public EdDSA Key 已写入 App `Info.plist`。
-- 当前没有有效的公开 `SUFeedURL`。
-- 不要使用父目录 VoxCPM 项目的 GitHub Remote 作为更新源，该 Remote 与本项目无关。
+- App 已配置 `SUFeedURL = https://zhouxuan3550.github.io/fcp-cleaner/appcast.xml`，该地址已可访问并含 EdDSA 签名条目。
+- 更新分发走 GitHub Releases（仓库 `zhouxuan3550/fcp-cleaner`），appcast.xml 部署在该仓库的 `gh-pages` 分支根目录。
 - 私钥由 Sparkle 工具存储在本机钥匙串中，不要把私钥写入代码或文档。
+- 发布新版本时：`release.sh` 构建 DMG → 创建同名 Git tag 与 GitHub Release 并挂载 DMG → 用 `generate_appcast --download-url-prefix https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v<版本>/` 生成条目 → 合入 gh-pages 的 appcast.xml 推送。
 
 ## 12. 当前限制和技术债务
 
-1. 当前 DMG 只有 arm64，没有 Intel 通用版本。
-2. 当前使用 ad-hoc 签名，没有 Apple Developer ID 公证。
-3. 没有 Xcode 工程，App Bundle 和 DMG 打包是手工流程。
-4. 没有完整 SwiftUI 自动化测试，现有测试主要覆盖 Core 安全逻辑。
-5. Finder 功能使用 macOS Services，不是独立 Finder Sync Extension。
-6. FCP 没有公开的单资源库锁 API，占用检测依赖 `lsof`。
-7. 外置缓存结构目前只支持 `.fcpcache` 明确链接，不猜测其他目录。
-8. Library 总大小只表示资源库包自身大小，外置缓存会单独计入可清理空间。
-9. 大型资源库完整扫描和最终指纹复核仍然需要遍历文件元数据，这是安全要求，不能简单移除。
-10. 项目目录位于另一个大型项目目录中，目前不是独立 Git 仓库。
+1. 当前使用 ad-hoc 签名，没有 Apple Developer ID 公证。
+2. 没有 Xcode 工程；App Bundle 与 DMG 由根目录 `release.sh` 自动化（universal2 双架构）。
+3. 没有完整 SwiftUI 自动化测试，现有测试主要覆盖 Core 安全逻辑，App 层状态机测试待 `LibraryStore` 抽取后补充。
+4. Finder 功能使用 macOS Services，不是独立 Finder Sync Extension。
+5. FCP 没有公开的单资源库锁 API，占用检测依赖 `lsof`。
+6. 外置缓存结构目前只支持 `.fcpcache` 明确链接，不猜测其他目录。
+7. Library 总大小只表示资源库包自身大小，外置缓存会单独计入可清理空间。
+8. 大型资源库完整扫描和最终指纹复核仍然需要遍历文件元数据，这是安全要求，不能简单移除。
+9. 项目已是独立 Git 仓库，远程为 `github.com/zhouxuan3550/fcp-cleaner`；历史构建产物仅本地保留于 `Distribution/archive/`。
 
 ## 13. 发布验收清单
 

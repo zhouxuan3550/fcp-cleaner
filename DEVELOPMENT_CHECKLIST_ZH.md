@@ -1,48 +1,34 @@
 # FCP Cleaner 开发清单
 
-更新日期：2026-08-27。本文以当前公开仓库 `main` 和 3.5.0 源码为准。
+更新日期：2026-08-27（第二轮执行后复核）。本文以当前公开仓库 `main` 为准。
 
 ## 已核对的状态
 
-- 3.5.0 源码已提交并推送；尚未创建 `v3.5.0` Git tag。
+- 3.5.0 源码已提交并推送；`v3.5.0` 注释 tag 已创建并推送，且已建立同名 GitHub Release 并挂载 DMG。
 - 清理并发入口和批量清理结果摘要已修复。
 - 最低清理门槛为固定 200 MB，是已记录的产品决定。
-- 当前 App 包已配置 `SUFeedURL`，且 Sparkle 依赖锁定在 `Package.resolved` 的 2.9.6。
-- 更新地址 `https://zhouxuan3550.github.io/fcp-cleaner/appcast.xml` 当前返回 404，GitHub 也没有 Release；自动更新尚未可用。
-- 当前 Core 有 22 项测试；App 层状态逻辑没有自动化测试。
+- 当前 App 包已配置 `SUFeedURL`，Sparkle 依赖已在 Package.swift 钉死 exact 2.9.6。
+- 更新地址 `https://zhouxuan3550.github.io/fcp-cleaner/appcast.xml` 已返回 HTTP 200，内容含 EdDSA 签名；剩余仅“干净安装旧版本实测发现更新”一项人工验证。
+- 当前 Core 有 34 项测试；App 层状态逻辑尚无自动化测试（吞吐分桶与发现规则谓词已在 Core 覆盖）。
 
 ## P0：正确性与发布阻塞
 
-- [ ] 给 3.5.0 创建并推送带注释的 `v3.5.0` tag。
+- [x] 给 3.5.0 创建并推送带注释的 `v3.5.0` tag。
   - 验收：tag 指向 `Release FCP Cleaner 3.5.0` 提交，GitHub Release 使用同一 tag。
-- [ ] 移除资源库时取消扫描队列和运行中的扫描。
-  - 实现：从 `scanQueue` 删除目标请求，调用 `scanControl.cancel()`，并确保扫描任务结束后不会重新影响已移除的记录。
-  - 验收：移除正在扫描的资源库后，并发槽位立即可用于下一个队列项目，列表不再出现该资源库。
-- [ ] 分离扫描错误与清理前检查错误。
-  - 实现：为 `LibraryRecord` 分别保存 `scanError` 和 `cleanupError`，侧栏按实际状态显示“扫描失败”或“清理前检查未通过”。
-  - 验收：FCP 正在使用资源库时，已完成扫描仍显示“已就绪”，详情中展示可操作的预检失败原因。
-- [ ] 让 `Cmd-R`、清理和扫描菜单命令具备可见禁用状态或用户反馈。
-  - 验收：扫描进行中按 `Cmd-R` 不会静默失败；清理期间所有可能重复发起清理的入口均不可用。
-- [ ] 补齐 `FCPStructureRules.candidateLocation` 测试。
-  - 覆盖：外置缓存规则前缀、事件名称推导、共享缓存、未知 rule ID 返回 `nil`。
+- [x] 移除资源库时取消扫描队列和运行中的扫描。
+- [x] 分离扫描错误与清理前检查错误。
+- [x] 让 `Cmd-R`、清理和扫描菜单命令具备可见禁用状态或用户反馈。
+- [x] 补齐 `FCPStructureRules.candidateLocation` 测试。
 - [ ] 接通 Sparkle 发布闭环，或在完成前隐藏更新功能。
-  - 实现：创建 GitHub Release、上传签名后的 DMG、部署 `appcast.xml` 到 GitHub Pages，并验证 EdDSA 签名。
-  - 验收：`SUFeedURL` 返回 HTTP 200；干净安装的旧版本能发现测试更新；下载、校验、安装失败时有可读错误。
+  - 已完成：GitHub Release v3.5.0 挂载 DMG；EdDSA 签名 appcast 部署到 gh-pages 并启用 Pages；feed 实测 HTTP 200 且 enclosure 可下载。
+  - 剩余：干净安装旧版本实测“发现更新→下载→安装”的人工验证。
 
 ## P1：性能与外置盘可靠性
 
-- [ ] 为清理耗时预估按卷分桶。
-  - 实现：以稳定的 volume UUID 记录样本；内置盘和每个外置盘分别计算吞吐量，样本不足时显示“暂无预计”。
-  - 验收：同一批数据在内置 SSD 和 USB 机械盘上显示不同预估，不跨盘污染数据。
-- [ ] 节流扫描进度更新。
-  - 实现：保留扫描器每 256 文件的内部统计，但 App 层以约 100 ms 为最小刷新间隔合并主线程更新。
-  - 验收：百万文件扫描期间主线程保持可交互，进度仍连续递增，取消响应不超过 1 秒。
-- [ ] 收紧 Spotlight 自动发现并提供结果来源。
-  - 实现：仅接收本地、在线、非 Time Machine 备份卷的目录；发现结果必须通过资源库数据库校验；UI 标识“工作目录”或“本机发现”。
-  - 验收：网络卷、快照和无效同名包不会进入待清理列表。
-- [ ] 增加外置盘权限与在线状态诊断。
-  - 实现：对每个资源库显示卷名、可写状态、书签访问状态和最近一次可访问时间；提供“重新授权”入口。
-  - 验收：外置盘拔出、只读、权限失效时不出现泛化“失败”，而是给出准确修复路径。
+- [x] 为清理耗时预估按卷分桶。
+- [x] 节流扫描进度更新。
+- [x] 收紧 Spotlight 自动发现并提供结果来源。
+- [x] 增加外置盘权限与在线状态诊断。
 
 ## P2：产品能力
 
@@ -61,20 +47,28 @@
 
 ## P3：工程健康与发布卫生
 
-- [ ] 删除无调用方的 `requestPrimaryClean`，或接入为唯一主清理入口。
+- [x] 删除无调用方的 `requestPrimaryClean`，或接入为唯一主清理入口。
 - [ ] 抽取 `LibraryStore` 的发现、扫描队列、清理协调和磁盘监控职责。
-  - 验收：筛选、批量选择、扫描取消和清理状态可以在不启动 SwiftUI 的情况下单元测试。
 - [ ] 将 `ContentView` 按 Header、Sidebar、Library Detail、Confirmation Sheets、History 拆分文件。
-  - 验收：拆分不改变可访问性标签、快捷键或视觉令牌。
-- [ ] 为 App 状态增加测试。
-  - 最低覆盖：移除时取消扫描、预检错误文案、批量选择过滤、重复清理锁、按卷吞吐量统计。
-- [ ] 固化依赖版本策略。
-  - 保留 `Package.resolved`，并将 Sparkle 的 package 约束改为精确 2.9.6，避免重新解析时意外升级。
-- [ ] 同步 `PROJECT_HANDOFF_ZH.md`。
-  - 修正独立仓库、universal2、自动打包、`SUFeedURL` 和已完成功能的陈述。
-- [ ] 清理 `Distribution/` 的历史 staging 和重复 DMG。
-  - 实现：`release.sh` 只保留当前构建 staging；历史安装包改由 GitHub Releases 托管，不提交临时目录。
-  - 验收：源码仓库不包含可再生的 staging 目录，发布脚本不会删除当前待发布 DMG。
+- [ ] 为 App 状态增加测试。（部分：吞吐分桶、发现规则谓词已在 Core 测试覆盖；Store 状态机测试依赖上述抽取）
+- [x] 固化依赖版本策略。
+- [x] 同步 `PROJECT_HANDOFF_ZH.md`。
+- [x] 清理 `Distribution/` 的历史 staging 和重复 DMG。
+
+## 执行记录（2026-08-27 第二轮）
+
+| 项目 | 提交 | 说明 |
+| --- | --- | --- |
+| v3.5.0 tag + Release | （tag） | 注释 tag 推送；Release 挂载 universal DMG |
+| 生命周期修复组 | `65c4b92` | 移除取消扫描 / scanError·cleanupError 拆分 / 菜单禁用态 / 删死代码 |
+| candidateLocation 测试 | `e68523d` | 共享缓存、事件名推导、external 前缀、未知 ID（+6 用例）|
+| 按卷吞吐分桶 | `60ce507` | Core CleanupThroughputIndex + 卷 UUID 键控持久化（+4 用例）|
+| 进度节流 | `cf7ef8b` | ScanProgressCoalescer，~100 ms 主线程合并 |
+| 发现收紧 | `7248d3a` | statfs 本地卷判定 + TM 排除 + 数据库预校验 + 来源标签（+2 用例）|
+| 外置盘诊断 | `8435dac` | 设置弹窗诊断区块、重授权、上次可访问时间 |
+| 工程卫生 | 本轮收尾提交 | Sparkle exact 2.9.6 / staging 清理 / 旧 DMG 归档 archive/ / 双文档同步 |
+
+测试基线由 22 提升到 34，全部通过。P2 四项产品能力尚未开始。
 
 ## 暂不建议做
 
