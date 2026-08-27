@@ -18,4 +18,10 @@ struct LibraryDiscoveryRulesTests {
         #expect(!LibraryDiscoveryRules.describesTimeMachineVolume(lastPathComponent: "LaCie"))
         #expect(!LibraryDiscoveryRules.describesTimeMachineVolume(lastPathComponent: "工程备份"))
     }
+
+    @Test("volume names are evaluated instead of library package names")
+    func gatesVolumeNames() {
+        #expect(!LibraryDiscoveryRules.allowsSpotlightDiscovery(localMount: true, volumeName: "Time Machine"))
+        #expect(LibraryDiscoveryRules.allowsSpotlightDiscovery(localMount: true, volumeName: "Media SSD"))
+    }
 }

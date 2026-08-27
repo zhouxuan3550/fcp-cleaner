@@ -87,7 +87,7 @@ private struct MenuBarPanel: View {
                 Button("扫描") { store.discoverLibraries() }
                     .disabled(store.isDiscovering)
                 Button("清理") { store.requestMenuBarCleanup() }
-                    .disabled(store.totalCleanableSize < LibraryStore.minimumCleanableSize)
+                    .disabled(store.totalCleanableSize < LibraryStore.minimumCleanableSize || store.isPreflighting || store.isCleaning)
                 Spacer()
                 Button("退出") { NSApplication.shared.terminate(nil) }
             }

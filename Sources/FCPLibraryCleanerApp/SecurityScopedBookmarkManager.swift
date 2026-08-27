@@ -48,17 +48,20 @@ final class SecurityScopedBookmarkManager {
                 lastScanned: bookmark.metadata.lastScanned,
                 totalAllocatedSize: bookmark.metadata.totalAllocatedSize,
                 cleanableSize: bookmark.metadata.cleanableSize,
-                lastActivity: bookmark.metadata.lastActivity
+                lastActivity: bookmark.metadata.lastActivity,
+                discoverySourceRaw: bookmark.metadata.discoverySourceRaw
             ))
         }
     }
 
-    func save(_ metadata: [RecentLibraryMetadata]) {
+    func save(_ metadata: [RecentLibraryMetadata], replacementURLs: [URL: URL] = [:]) {
         let bookmarks = metadata.compactMap { entry -> StoredBookmark? in
             let url = entry.url.standardizedFileURL
-            _ = url.startAccessingSecurityScopedResource()
+            let accessURL = replacementURLs[url]?.standardizedFileURL ?? url
+            _ = accessURL.startAccessingSecurityScopedResource()
             activeURLs.insert(url)
-            guard let data = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) else {
+            activeURLs.insert(accessURL)
+            guard let data = try? accessURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) else {
                 return nil
             }
             return StoredBookmark(data: data, metadata: RecentLibraryMetadata(

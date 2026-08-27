@@ -9,6 +9,13 @@ public enum LibraryDiscoveryRules {
         localMount && !timeMachineBackup
     }
 
+    public static func allowsSpotlightDiscovery(localMount: Bool, volumeName: String) -> Bool {
+        allowsSpotlightDiscovery(
+            localMount: localMount,
+            timeMachineBackup: describesTimeMachineVolume(lastPathComponent: volumeName)
+        )
+    }
+
     public static func describesTimeMachineVolume(lastPathComponent: String) -> Bool {
         let name = lastPathComponent
         return name.hasPrefix("com.apple.TimeMachine")

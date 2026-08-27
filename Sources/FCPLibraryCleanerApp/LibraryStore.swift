@@ -557,12 +557,14 @@ final class LibraryStore: NSObject {
 
     nonisolated private static func allowsSpotlightDiscovery(_ libraryURL: URL) -> Bool {
         var volumeStat = statfs()
-        guard statfs(libraryURL.path, &volumeStat) == 0 else { return false }
+        guard statfs(libraryURL.path, &volumeStat) == 0,
+              let values = try? libraryURL.resourceValues(forKeys: [.volumeURLKey]),
+              let volumeURL = values.allValues[.volumeURLKey] as? URL else { return false }
         let localMount = volumeStat.f_flags & UInt32(MNT_LOCAL) != 0
-        let backupVolume = LibraryDiscoveryRules.describesTimeMachineVolume(
-            lastPathComponent: libraryURL.pathComponents.last ?? ""
+        return LibraryDiscoveryRules.allowsSpotlightDiscovery(
+            localMount: localMount,
+            volumeName: volumeURL.lastPathComponent
         )
-        return LibraryDiscoveryRules.allowsSpotlightDiscovery(localMount: localMount, timeMachineBackup: backupVolume)
     }
 
     /// Cheap structural validation before a candidate earns a scan slot.
@@ -1054,6 +1056,7 @@ final class LibraryStore: NSObject {
     }
 
     func requestMenuBarCleanup() {
+        guard !isPreflighting, !isCleaning else { return }
         libraryFilter = .waiting
         inactivityFilter = .all
         selectedVolumeURL = nil
@@ -1147,11 +1150,11 @@ final class LibraryStore: NSObject {
         guard !record.isDiagnosingVolume else { return }
         record.isDiagnosingVolume = true
         let url = record.url
-        Task { [weak self, weak record] in
+        Task { [weak record] in
             let report = await Task.detached(priority: .utility) {
                 Self.probeVolumeAccess(url)
             }.value
-            guard let self, let record else { return }
+            guard let record else { return }
             record.accessReport = report
             if report.mounted { record.lastAccessibleAt = Date() }
             record.isDiagnosingVolume = false
@@ -1196,7 +1199,10 @@ final class LibraryStore: NSObject {
             ))
             return
         }
-        bookmarks.save(currentRecentsMetadata())
+        bookmarks.save(
+            currentRecentsMetadata(),
+            replacementURLs: [record.url.standardizedFileURL: picked.standardizedFileURL]
+        )
         record.accessReport = Self.probeVolumeAccess(record.url)
         if record.accessReport?.mounted == true { record.lastAccessibleAt = Date() }
         scan(record, force: false)
