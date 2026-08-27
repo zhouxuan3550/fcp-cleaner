@@ -65,6 +65,8 @@
 	<true/>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://zhouxuan3550.github.io/fcp-cleaner/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>Ek/qM3L+GpWd+EL5fcl+10HyPuS8dnmXpQKNTckodOA=</string>
 </dict>
