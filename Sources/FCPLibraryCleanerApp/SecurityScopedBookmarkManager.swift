@@ -7,6 +7,8 @@ struct RecentLibraryMetadata: Codable, Sendable {
     let cleanableSize: Int64?
     let lastActivity: Date?
     var discoverySourceRaw: String? = nil
+    /// 存档时的卷 UUID：恢复时若当前同路径挂载的是另一块盘，则拒绝复活条目。
+    var volumeUUIDRaw: String? = nil
 }
 
 struct RestoredLibrary: Sendable {
@@ -70,7 +72,8 @@ final class SecurityScopedBookmarkManager {
                 totalAllocatedSize: entry.totalAllocatedSize,
                 cleanableSize: entry.cleanableSize,
                 lastActivity: entry.lastActivity,
-                discoverySourceRaw: entry.discoverySourceRaw
+                discoverySourceRaw: entry.discoverySourceRaw,
+                volumeUUIDRaw: entry.volumeUUIDRaw
             ))
         }
         UserDefaults.standard.set(try? JSONEncoder().encode(bookmarks), forKey: Self.storageKey)

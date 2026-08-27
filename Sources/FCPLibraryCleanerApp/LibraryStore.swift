@@ -218,7 +218,17 @@ final class LibraryStore: NSObject {
     private override init() {
         super.init()
         let restored = bookmarks.restore()
-        libraries = restored.map { LibraryRecord(url: $0.metadata.url, restored: $0) }
+        // 卷身份绑定：同一路径当前挂载的若是另一块盘（UUID 不同），拒绝复活旧条目，
+        // 防止把上一块盘的扫描元数据安到异盘同名资源库上。
+        libraries = restored.compactMap { entry -> LibraryRecord? in
+            let record = LibraryRecord(url: entry.metadata.url, restored: entry)
+            if let saved = entry.metadata.volumeUUIDRaw,
+               let current = record.volumeID,
+               saved != current {
+                return nil
+            }
+            return record
+        }
         workDirectories = bookmarks.restoreWorkDirectories()
         selectedID = libraries.first?.id
         if UserDefaults.standard.object(forKey: "lowSpaceWarningGB") == nil { lowSpaceWarningGB = 100 }
@@ -1220,7 +1230,8 @@ final class LibraryStore: NSObject {
                 totalAllocatedSize: $0.lastKnownTotalSize,
                 cleanableSize: $0.lastKnownCleanableSize,
                 lastActivity: $0.lastActivity,
-                discoverySourceRaw: $0.discoverySource?.rawValue
+                discoverySourceRaw: $0.discoverySource?.rawValue,
+                volumeUUIDRaw: $0.volumeID
             )
         }
     }
