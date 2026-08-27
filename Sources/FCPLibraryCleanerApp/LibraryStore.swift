@@ -40,6 +40,9 @@ final class LibraryRecord: Identifiable {
     var cleanupAfterSize: Int64?
     var inspectorReport: InspectionReport?
     var isInspecting = false
+    var accessReport: VolumeAccessReport?
+    var isDiagnosingVolume = false
+    var lastAccessibleAt: Date?
     var lastScanned: Date?
     var lastKnownTotalSize: Int64?
     var lastKnownCleanableSize: Int64?
@@ -632,6 +635,7 @@ final class LibraryStore: NSObject {
                 record.lastKnownTotalSize = record.scanResult?.totalAllocatedSize
                 record.lastKnownCleanableSize = record.scanResult?.confirmedCleanableSize
                 record.lastActivity = LibraryRecord.activityDate(for: record.url)
+                record.lastAccessibleAt = Date()
                 saveRecents()
                 evaluateLowSpace()
                 if request.preserveLastCleanup, record.lastCleanup != nil {
@@ -1139,8 +1143,71 @@ final class LibraryStore: NSObject {
         }
     }
 
+    func diagnoseVolumeAccess(_ record: LibraryRecord) {
+        guard !record.isDiagnosingVolume else { return }
+        record.isDiagnosingVolume = true
+        let url = record.url
+        Task { [weak self, weak record] in
+            let report = await Task.detached(priority: .utility) {
+                Self.probeVolumeAccess(url)
+            }.value
+            guard let self, let record else { return }
+            record.accessReport = report
+            if report.mounted { record.lastAccessibleAt = Date() }
+            record.isDiagnosingVolume = false
+        }
+    }
+
+    nonisolated private static func probeVolumeAccess(_ url: URL) -> VolumeAccessReport {
+        var isDirectory: ObjCBool = false
+        let mounted = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+        let writable = mounted && FileManager.default.isWritableFile(atPath: url.path)
+        let volumeName = try? url.resourceValues(forKeys: [.volumeNameKey]).volumeName
+        return VolumeAccessReport(
+            libraryURL: url,
+            volumeName: volumeName,
+            mounted: mounted,
+            writable: writable,
+            checkedAt: Date()
+        )
+    }
+
+    /// Re-mints the security-scoped bookmark by having the user pick the same
+    /// package again — the standard remedy after a scope went stale.
+    func reauthorizeLibraryAccess(_ record: LibraryRecord) {
+        let panel = NSOpenPanel()
+        panel.title = "重新授权资源库访问"
+        panel.prompt = "重新授权"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [UTType(importedAs: "com.apple.finalcutprolibrary")]
+        panel.directoryURL = record.url.deletingLastPathComponent()
+        guard panel.runModal() == .OK, let picked = panel.urls.first else { return }
+        guard picked.standardizedFileURL == record.url.standardizedFileURL else {
+            showCleanupNotice(CleanupNotice(
+                title: "重新授权未完成",
+                libraryCount: 1,
+                freedSize: 0,
+                cleanedItemCount: 0,
+                categories: [],
+                errorCount: 1,
+                errorMessage: "所选的不是原资源库（\(record.displayName)），请重新选择同一个 .fcpbundle"
+            ))
+            return
+        }
+        bookmarks.save(currentRecentsMetadata())
+        record.accessReport = Self.probeVolumeAccess(record.url)
+        if record.accessReport?.mounted == true { record.lastAccessibleAt = Date() }
+        scan(record, force: false)
+    }
+
     private func saveRecents() {
-        bookmarks.save(libraries.map {
+        bookmarks.save(currentRecentsMetadata())
+    }
+
+    private func currentRecentsMetadata() -> [RecentLibraryMetadata] {
+        libraries.map {
             RecentLibraryMetadata(
                 url: $0.url,
                 lastScanned: $0.lastScanned,
@@ -1149,7 +1216,7 @@ final class LibraryStore: NSObject {
                 lastActivity: $0.lastActivity,
                 discoverySourceRaw: $0.discoverySource?.rawValue
             )
-        })
+        }
     }
 }
 
@@ -1185,6 +1252,15 @@ struct DiskSpaceWarning: Identifiable {
     let name: String
     let availableSize: Int64
     let cleanableSize: Int64
+}
+
+struct VolumeAccessReport: Identifiable {
+    var id: URL { libraryURL }
+    let libraryURL: URL
+    let volumeName: String?
+    let mounted: Bool
+    let writable: Bool
+    let checkedAt: Date
 }
 
 @MainActor

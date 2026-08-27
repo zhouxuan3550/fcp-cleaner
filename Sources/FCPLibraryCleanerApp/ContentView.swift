@@ -1591,7 +1591,65 @@ private struct LibrarySettings: View {
                     .foregroundStyle(AppColor.secondaryText)
             }
             Divider()
+            VolumeAccessSection(library: library, store: store)
+            Divider()
             Button("从列表移除", role: .destructive) { store.remove([library]) }
+        }
+    }
+}
+
+private struct VolumeAccessSection: View {
+    let library: LibraryRecord
+    let store: LibraryStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("外置盘诊断")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(AppColor.tertiaryText)
+                .textCase(.uppercase)
+            HStack(spacing: 8) {
+                statusLine
+                Spacer(minLength: 6)
+                if library.isDiagnosingVolume {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button("诊断") { store.diagnoseVolumeAccess(library) }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(AppColor.secondaryText)
+                    Button("重新授权") { store.reauthorizeLibraryAccess(library) }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(AppColor.accent)
+                }
+            }
+            if let report = library.accessReport, report.mounted, !report.writable {
+                Label("卷处于只读状态，清理与废纸篓移动都会失败，请重新挂载外置盘", systemImage: "lock.fill")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(AppColor.danger)
+                    .lineLimit(2)
+            }
+            if let at = library.lastAccessibleAt {
+                Text("上次可访问 \(at.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(AppColor.tertiaryText)
+            }
+        }
+    }
+
+    @ViewBuilder private var statusLine: some View {
+        if let report = library.accessReport {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(report.mounted ? (report.writable ? AppColor.success : AppColor.danger) : AppColor.danger)
+                    .frame(width: 7, height: 7)
+                Text(report.mounted ? (report.writable ? "在线 · 可写" : "在线 · 只读") : "已断开或未挂载")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(report.mounted ? AppColor.primaryText : AppColor.danger)
+            }
+        } else {
+            Text("尚未检测")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AppColor.secondaryText)
         }
     }
 }
