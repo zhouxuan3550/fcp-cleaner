@@ -6,6 +6,7 @@ struct RecentLibraryMetadata: Codable, Sendable {
     let totalAllocatedSize: Int64?
     let cleanableSize: Int64?
     let lastActivity: Date?
+    var discoverySourceRaw: String? = nil
 }
 
 struct RestoredLibrary: Sendable {
@@ -65,7 +66,8 @@ final class SecurityScopedBookmarkManager {
                 lastScanned: entry.lastScanned,
                 totalAllocatedSize: entry.totalAllocatedSize,
                 cleanableSize: entry.cleanableSize,
-                lastActivity: entry.lastActivity
+                lastActivity: entry.lastActivity,
+                discoverySourceRaw: entry.discoverySourceRaw
             ))
         }
         UserDefaults.standard.set(try? JSONEncoder().encode(bookmarks), forKey: Self.storageKey)

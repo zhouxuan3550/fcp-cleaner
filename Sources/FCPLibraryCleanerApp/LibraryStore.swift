@@ -5,6 +5,21 @@ import SwiftUI
 import UniformTypeIdentifiers
 import FCPLibraryCleanerCore
 
+enum DiscoverySource: String, Codable, Sendable {
+    case manualAdd
+    case workDirectory
+    case spotlightSearch
+
+    /// Sidebar-row suffix; manually added libraries stay unlabeled.
+    var title: String? {
+        switch self {
+        case .manualAdd: nil
+        case .workDirectory: "工作目录"
+        case .spotlightSearch: "本机发现"
+        }
+    }
+}
+
 @Observable @MainActor
 final class LibraryRecord: Identifiable {
     let id = UUID()
@@ -30,9 +45,10 @@ final class LibraryRecord: Identifiable {
     var lastKnownCleanableSize: Int64?
     var pendingFreedSize: Int64 = 0
     var lastActivity: Date?
+    let discoverySource: DiscoverySource?
     @ObservationIgnored var scanControl: ScanControl?
 
-    init(url: URL, restored: RestoredLibrary? = nil) {
+    init(url: URL, restored: RestoredLibrary? = nil, discoveredVia source: DiscoverySource? = nil) {
         self.url = url
         let values = try? url.resourceValues(forKeys: [.volumeURLKey, .volumeNameKey, .volumeUUIDStringKey])
         volumeURL = values?.allValues[.volumeURLKey] as? URL ?? URL(fileURLWithPath: "/")
@@ -42,6 +58,7 @@ final class LibraryRecord: Identifiable {
         lastKnownTotalSize = restored?.metadata.totalAllocatedSize
         lastKnownCleanableSize = restored?.metadata.cleanableSize
         lastActivity = restored?.metadata.lastActivity ?? Self.activityDate(for: url)
+        discoverySource = restored?.metadata.discoverySourceRaw.flatMap(DiscoverySource.init(rawValue:)) ?? source
     }
 
     fileprivate static func activityDate(for libraryURL: URL) -> Date? {
@@ -369,7 +386,7 @@ final class LibraryStore: NSObject {
                     Self.findLibraries(in: roots)
                 }.value
                 guard runID == discoveryRunID else { return }
-                merge(libraryURLs: urls, selectNewest: selectedID == nil)
+                merge(libraryURLs: urls, selectNewest: selectedID == nil, source: .workDirectory)
                 isDiscovering = false
             }
             return
@@ -418,7 +435,7 @@ final class LibraryStore: NSObject {
             guard let item = result as? NSMetadataItem else { return nil }
             return item.value(forAttribute: NSMetadataItemURLKey) as? URL
         }
-        merge(libraryURLs: urls, selectNewest: selectedID == nil)
+        merge(libraryURLs: urls, selectNewest: selectedID == nil, source: .spotlightSearch)
         query.enableUpdates()
     }
 
@@ -466,16 +483,19 @@ final class LibraryStore: NSObject {
     }
 
     func add(libraryURLs: [URL]) {
-        merge(libraryURLs: libraryURLs, selectNewest: true)
+        merge(libraryURLs: libraryURLs, selectNewest: true, source: .manualAdd)
     }
 
-    private func merge(libraryURLs: [URL], selectNewest: Bool) {
+    private func merge(libraryURLs: [URL], selectNewest: Bool, source: DiscoverySource) {
         var newRecords: [LibraryRecord] = []
         let candidates = Set(libraryURLs.map(\.standardizedFileURL))
             .filter { url in
                 guard url.pathExtension.lowercased() == "fcpbundle" else { return false }
                 var isDirectory: ObjCBool = false
-                return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+                guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                      isDirectory.boolValue else { return false }
+                if source == .spotlightSearch, !Self.allowsSpotlightDiscovery(url) { return false }
+                return Self.libraryDatabaseExists(at: url)
             }
             .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
 
@@ -484,7 +504,7 @@ final class LibraryStore: NSObject {
                 if selectNewest { selectedID = existing.id }
                 continue
             }
-            let record = LibraryRecord(url: url)
+            let record = LibraryRecord(url: url, discoveredVia: source)
             libraries.append(record)
             newRecords.append(record)
             if selectNewest { selectedID = record.id }
@@ -530,6 +550,21 @@ final class LibraryStore: NSObject {
             return false
         }
         return values.isDirectory == true && values.isSymbolicLink != true
+    }
+
+    nonisolated private static func allowsSpotlightDiscovery(_ libraryURL: URL) -> Bool {
+        var volumeStat = statfs()
+        guard statfs(libraryURL.path, &volumeStat) == 0 else { return false }
+        let localMount = volumeStat.f_flags & UInt32(MNT_LOCAL) != 0
+        let backupVolume = LibraryDiscoveryRules.describesTimeMachineVolume(
+            lastPathComponent: libraryURL.pathComponents.last ?? ""
+        )
+        return LibraryDiscoveryRules.allowsSpotlightDiscovery(localMount: localMount, timeMachineBackup: backupVolume)
+    }
+
+    /// Cheap structural validation before a candidate earns a scan slot.
+    nonisolated private static func libraryDatabaseExists(at libraryURL: URL) -> Bool {
+        FileManager.default.fileExists(atPath: libraryURL.appendingPathComponent(FCPStructureRules.libraryDatabaseName).path)
     }
 
     func scan(_ record: LibraryRecord, preserveLastCleanup: Bool = false, force: Bool = true) {
@@ -1111,7 +1146,8 @@ final class LibraryStore: NSObject {
                 lastScanned: $0.lastScanned,
                 totalAllocatedSize: $0.lastKnownTotalSize,
                 cleanableSize: $0.lastKnownCleanableSize,
-                lastActivity: $0.lastActivity
+                lastActivity: $0.lastActivity,
+                discoverySourceRaw: $0.discoverySource?.rawValue
             )
         })
     }

@@ -469,12 +469,24 @@ private struct LibraryRow: View {
     }
 
     private var subtitle: String {
-        if library.isScanning { return library.usedCachedScan ? "缓存" : "扫描中" }
-        if library.isQueued { return "等待扫描" }
-        if library.scanError != nil { return "扫描失败" }
-        if library.cleanupError != nil { return "预检未通过" }
-        if library.usedCachedScan { return "增量复用" }
-        return "已就绪"
+        var status: String
+        if library.isScanning {
+            status = library.usedCachedScan ? "缓存" : "扫描中"
+        } else if library.isQueued {
+            status = "等待扫描"
+        } else if library.scanError != nil {
+            status = "扫描失败"
+        } else if library.cleanupError != nil {
+            status = "预检未通过"
+        } else if library.usedCachedScan {
+            status = "增量复用"
+        } else {
+            status = "已就绪"
+        }
+        if let tag = library.discoverySource?.title {
+            status += " · \(tag)"
+        }
+        return status
     }
 }
 
