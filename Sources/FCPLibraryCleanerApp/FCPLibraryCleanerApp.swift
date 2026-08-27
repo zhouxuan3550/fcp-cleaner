@@ -1,0 +1,102 @@
+import AppKit
+import SwiftUI
+
+@main
+struct FCPLibraryCleanerApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    init() {
+        UpdateController.shared.startIfConfigured()
+    }
+
+    var body: some Scene {
+        WindowGroup("FCP Cleaner") {
+            ContentView()
+        }
+        .defaultSize(width: 1_080, height: 760)
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("选择资源库…") {
+                    LibraryStore.shared.openLibraryPanel()
+                }
+                .keyboardShortcut("o", modifiers: [.command])
+
+                Button("全选可清理资源库") {
+                    LibraryStore.shared.toggleSelectAllCleanableLibraries()
+                }
+                .keyboardShortcut("a", modifiers: [.command])
+
+                Button("清理") {
+                    let store = LibraryStore.shared
+                    if !store.batchSelectedIDs.isEmpty {
+                        store.requestBatchClean()
+                    } else if let selected = store.selectedLibrary {
+                        store.requestClean(selected)
+                    }
+                }
+                .keyboardShortcut(.return, modifiers: [.command])
+
+                Button("重新扫描当前资源库") {
+                    if let selected = LibraryStore.shared.selectedLibrary {
+                        LibraryStore.shared.scan(selected, force: false)
+                    }
+                }
+                .keyboardShortcut("r", modifiers: [.command])
+            }
+            CommandGroup(after: .appInfo) {
+                Button("检查更新…") {
+                    UpdateController.shared.checkForUpdates()
+                }
+                .disabled(!UpdateController.shared.isConfigured)
+            }
+        }
+
+        MenuBarExtra("FCP Cleaner", systemImage: "sparkles") {
+            MenuBarPanel(store: LibraryStore.shared)
+        }
+        .menuBarExtraStyle(.window)
+    }
+}
+
+private struct MenuBarPanel: View {
+    @Bindable var store: LibraryStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                CleanerMenuMark()
+                Text("FCP Cleaner")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                Spacer()
+                Text(format(store.totalCleanableSize))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+            }
+            if let warning = store.lowSpaceWarnings.first {
+                Label("\(warning.name) 剩余 \(format(warning.availableSize))", systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.orange)
+            }
+            HStack {
+                Button("打开") { store.showMainWindow() }
+                Button("扫描") { store.discoverLibraries() }
+                    .disabled(store.isDiscovering)
+                Button("清理") { store.requestMenuBarCleanup() }
+                    .disabled(store.totalCleanableSize < LibraryStore.minimumCleanableSize)
+                Spacer()
+                Button("退出") { NSApplication.shared.terminate(nil) }
+            }
+        }
+        .padding(14)
+        .frame(width: 280)
+    }
+}
+
+private struct CleanerMenuMark: View {
+    var body: some View {
+        Image(systemName: "paintbrush.pointed.fill")
+            .foregroundStyle(.white)
+            .frame(width: 28, height: 28)
+            .background(Color(red: 0.39, green: 0.30, blue: 0.85))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
