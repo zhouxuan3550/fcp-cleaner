@@ -578,12 +578,15 @@ final class LibraryStore: NSObject {
                     result = cached
                     record.usedCachedScan = true
                 } else {
+                    let progressCoalescer = ScanProgressCoalescer()
                     result = try await LibraryScanner().scan(
                         libraryURL: record.url,
                         control: control,
-                        onProgress: { progress in
-                            Task { @MainActor [weak record] in
-                                record?.scanProgress = progress
+                        onProgress: { [weak record] progress in
+                            if let merged = progressCoalescer.consume(progress) {
+                                Task { @MainActor [weak record] in
+                                    record?.scanProgress = merged
+                                }
                             }
                         }
                     )
