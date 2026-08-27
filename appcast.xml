@@ -1,0 +1,14 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>FCP Cleaner</title>
+        <item>
+            <title>3.5.0</title>
+            <pubDate>Thu, 27 Aug 2026 17:32:00 +0800</pubDate>
+            <sparkle:version>350</sparkle:version>
+            <sparkle:shortVersionString>3.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.5.0/FCP-Cleaner-3.5.0-universal.dmg" length="4066731" type="application/octet-stream" sparkle:edSignature="HSYFsD53U0UzIn+0BTZOhvxfxSfbbxbqM+mzZ0x9cjUL8UQx9D39J7fhQJ2fCfY2W/ZzFstWFNUE4LtYR+2iDg=="/>
+        </item>
+    </channel>
+</rss>
