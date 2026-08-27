@@ -416,7 +416,7 @@ private struct LibraryRow: View {
                             .lineLimit(1)
                         Text(subtitle)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(library.lastError != nil ? AppColor.danger : AppColor.tertiaryText)
+                            .foregroundStyle(library.scanError != nil || library.cleanupError != nil ? AppColor.danger : AppColor.tertiaryText)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 6)
@@ -471,7 +471,8 @@ private struct LibraryRow: View {
     private var subtitle: String {
         if library.isScanning { return library.usedCachedScan ? "缓存" : "扫描中" }
         if library.isQueued { return "等待扫描" }
-        if library.lastError != nil { return "扫描失败" }
+        if library.scanError != nil { return "扫描失败" }
+        if library.cleanupError != nil { return "预检未通过" }
         if library.usedCachedScan { return "增量复用" }
         return "已就绪"
     }
@@ -693,12 +694,13 @@ private struct LibraryStatusBadge: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(library.lastError == nil ? AppColor.success : AppColor.danger)
+                .fill(library.scanError == nil ? AppColor.success : AppColor.danger)
                 .frame(width: 7, height: 7)
             Text(
                 library.isQueued ? "等待扫描" :
                 library.isScanning ? "扫描中" :
-                library.lastError != nil ? "扫描失败" :
+                library.scanError != nil ? "扫描失败" :
+                library.cleanupError != nil ? "预检未通过" :
                 library.usedCachedScan ? "增量复用" :
                 "已就绪"
             )
@@ -780,7 +782,7 @@ private struct ScanErrorView: View {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 30))
                 .foregroundStyle(AppColor.danger)
-            Text(library.lastError ?? "尚未扫描")
+            Text(library.scanError ?? "尚未扫描")
                 .font(.system(size: 13))
                 .foregroundStyle(AppColor.secondaryText)
                 .multilineTextAlignment(.center)
@@ -999,7 +1001,7 @@ private struct CleanupStatus: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                } else if let error = library.lastError {
+                } else if let error = library.cleanupError {
                     Text(error)
                         .foregroundStyle(AppColor.danger)
                         .frame(maxWidth: .infinity, alignment: .leading)

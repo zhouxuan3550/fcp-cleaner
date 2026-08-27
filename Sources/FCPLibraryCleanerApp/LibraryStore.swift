@@ -16,7 +16,8 @@ final class LibraryRecord: Identifiable {
     var isQueued = false
     var usedCachedScan = false
     var scanProgress = ScanProgress(files: 0, directories: 0, allocatedBytes: 0)
-    var lastError: String?
+    var scanError: String?
+    var cleanupError: String?
     var lastCleanup: CleanupResult?
     var failedCleanupPlan: CleanupPlan?
     var cleanupBeforeSize: Int64?
@@ -560,10 +561,11 @@ final class LibraryStore: NSObject {
         record.isScanning = true
         record.usedCachedScan = false
         record.scanProgress = ScanProgress(files: 0, directories: 0, allocatedBytes: 0)
-        record.lastError = nil
+        record.scanError = nil
         if !request.preserveLastCleanup {
             record.lastCleanup = nil
             record.failedCleanupPlan = nil
+            record.cleanupError = nil
         }
         record.inspectorReport = nil
         Task { [weak self, weak record] in
@@ -597,9 +599,9 @@ final class LibraryStore: NSObject {
                 }
                 record.pendingFreedSize = 0
             } catch is CancellationError {
-                record.lastError = nil
+                record.scanError = nil
             } catch {
-                record.lastError = error.localizedDescription
+                record.scanError = error.localizedDescription
                 record.scanResult = nil
                 record.pendingFreedSize = 0
             }
@@ -631,7 +633,7 @@ final class LibraryStore: NSObject {
             } catch is CancellationError {
                 record.inspectorReport = nil
             } catch {
-                record.lastError = error.localizedDescription
+                record.scanError = error.localizedDescription
             }
             record.isInspecting = false
         }
@@ -650,12 +652,22 @@ final class LibraryStore: NSObject {
         }
     }
 
-    func requestPrimaryClean(_ record: LibraryRecord) {
-        if batchSelectedIDs.count > 1 {
-            requestBatchClean()
-        } else {
-            requestClean(record)
-        }
+    var canRescanSelectedLibrary: Bool {
+        guard let selected = selectedLibrary else { return false }
+        return !selected.isScanning && !selected.isQueued
+    }
+
+    var canRequestCleanupForSelection: Bool {
+        guard !isPreflighting, !isCleaning, !isBatchCleaning else { return false }
+        if !batchSelectedIDs.isEmpty { return true }
+        guard let selected = selectedLibrary else { return false }
+        return selected.scanResult != nil
+            && selected.spaceToFree >= Self.minimumCleanableSize
+            && !selected.isScanning
+    }
+
+    var hasSelectableBatchCandidates: Bool {
+        !batchCleanableLibraries.isEmpty && !isPreflighting && !isCleaning && !isBatchCleaning
     }
 
     func requestRetry(_ record: LibraryRecord) {
@@ -730,7 +742,7 @@ final class LibraryStore: NSObject {
 
     private func showPreflightFailure(_ error: Error, record: LibraryRecord?) {
         let message = error.localizedDescription
-        record?.lastError = message
+        record?.cleanupError = message
         showCleanupNotice(CleanupNotice(
             title: "清理前检查未通过",
             libraryCount: record == nil ? 0 : 1,
@@ -778,7 +790,7 @@ final class LibraryStore: NSObject {
                     errorCount += result.errors.count
                     firstErrorMessage = firstErrorMessage ?? result.errors.first?.localizedDescription
                     categories.formUnion(entry.plan.entries.map(\.item.category))
-                    record.lastError = result.errors.isEmpty
+                    record.cleanupError = result.errors.isEmpty
                         ? nil
                         : result.errors.map(\.localizedDescription).joined(separator: "\n")
                     recordsToRescan.append(record)
@@ -795,7 +807,7 @@ final class LibraryStore: NSObject {
                     errorCount += 1
                     firstErrorMessage = firstErrorMessage ?? error.localizedDescription
                     record.failedCleanupPlan = entry.plan
-                    record.lastError = error.localizedDescription
+                    record.cleanupError = error.localizedDescription
                     cleanupHistory.appendFailure(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, error: error)
                     summaryLibraries.append(CleanupSummaryLibrary(
                         name: record.displayName,
@@ -876,9 +888,9 @@ final class LibraryStore: NSObject {
                     errorCount: result.errors.count,
                     errorMessage: result.errors.first?.localizedDescription
                 ))
-                if !result.errors.isEmpty {
-                    record.lastError = result.errors.map(\.localizedDescription).joined(separator: "\n")
-                }
+                record.cleanupError = result.errors.isEmpty
+                    ? nil
+                    : result.errors.map(\.localizedDescription).joined(separator: "\n")
                 scan(record, preserveLastCleanup: true, force: true)
                 NotificationController.shared.cleanupFinished(
                     freedSize: result.freedAllocatedSize,
@@ -887,7 +899,7 @@ final class LibraryStore: NSObject {
                     enabled: notificationsEnabled
                 )
             } catch {
-                record.lastError = error.localizedDescription
+                record.cleanupError = error.localizedDescription
                 record.failedCleanupPlan = confirmation.plan
                 cleanupHistory.appendFailure(libraryName: record.displayName, libraryURL: record.url, plan: confirmation.plan, error: error)
                 showCleanupNotice(CleanupNotice(
@@ -912,11 +924,17 @@ final class LibraryStore: NSObject {
 
     func remove(_ records: [LibraryRecord]) {
         let ids = Set(records.map(\.id))
+        for record in records {
+            if let index = scanQueue.firstIndex(where: { $0.record.id == record.id }) {
+                scanQueue.remove(at: index)
+                record.isQueued = false
+            }
+            record.scanControl?.cancel()
+        }
         libraries.removeAll { ids.contains($0.id) }
         batchSelectedIDs.subtract(ids)
-        if ids.contains(selectedID ?? UUID()) {
-            selectedID = libraries.first?.id
-        }
+        selectedID = nil
+        reconcileFilteredLibraries()
         saveRecents()
     }
 

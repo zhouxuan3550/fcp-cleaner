@@ -26,6 +26,7 @@ struct FCPLibraryCleanerApp: App {
                     LibraryStore.shared.toggleSelectAllCleanableLibraries()
                 }
                 .keyboardShortcut("a", modifiers: [.command])
+                .disabled(!LibraryStore.shared.hasSelectableBatchCandidates)
 
                 Button("清理") {
                     let store = LibraryStore.shared
@@ -36,7 +37,7 @@ struct FCPLibraryCleanerApp: App {
                     }
                 }
                 .keyboardShortcut(.delete, modifiers: [.command])
-                .disabled(LibraryStore.shared.isPreflighting || LibraryStore.shared.isCleaning)
+                .disabled(!LibraryStore.shared.canRequestCleanupForSelection)
 
                 Button("重新扫描当前资源库") {
                     if let selected = LibraryStore.shared.selectedLibrary {
@@ -44,6 +45,7 @@ struct FCPLibraryCleanerApp: App {
                     }
                 }
                 .keyboardShortcut("r", modifiers: [.command])
+                .disabled(!LibraryStore.shared.canRescanSelectedLibrary)
             }
             CommandGroup(after: .appInfo) {
                 Button("检查更新…") {
