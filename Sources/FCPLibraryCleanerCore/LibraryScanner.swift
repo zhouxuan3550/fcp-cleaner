@@ -329,6 +329,7 @@ public struct LibraryScanner: Sendable {
         var logical: Int64 = 0
         var files = 0
         var directories = 0
+        var lastHeartbeat = ContinuousClock.now
         let keys: Set<URLResourceKey> = [
             .isDirectoryKey,
             .isSymbolicLinkKey,
@@ -365,6 +366,12 @@ public struct LibraryScanner: Sendable {
                 files += 1
                 if files.isMultiple(of: 256) {
                     onProgress(ScanProgress(files: files, directories: directories, allocatedBytes: allocated))
+                    // 心跳：让"看起来卡住"可以从日志直接区分是慢还是真死
+                    let now = ContinuousClock.now
+                    if now - lastHeartbeat > .seconds(30) {
+                        lastHeartbeat = now
+                        logger.info("Scan heartbeat \(files) files / \(directories) dirs / \(allocated) bytes in \(rootURL.path, privacy: .private(mask: .hash))")
+                    }
                 }
             } catch {
                 throw CleanupError.permissionDenied(url)

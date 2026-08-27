@@ -622,6 +622,12 @@ final class LibraryStore: NSObject {
         record.inspectorReport = nil
         Task { [weak self, weak record] in
             guard let self, let record else { return }
+            // 防止 App Nap 节流长扫描（笔记本合盖场景下吞吐会莫名劣化）
+            let scanActivity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiatedAllowingIdleSystemSleep],
+                reason: "FCP Cleaner 扫描资源库"
+            )
+            defer { ProcessInfo.processInfo.endActivity(scanActivity) }
             do {
                 let result: LibraryScanResult
                 if !request.force, let cached = await scanCache.loadIfCurrent(libraryURL: record.url) {
@@ -757,6 +763,12 @@ final class LibraryStore: NSObject {
         }
         cleanupPreparationTotal = entries.count
         Task {
+            // 移动大目录期间避免系统休眠/节流
+            let batchActivity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiatedAllowingIdleSystemSleep],
+                reason: "FCP Cleaner 批量预检与清理"
+            )
+            defer { ProcessInfo.processInfo.endActivity(batchActivity) }
             var failure: (Error, LibraryRecord)?
             for entry in entries {
                 do {
@@ -924,6 +936,12 @@ final class LibraryStore: NSObject {
         record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
         record.cleanupAfterSize = nil
         Task {
+            // 单库清理同样不可被节流打断
+            let cleanActivity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiatedAllowingIdleSystemSleep],
+                reason: "FCP Cleaner 清理资源库"
+            )
+            defer { ProcessInfo.processInfo.endActivity(cleanActivity) }
             do {
                 let start = ContinuousClock.now
                 let result = try await CleanupEngine().execute(plan: confirmation.plan)
