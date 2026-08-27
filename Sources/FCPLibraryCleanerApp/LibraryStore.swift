@@ -11,6 +11,7 @@ final class LibraryRecord: Identifiable {
     let url: URL
     let volumeURL: URL
     let volumeName: String
+    let volumeID: String?
     var scanResult: LibraryScanResult?
     var isScanning = false
     var isQueued = false
@@ -33,9 +34,10 @@ final class LibraryRecord: Identifiable {
 
     init(url: URL, restored: RestoredLibrary? = nil) {
         self.url = url
-        let values = try? url.resourceValues(forKeys: [.volumeURLKey, .volumeNameKey])
+        let values = try? url.resourceValues(forKeys: [.volumeURLKey, .volumeNameKey, .volumeUUIDStringKey])
         volumeURL = values?.allValues[.volumeURLKey] as? URL ?? URL(fileURLWithPath: "/")
         volumeName = values?.volumeName ?? volumeURL.lastPathComponent
+        volumeID = values?.volumeUUIDString
         lastScanned = restored?.metadata.lastScanned
         lastKnownTotalSize = restored?.metadata.totalAllocatedSize
         lastKnownCleanableSize = restored?.metadata.cleanableSize
@@ -778,7 +780,7 @@ final class LibraryStore: NSObject {
                     let start = ContinuousClock.now
                     let result = try await CleanupEngine().execute(plan: entry.plan)
                     let elapsed = ContinuousClock.now - start
-                    CleanupThroughputStore.record(bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
+                    CleanupThroughputStore.record(volumeID: entry.record.volumeID, bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
                     record.lastCleanup = result
                     applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
                     cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, result: result)
@@ -872,7 +874,7 @@ final class LibraryStore: NSObject {
                 let start = ContinuousClock.now
                 let result = try await CleanupEngine().execute(plan: confirmation.plan)
                 let elapsed = ContinuousClock.now - start
-                CleanupThroughputStore.record(bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
+                CleanupThroughputStore.record(volumeID: record.volumeID, bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
                 record.lastCleanup = result
                 applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
                 cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: confirmation.plan, result: result)
@@ -957,9 +959,24 @@ final class LibraryStore: NSObject {
         return max(0, base - penalty)
     }
 
-    func estimatedCleanupDuration(forBytes bytes: Int64) -> Double? {
-        guard let bytesPerSecond = CleanupThroughputStore.averageBytesPerSecond() else { return nil }
+    func estimatedCleanupDuration(forBytes bytes: Int64, volumeID: String?) -> Double? {
+        guard let volumeID,
+              let bytesPerSecond = CleanupThroughputStore.averageBytesPerSecond(volumeID: volumeID),
+              bytesPerSecond > 0 else { return nil }
         return Double(bytes) / bytesPerSecond
+    }
+
+    /// Batch ETA sums per-entry estimates; nil when any involved volume lacks history.
+    func estimatedBatchCleanupDuration(entries: [(bytes: Int64, volumeID: String?)]) -> Double? {
+        guard !entries.isEmpty else { return nil }
+        var total = 0.0
+        for entry in entries {
+            guard let duration = estimatedCleanupDuration(forBytes: entry.bytes, volumeID: entry.volumeID) else {
+                return nil
+            }
+            total += duration
+        }
+        return total
     }
 
     private func applyImmediateCleanupDelta(_ record: LibraryRecord, freed: Int64) {

@@ -957,7 +957,7 @@ private struct CleanupActionCard: View {
                     .foregroundStyle(AppColor.tertiaryText)
                     .lineLimit(1)
             }
-            if let seconds = store.estimatedCleanupDuration(forBytes: library.spaceToFree) {
+            if let seconds = store.estimatedCleanupDuration(forBytes: library.spaceToFree, volumeID: library.volumeID) {
                 Label("预计耗时 \(FormatHelpers.estimatedTime(seconds))", systemImage: "clock")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(AppColor.tertiaryText)
@@ -1122,7 +1122,7 @@ private struct SingleCleanConfirmationSheet: View {
                             .monospacedDigit()
                     }
                     .padding(.top, 10)
-                    if let seconds = store.estimatedCleanupDuration(forBytes: confirmation.plan.spaceToFree) {
+                    if let seconds = store.estimatedCleanupDuration(forBytes: confirmation.plan.spaceToFree, volumeID: confirmation.record.volumeID) {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
                             Text("预计耗时 \(FormatHelpers.estimatedTime(seconds))")
@@ -1181,7 +1181,9 @@ private struct BatchCleanConfirmationSheet: View {
                     Text("共 \(FormatHelpers.bytes(confirmation.totalSpaceToFree))")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(AppColor.secondaryText)
-                    if let seconds = store.estimatedCleanupDuration(forBytes: confirmation.totalSpaceToFree) {
+                    if let seconds = store.estimatedBatchCleanupDuration(
+                        entries: confirmation.entries.map { (bytes: $0.plan.spaceToFree, volumeID: $0.record.volumeID) }
+                    ) {
                         Text("预计耗时 \(FormatHelpers.estimatedTime(seconds))")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(AppColor.tertiaryText)
