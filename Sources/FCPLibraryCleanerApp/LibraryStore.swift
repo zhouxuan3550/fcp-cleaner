@@ -213,6 +213,7 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var lastLowSpaceNotification: [URL: Date] = [:]
     @ObservationIgnored private var lastAutomaticLowSpaceScan: [URL: Date] = [:]
     @ObservationIgnored private var spaceMonitorTask: Task<Void, Never>?
+    @ObservationIgnored private var isEvaluatingLowSpace = false
     private let maximumConcurrentScans = 3
 
     private override init() {
@@ -500,18 +501,34 @@ final class LibraryStore: NSObject {
     }
 
     private func merge(libraryURLs: [URL], selectNewest: Bool, source: DiscoverySource) {
-        var newRecords: [LibraryRecord] = []
-        let candidates = Set(libraryURLs.map(\.standardizedFileURL))
+        // 候选校验涉及 fileExists/statfs/数据库探测，网络路径可能阻塞——全部后台执行。
+        Task { [weak self] in
+            let candidates = await Task.detached(priority: .utility) {
+                Self.validateCandidates(libraryURLs, source: source)
+            }.value
+            self?.applyValidatedCandidates(candidates, selectNewest: selectNewest, source: source)
+        }
+    }
+
+    nonisolated private static func validateCandidates(
+        _ libraryURLs: [URL],
+        source: DiscoverySource
+    ) -> [URL] {
+        Set(libraryURLs.map(\.standardizedFileURL))
             .filter { url in
                 guard url.pathExtension.lowercased() == "fcpbundle" else { return false }
                 var isDirectory: ObjCBool = false
                 guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
                       isDirectory.boolValue else { return false }
-                if source == .spotlightSearch, !Self.allowsSpotlightDiscovery(url) { return false }
-                return Self.libraryDatabaseExists(at: url)
+                if source == .spotlightSearch, !allowsSpotlightDiscovery(url) { return false }
+                return libraryDatabaseExists(at: url)
             }
             .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+    }
 
+    @MainActor
+    private func applyValidatedCandidates(_ candidates: [URL], selectNewest: Bool, source: DiscoverySource) {
+        var newRecords: [LibraryRecord] = []
         for url in candidates {
             if let existing = libraries.first(where: { $0.url == url }) {
                 if selectNewest { selectedID = existing.id }
@@ -1101,34 +1118,69 @@ final class LibraryStore: NSObject {
         requestBatchClean()
     }
 
+    /// 卷容量探测全部在后台执行——网络卷上这类调用可能阻塞数秒，绝不能上主线程。
     func evaluateLowSpace() {
+        guard !isEvaluatingLowSpace else { return }
+        isEvaluatingLowSpace = true
         let threshold = Int64(lowSpaceWarningGB) * 1_024 * 1_024 * 1_024
-        let grouped = Dictionary(grouping: libraries, by: \.volumeURL)
-        var warnings: [DiskSpaceWarning] = []
-        for (volumeURL, records) in grouped {
+        let volumeURLs = Array(Set(libraries.map(\.volumeURL)))
+        let nameByVolume = Dictionary(libraries.map { ($0.volumeURL, $0.volumeName) }, uniquingKeysWith: { first, _ in first })
+        let cleanableByVolume = Dictionary(grouping: libraries, by: \.volumeURL)
+            .mapValues { $0.reduce(Int64(0)) { $0 + $1.spaceToFree } }
+        Task { [weak self] in
+            let lowSpaces = await Task.detached(priority: .utility) {
+                Self.probeVolumeAvailability(volumeURLs, threshold: threshold)
+            }.value
+            guard let self else { return }
+            isEvaluatingLowSpace = false
+            applyLowSpaceResults(
+                lowSpaces,
+                nameByVolume: nameByVolume,
+                cleanableByVolume: cleanableByVolume
+            )
+        }
+    }
+
+    nonisolated private static func probeVolumeAvailability(
+        _ volumeURLs: [URL],
+        threshold: Int64
+    ) -> [(volumeURL: URL, availableSize: Int64)] {
+        volumeURLs.compactMap { volumeURL in
             guard let values = try? volumeURL.resourceValues(forKeys: [
                 .volumeAvailableCapacityForImportantUsageKey,
                 .volumeAvailableCapacityKey,
             ]),
-                  let available = values.volumeAvailableCapacityForImportantUsage ?? values.volumeAvailableCapacity.map(Int64.init),
-                  available < threshold else { continue }
-            let cleanable = records.reduce(Int64(0)) { $0 + $1.spaceToFree }
-            let warning = DiskSpaceWarning(
-                volumeURL: volumeURL,
-                name: records.first?.volumeName ?? volumeURL.lastPathComponent,
-                availableSize: available,
+                let available = values.volumeAvailableCapacityForImportantUsage
+                    ?? values.volumeAvailableCapacity.map(Int64.init),
+                available < threshold else { return nil }
+            return (volumeURL, available)
+        }
+    }
+
+    private func applyLowSpaceResults(
+        _ lowSpaces: [(volumeURL: URL, availableSize: Int64)],
+        nameByVolume: [URL: String],
+        cleanableByVolume: [URL: Int64]
+    ) {
+        var warnings: [DiskSpaceWarning] = []
+        for item in lowSpaces {
+            let name = nameByVolume[item.volumeURL] ?? item.volumeURL.lastPathComponent
+            let cleanable = cleanableByVolume[item.volumeURL] ?? 0
+            warnings.append(DiskSpaceWarning(
+                volumeURL: item.volumeURL,
+                name: name,
+                availableSize: item.availableSize,
                 cleanableSize: cleanable
-            )
-            warnings.append(warning)
-            let lastNotification = lastLowSpaceNotification[volumeURL] ?? .distantPast
+            ))
+            let lastNotification = lastLowSpaceNotification[item.volumeURL] ?? .distantPast
             if cleanable >= Self.minimumCleanableSize, Date().timeIntervalSince(lastNotification) > 86_400 {
                 NotificationController.shared.lowSpace(
-                    volumeName: warning.name,
-                    availableSize: available,
+                    volumeName: name,
+                    availableSize: item.availableSize,
                     cleanableSize: cleanable,
                     enabled: notificationsEnabled
                 )
-                lastLowSpaceNotification[volumeURL] = Date()
+                lastLowSpaceNotification[item.volumeURL] = Date()
             }
         }
         lowSpaceWarnings = warnings.sorted { $0.availableSize < $1.availableSize }
