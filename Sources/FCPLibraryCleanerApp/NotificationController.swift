@@ -16,7 +16,7 @@ final class NotificationController {
         guard enabled else { return }
         let content = UNMutableNotificationContent()
         content.title = errorCount == 0 ? "FCP Cleaner 清理完成" : "FCP Cleaner 清理结束"
-        content.body = "释放 \(format(freedSize)) · \(libraryCount) 个资源库" + (errorCount > 0 ? " · \(errorCount) 项失败" : "")
+        content.body = "释放 \(FormatHelpers.bytes(freedSize)) · \(libraryCount) 个资源库" + (errorCount > 0 ? " · \(errorCount) 项失败" : "")
         content.sound = .default
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
@@ -25,7 +25,7 @@ final class NotificationController {
         guard enabled else { return }
         let content = UNMutableNotificationContent()
         content.title = "\(volumeName) 空间不足"
-        content.body = "剩余 \(format(availableSize))，FCP Cleaner 可释放 \(format(cleanableSize))"
+        content.body = "剩余 \(FormatHelpers.bytes(availableSize))，FCP Cleaner 可释放 \(FormatHelpers.bytes(cleanableSize))"
         content.sound = .default
         UNUserNotificationCenter.current().add(UNNotificationRequest(
             identifier: "low-space-\(volumeName)",

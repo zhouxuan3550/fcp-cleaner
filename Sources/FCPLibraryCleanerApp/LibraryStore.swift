@@ -26,6 +26,7 @@ final class LibraryRecord: Identifiable {
     var lastScanned: Date?
     var lastKnownTotalSize: Int64?
     var lastKnownCleanableSize: Int64?
+    var pendingFreedSize: Int64 = 0
     var lastActivity: Date?
     @ObservationIgnored var scanControl: ScanControl?
 
@@ -117,12 +118,25 @@ enum AppearanceMode: Int, CaseIterable, Identifiable {
         case .light: .light
         }
     }
+
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system: nil
+        case .dark: NSAppearance(named: .darkAqua)
+        case .light: NSAppearance(named: .aqua)
+        }
+    }
+
+    @MainActor
+    func applyToApplication() {
+        NSApplication.shared.appearance = nsAppearance
+    }
 }
 
 @Observable @MainActor
 final class LibraryStore: NSObject {
     static let shared = LibraryStore()
-    static let minimumCleanableSize: Int64 = 500 * 1_024 * 1_024
+    static let minimumCleanableSize: Int64 = 200 * 1_024 * 1_024
 
     var libraries: [LibraryRecord] = []
     var workDirectories: [URL] = []
@@ -141,6 +155,7 @@ final class LibraryStore: NSObject {
     var cleanConfirmation: CleanConfirmation?
     var batchCleanConfirmation: BatchCleanConfirmation?
     var isBatchCleaning = false
+    var isCleaning = false
     var isPreflighting = false
     var cleanupPreparationCompleted = 0
     var cleanupPreparationTotal = 0
@@ -149,6 +164,7 @@ final class LibraryStore: NSObject {
     var isDiscovering = false
     var discoveryError: String?
     var cleanupNotice: CleanupNotice?
+    var cleanupSummary: CleanupSummary?
     var lowSpaceWarnings: [DiskSpaceWarning] = []
     var notificationsEnabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true {
         didSet {
@@ -579,11 +595,13 @@ final class LibraryStore: NSObject {
                 if request.preserveLastCleanup, record.lastCleanup != nil {
                     record.cleanupAfterSize = record.scanResult?.totalAllocatedSize
                 }
+                record.pendingFreedSize = 0
             } catch is CancellationError {
                 record.lastError = nil
             } catch {
                 record.lastError = error.localizedDescription
                 record.scanResult = nil
+                record.pendingFreedSize = 0
             }
             record.isScanning = false
             record.scanControl = nil
@@ -620,7 +638,7 @@ final class LibraryStore: NSObject {
     }
 
     func requestClean(_ record: LibraryRecord) {
-        guard !isPreflighting else { return }
+        guard !isPreflighting, !isCleaning else { return }
         guard let result = record.scanResult,
               record.spaceToFree >= Self.minimumCleanableSize else { return }
         do {
@@ -641,13 +659,13 @@ final class LibraryStore: NSObject {
     }
 
     func requestRetry(_ record: LibraryRecord) {
-        guard !isPreflighting else { return }
+        guard !isPreflighting, !isCleaning else { return }
         guard let plan = record.failedCleanupPlan else { return }
         preflight(record: record, plan: plan, isRetry: true)
     }
 
     func requestBatchClean() {
-        guard !isPreflighting else { return }
+        guard !isPreflighting, !isCleaning else { return }
         isPreflighting = true
         cleanupPreparationCompleted = 0
         cleanupPreparationTotal = batchSelectedIDs.count
@@ -725,24 +743,32 @@ final class LibraryStore: NSObject {
     }
 
     func performConfirmedBatchCleanup(_ confirmation: BatchCleanConfirmation) {
+        guard !isCleaning else { return }
         batchCleanConfirmation = nil
         isBatchCleaning = true
+        isCleaning = true
         batchCleanupCompleted = 0
         batchCleanupTotal = confirmation.entries.count
         Task {
+            let batchStart = ContinuousClock.now
             var freedSize: Int64 = 0
             var cleanedItemCount = 0
             var errorCount = 0
             var firstErrorMessage: String?
             var categories = Set<CacheCategory>()
             var recordsToRescan: [LibraryRecord] = []
+            var summaryLibraries: [CleanupSummaryLibrary] = []
             for entry in confirmation.entries {
                 let record = entry.record
                 record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
                 record.cleanupAfterSize = nil
                 do {
+                    let start = ContinuousClock.now
                     let result = try await CleanupEngine().execute(plan: entry.plan)
+                    let elapsed = ContinuousClock.now - start
+                    CleanupThroughputStore.record(bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
                     record.lastCleanup = result
+                    applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
                     cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, result: result)
                     record.failedCleanupPlan = result.errors.isEmpty
                         ? nil
@@ -756,17 +782,38 @@ final class LibraryStore: NSObject {
                         ? nil
                         : result.errors.map(\.localizedDescription).joined(separator: "\n")
                     recordsToRescan.append(record)
+                    summaryLibraries.append(CleanupSummaryLibrary(
+                        name: record.displayName,
+                        url: record.url,
+                        freedSize: result.freedAllocatedSize,
+                        itemCount: result.movedToTrash.count,
+                        errorCount: result.errors.count,
+                        errorMessage: result.errors.first?.localizedDescription,
+                        succeeded: result.errors.isEmpty
+                    ))
                 } catch {
                     errorCount += 1
                     firstErrorMessage = firstErrorMessage ?? error.localizedDescription
                     record.failedCleanupPlan = entry.plan
                     record.lastError = error.localizedDescription
                     cleanupHistory.appendFailure(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, error: error)
+                    summaryLibraries.append(CleanupSummaryLibrary(
+                        name: record.displayName,
+                        url: record.url,
+                        freedSize: 0,
+                        itemCount: 0,
+                        errorCount: 1,
+                        errorMessage: error.localizedDescription,
+                        succeeded: false
+                    ))
                 }
                 batchCleanupCompleted += 1
             }
+            let batchElapsed = ContinuousClock.now - batchStart
+            let batchSeconds = Double(batchElapsed.components.seconds) + Double(batchElapsed.components.attoseconds) / 1e18
             batchSelectedIDs.removeAll()
             isBatchCleaning = false
+            isCleaning = false
             batchCleanupCompleted = 0
             batchCleanupTotal = 0
             for record in recordsToRescan {
@@ -781,6 +828,17 @@ final class LibraryStore: NSObject {
                 errorCount: errorCount,
                 errorMessage: firstErrorMessage
             ))
+            cleanupSummary = CleanupSummary(
+                title: "批量清理完成",
+                libraryCount: confirmation.entries.count,
+                totalFreedSize: freedSize,
+                totalItemCount: cleanedItemCount,
+                categories: categories,
+                errorCount: errorCount,
+                errorMessage: firstErrorMessage,
+                elapsedSeconds: batchSeconds,
+                libraries: summaryLibraries
+            )
             NotificationController.shared.cleanupFinished(
                 freedSize: freedSize,
                 libraryCount: confirmation.entries.count,
@@ -791,14 +849,20 @@ final class LibraryStore: NSObject {
     }
 
     func performConfirmedCleanup(_ confirmation: CleanConfirmation) {
+        guard !isCleaning else { return }
         cleanConfirmation = nil
+        isCleaning = true
         let record = confirmation.record
         record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
         record.cleanupAfterSize = nil
         Task {
             do {
+                let start = ContinuousClock.now
                 let result = try await CleanupEngine().execute(plan: confirmation.plan)
+                let elapsed = ContinuousClock.now - start
+                CleanupThroughputStore.record(bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
                 record.lastCleanup = result
+                applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
                 cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: confirmation.plan, result: result)
                 record.failedCleanupPlan = result.errors.isEmpty
                     ? nil
@@ -842,6 +906,7 @@ final class LibraryStore: NSObject {
                     enabled: notificationsEnabled
                 )
             }
+            isCleaning = false
         }
     }
 
@@ -868,6 +933,28 @@ final class LibraryStore: NSObject {
         return record.lastKnownCleanableSize ?? 0
     }
 
+    func effectiveCleanableSize(for record: LibraryRecord) -> Int64 {
+        let base = knownCleanableSize(for: record)
+        let penalty = record.scanResult != nil ? record.pendingFreedSize : 0
+        return max(0, base - penalty)
+    }
+
+    func estimatedCleanupDuration(forBytes bytes: Int64) -> Double? {
+        guard let bytesPerSecond = CleanupThroughputStore.averageBytesPerSecond() else { return nil }
+        return Double(bytes) / bytesPerSecond
+    }
+
+    private func applyImmediateCleanupDelta(_ record: LibraryRecord, freed: Int64) {
+        guard freed > 0 else { return }
+        record.pendingFreedSize += freed
+        let known = record.lastKnownCleanableSize ?? knownCleanableSize(for: record)
+        record.lastKnownCleanableSize = max(0, known - freed)
+        if let total = record.lastKnownTotalSize {
+            record.lastKnownTotalSize = max(0, total - freed)
+        }
+        saveRecents()
+    }
+
     private func matchesInactivity(_ record: LibraryRecord) -> Bool {
         guard inactivityFilter != .all else { return true }
         guard let lastActivity = record.lastActivity else { return true }
@@ -876,7 +963,10 @@ final class LibraryStore: NSObject {
     }
 
     var totalCleanableSize: Int64 {
-        waitingLibraries.reduce(0) { $0 + $1.spaceToFree }
+        libraries.reduce(Int64(0)) { partial, record in
+            let size = effectiveCleanableSize(for: record)
+            return size >= Self.minimumCleanableSize ? partial + size : partial
+        }
     }
 
     func showMainWindow() {

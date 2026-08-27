@@ -53,6 +53,27 @@ public enum FCPStructureRules {
         ObservationRule(id: "event.audio-analysis-files", category: .analysisFiles, relativePath: ["Audio Analysis Files"]),
     ]
 
+    public struct CandidateLocation: Sendable, Hashable {
+        public let eventName: String?
+        public let categoryPath: String
+    }
+
+    public static func candidateLocation(for url: URL, ruleID: String) -> CandidateLocation? {
+        let baseRuleID = ruleID.hasPrefix(externalRulePrefix)
+            ? String(ruleID.dropFirst(externalRulePrefix.count))
+            : ruleID
+        if let rule = libraryCandidateRules.first(where: { $0.id == baseRuleID }) {
+            return CandidateLocation(eventName: nil, categoryPath: rule.relativePath.joined(separator: " / "))
+        }
+        guard let rule = eventCandidateRules.first(where: { $0.id == baseRuleID }) else { return nil }
+        var eventURL = url
+        for _ in rule.relativePath { eventURL.deleteLastPathComponent() }
+        return CandidateLocation(
+            eventName: eventURL.lastPathComponent,
+            categoryPath: rule.relativePath.joined(separator: " / ")
+        )
+    }
+
     public static func matchesConfirmedCandidate(
         _ candidateURL: URL,
         in libraryURL: URL,

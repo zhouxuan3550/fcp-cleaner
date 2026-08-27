@@ -1,11 +1,19 @@
 import AppKit
 import Foundation
 import Observation
+import UniformTypeIdentifiers
 import FCPLibraryCleanerCore
 
 struct CleanupHistoryFile: Codable, Hashable, Sendable {
     let originalURL: URL
     let trashURL: URL
+}
+
+enum HistoryExportFormat: String, CaseIterable, Identifiable {
+    case csv, json
+    var id: String { rawValue }
+    var fileExtension: String { rawValue }
+    var mimeType: String { self == .csv ? "text/csv" : "application/json" }
 }
 
 struct CleanupHistoryEntry: Codable, Identifiable, Sendable {
@@ -111,6 +119,53 @@ final class CleanupHistoryStore {
         }
         if restored.isEmpty { return failures > 0 ? "没有可恢复的项目" : "项目已不在废纸篓" }
         return failures == 0 ? "已恢复 \(restored.count) 项" : "已恢复 \(restored.count) 项，\(failures) 项失败"
+    }
+
+    func exportData(as format: HistoryExportFormat) -> Data {
+        switch format {
+        case .json:
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            return (try? encoder.encode(entries)) ?? Data()
+        case .csv:
+            var csv = "Date,Library,Freed Size,Items,Categories,Errors\n"
+            let formatter = ISO8601DateFormatter()
+            for entry in entries {
+                let date = formatter.string(from: entry.date)
+                let library = escapeCSV(entry.libraryName)
+                let size = FormatHelpers.bytes(entry.freedSize)
+                let items = "\(entry.itemCount)"
+                let categories = entry.categories.map(\.chineseName).joined(separator: "; ")
+                let errors = entry.errorMessages.joined(separator: "; ")
+                csv += "\(date),\(library),\(escapeCSV(size)),\(items),\(escapeCSV(categories)),\(escapeCSV(errors))\n"
+            }
+            return csv.data(using: .utf8) ?? Data()
+        }
+    }
+
+    @discardableResult
+    func presentExportPanel(as format: HistoryExportFormat) -> Bool {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "FCP-Cleaner-History.\(format.fileExtension)"
+        panel.allowedContentTypes = [format == .csv
+            ? UTType.commaSeparatedText
+            : UTType.json]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+        let data = exportData(as: format)
+        do {
+            try data.write(to: url, options: .atomic)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func escapeCSV(_ field: String) -> String {
+        if field.contains(",") || field.contains("\"") || field.contains("\n") {
+            return "\"\(field.replacingOccurrences(of: "\"", with: "\"\""))\""
+        }
+        return field
     }
 
     func clear() {

@@ -6,17 +6,23 @@ import FCPLibraryCleanerCore
 struct ContentView: View {
     @State private var store = LibraryStore.shared
     @State private var isDropTargeted = false
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             AppHeader(store: store)
-            MainWorkspace(store: store, isDropTargeted: isDropTargeted)
-                .padding(.horizontal, 38)
-                .padding(.bottom, 34)
+            MainWorkspace(store: store, isDropTargeted: isDropTargeted, searchFocused: $isSearchFocused)
+                .padding(.horizontal, LayoutMetrics.contentHorizontalPadding)
+                .padding(.bottom, LayoutMetrics.contentBottomPadding)
         }
-        .frame(minWidth: 940, minHeight: 660)
+        .frame(minWidth: LayoutMetrics.windowMinWidth, minHeight: LayoutMetrics.windowMinHeight)
         .background(AppColor.canvas.ignoresSafeArea())
         .preferredColorScheme(store.appearanceMode.colorScheme)
+        .onKeyPress(.space) {
+            guard !isSearchFocused, !store.isDiscovering else { return .ignored }
+            store.discoverLibraries()
+            return .handled
+        }
         .overlay(alignment: .bottomTrailing) {
             if let notice = store.cleanupNotice {
                 CleanupNoticeView(notice: notice) {
@@ -28,6 +34,9 @@ struct ContentView: View {
         }
         .animation(.snappy(duration: 0.28), value: store.cleanupNotice?.id)
         .task { store.beginAutomaticDiscovery() }
+        .onChange(of: store.appearanceMode) { _, mode in
+            mode.applyToApplication()
+        }
         .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
             for provider in providers {
                 provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
@@ -43,6 +52,9 @@ struct ContentView: View {
         }
         .sheet(item: $store.batchCleanConfirmation) { confirmation in
             BatchCleanConfirmationSheet(confirmation: confirmation, store: store)
+        }
+        .sheet(item: $store.cleanupSummary) { summary in
+            CleanupSummarySheet(summary: summary)
         }
     }
 }
@@ -70,9 +82,10 @@ private struct AppHeader: View {
             Button {
                 showsHistory.toggle()
             } label: {
-                Label("记录", systemImage: "clock.arrow.circlepath")
+                Image(systemName: "clock.arrow.circlepath")
             }
             .buttonStyle(HeaderButtonStyle())
+            .accessibilityLabel("记录")
             .popover(isPresented: $showsHistory, arrowEdge: .bottom) {
                 CleanupHistoryView(store: store.cleanupHistory)
             }
@@ -80,9 +93,10 @@ private struct AppHeader: View {
             Button {
                 showsSettings.toggle()
             } label: {
-                Label("设置", systemImage: "slider.horizontal.3")
+                Image(systemName: "slider.horizontal.3")
             }
             .buttonStyle(HeaderButtonStyle())
+            .accessibilityLabel("设置")
             .popover(isPresented: $showsSettings, arrowEdge: .bottom) {
                 AppSettings(store: store)
             }
@@ -95,15 +109,16 @@ private struct AppHeader: View {
             }
             .buttonStyle(HeaderButtonStyle())
             .disabled(store.isDiscovering)
+            .help("自动扫描资源库 (空格键)")
 
             Button(action: store.openLibraryPanel) {
                 Label("添加资源库", systemImage: "plus")
             }
             .buttonStyle(HeaderButtonStyle(emphasized: true))
         }
-        .padding(.horizontal, 38)
-        .padding(.top, 28)
-        .padding(.bottom, 26)
+        .padding(.horizontal, LayoutMetrics.headerHorizontalPadding)
+        .padding(.top, LayoutMetrics.headerTopPadding)
+        .padding(.bottom, LayoutMetrics.headerBottomPadding)
     }
 }
 
@@ -111,7 +126,7 @@ private struct CleanerVectorMark: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .fill(AppColor.accent)
+                .fill(AppColor.brand)
             VStack(spacing: 6) {
                 HStack(spacing: 6) {
                     star
@@ -124,7 +139,7 @@ private struct CleanerVectorMark: View {
             }
         }
         .frame(width: 48, height: 48)
-        .shadow(color: AppColor.accent.opacity(0.35), radius: 10, y: 4)
+        .shadow(color: AppColor.brand.opacity(0.35), radius: 10, y: 4)
         .accessibilityHidden(true)
     }
 
@@ -138,6 +153,7 @@ private struct CleanerVectorMark: View {
 private struct MainWorkspace: View {
     let store: LibraryStore
     let isDropTargeted: Bool
+    var searchFocused: FocusState<Bool>.Binding
 
     var body: some View {
         VStack(spacing: 12) {
@@ -146,8 +162,8 @@ private struct MainWorkspace: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 HStack(alignment: .top, spacing: 12) {
-                    LibrarySidebar(store: store)
-                        .frame(width: 300)
+                    LibrarySidebar(store: store, searchFocused: searchFocused)
+                        .frame(width: LayoutMetrics.sidebarWidth)
                     Group {
                         if let library = store.selectedLibrary {
                             LibraryPanel(library: library, store: store)
@@ -170,6 +186,7 @@ private struct MainWorkspace: View {
 
 private struct LibrarySidebar: View {
     @Bindable var store: LibraryStore
+    var searchFocused: FocusState<Bool>.Binding
 
     var body: some View {
         VStack(spacing: 0) {
@@ -215,7 +232,7 @@ private struct LibrarySidebar: View {
                                 .foregroundStyle(filter == store.libraryFilter ? Color.white : AppColor.secondaryText)
                         }
                     }
-                    .buttonStyle(FilterButtonStyle(isSelected: filter == store.libraryFilter))
+                    .buttonStyle(FilterButtonStyle(isSelected: filter == store.libraryFilter, isDefault: filter == .waiting))
                 }
                 Spacer(minLength: 4)
                 Menu {
@@ -238,6 +255,7 @@ private struct LibrarySidebar: View {
                         .background(AppColor.control)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
+                .accessibilityLabel("筛选：\(store.inactivityFilter.title)")
                 .menuStyle(.borderlessButton)
                 .fixedSize()
                 .help(store.inactivityFilter.title)
@@ -251,6 +269,18 @@ private struct LibrarySidebar: View {
                     TextField("搜索资源库", text: $store.searchText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 12, weight: .medium))
+                        .focused(searchFocused)
+                    if !store.searchText.isEmpty {
+                        Button {
+                            store.searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(AppColor.tertiaryText)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("清除搜索")
+                    }
                 }
                 .padding(.horizontal, 9)
                 .frame(height: 28)
@@ -277,6 +307,7 @@ private struct LibrarySidebar: View {
                         .background(AppColor.control)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
+                .accessibilityLabel("排序：\(store.librarySort.title)")
                 .menuStyle(.borderlessButton)
                 .fixedSize()
                 .help("排序：\(store.librarySort.title)")
@@ -294,6 +325,7 @@ private struct LibrarySidebar: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(store.batchCleanableLibraries.isEmpty || store.isBatchCleaning || store.isPreflighting)
+                    .accessibilityLabel(store.areAllCleanableLibrariesSelected ? "取消全选" : "全选")
                     .help(store.areAllCleanableLibrariesSelected ? "取消全选" : "全选")
                 }
             }
@@ -341,7 +373,7 @@ private struct SidebarDiskHeader: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(isSelected ? AppColor.primaryText : AppColor.secondaryText)
                 .lineLimit(1)
-            Text(format(section.totalCleanable))
+            Text(FormatHelpers.bytes(section.totalCleanable))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AppColor.secondaryText)
                 .monospacedDigit()
@@ -429,7 +461,7 @@ private struct LibraryRow: View {
                 .controlSize(.mini)
                 .tint(AppColor.accent)
         } else {
-            Text(format(library.cleanableDisplaySize))
+            Text(FormatHelpers.bytes(library.cleanableDisplaySize))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AppColor.secondaryText)
                 .monospacedDigit()
@@ -455,7 +487,7 @@ private struct BatchActionBar: View {
                 .foregroundStyle(AppColor.accent)
             Text("已选 \(store.batchSelectedIDs.count) 个资源库")
                 .font(.system(size: 12, weight: .semibold))
-            Text(format(store.selectedBatchSpace))
+            Text(FormatHelpers.bytes(store.selectedBatchSpace))
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(AppColor.accent)
                 .monospacedDigit()
@@ -463,7 +495,7 @@ private struct BatchActionBar: View {
             Button("取消全选") {
                 store.batchSelectedIDs.removeAll()
             }
-            .buttonStyle(QueueActionButtonStyle())
+            .buttonStyle(QueueActionButtonStyle(enabled: !store.isBatchCleaning && !store.isPreflighting))
             .disabled(store.isBatchCleaning || store.isPreflighting)
 
             Button {
@@ -471,7 +503,7 @@ private struct BatchActionBar: View {
             } label: {
                 Label(batchActionTitle, systemImage: store.isPreflighting ? "hourglass" : "trash")
             }
-            .buttonStyle(QueueActionButtonStyle(emphasized: true))
+            .buttonStyle(QueueActionButtonStyle(emphasized: true, enabled: !store.isBatchCleaning && !store.isPreflighting))
             .disabled(store.isBatchCleaning || store.isPreflighting)
         }
         .padding(.horizontal, 16)
@@ -492,42 +524,6 @@ private struct BatchActionBar: View {
             return "正在清理 \(store.batchCleanupCompleted)/\(store.batchCleanupTotal)"
         }
         return "清理所选 \(store.batchSelectedIDs.count)"
-    }
-}
-
-private struct FilterButtonStyle: ButtonStyle {
-    let isSelected: Bool
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, weight: .semibold))
-            .lineLimit(1)
-            .fixedSize()
-            .foregroundStyle(isSelected ? Color.white : AppColor.secondaryText)
-            .padding(.horizontal, 9)
-            .frame(height: 30)
-            .background(isSelected ? AppColor.accent : AppColor.control)
-            .clipShape(Capsule())
-            .opacity(configuration.isPressed ? 0.74 : 1)
-    }
-}
-
-private struct QueueActionButtonStyle: ButtonStyle {
-    var emphasized = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(emphasized ? Color.white : AppColor.primaryText)
-            .padding(.horizontal, 11)
-            .frame(height: 30)
-            .background(emphasized ? AppColor.accent : AppColor.control)
-            .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(emphasized ? Color.clear : AppColor.border, lineWidth: 1)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .opacity(configuration.isPressed ? 0.75 : 1)
     }
 }
 
@@ -574,9 +570,9 @@ private struct NoCleanupView: View {
 
     private var emptySubtitle: String {
         switch store.libraryFilter {
-        case .waiting: "可清理空间低于 500 MB 的项目会自动跳过"
+        case .waiting: "可清理空间低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)) 的项目会自动跳过"
         case .scanning: "扫描任务最多同时运行 3 个"
-        case .skipped: "低于 500 MB 的资源库会显示在这里"
+        case .skipped: "低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)) 的资源库会显示在这里"
         }
     }
 }
@@ -639,11 +635,12 @@ private struct LibraryPanel: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(library.displayName)
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    Text(library.url.path)
+                    Text(shortPath(library.url))
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundStyle(AppColor.secondaryText)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                        .help(library.url.path)
                 }
                 Spacer()
                 LibraryStatusBadge(library: library)
@@ -657,7 +654,8 @@ private struct LibraryPanel: View {
                 .background(AppColor.control)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .disabled(library.isScanning || library.isQueued)
-                .help("重新扫描")
+                .accessibilityLabel("重新扫描")
+                .help("重新扫描（⌘R）")
                 .contextMenu {
                     Button("完整重新扫描") { store.scan(library, force: true) }
                 }
@@ -746,7 +744,7 @@ private struct ScanningView: View {
             HStack(spacing: 12) {
                 ScanCounter(value: library.scanProgress.files.formatted(), label: "文件")
                 ScanCounter(value: library.scanProgress.directories.formatted(), label: "文件夹")
-                ScanCounter(value: format(library.scanProgress.allocatedBytes), label: "已扫描")
+                ScanCounter(value: FormatHelpers.bytes(library.scanProgress.allocatedBytes), label: "已扫描")
             }
             Button("取消") { store.cancelScan(library) }
                 .buttonStyle(.borderless)
@@ -802,13 +800,13 @@ private struct ScanResultsView: View {
         ScrollView {
             VStack(spacing: 18) {
                 HStack(spacing: 14) {
-                    MetricCard(label: "资源库大小", value: format(result.totalAllocatedSize), icon: "internaldrive")
-                    MetricCard(label: "可安全清理", value: format(result.confirmedCleanableSize), icon: "sparkles", emphasized: true)
+                    MetricCard(label: "资源库大小", value: FormatHelpers.bytes(result.totalAllocatedSize), icon: "internaldrive")
+                    MetricCard(label: "可安全清理", value: FormatHelpers.bytes(result.confirmedCleanableSize), icon: "sparkles", emphasized: true)
                     MetricCard(label: "清理项目", value: result.cacheItems.count.formatted(), icon: "folder.badge.minus")
                 }
 
                 if result.externalCleanableSize > 0 {
-                    Label("包含外置缓存 \(format(result.externalCleanableSize))", systemImage: "externaldrive.fill")
+                    Label("包含外置缓存 \(FormatHelpers.bytes(result.externalCleanableSize))", systemImage: "externaldrive.fill")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(AppColor.accent)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -817,7 +815,7 @@ private struct ScanResultsView: View {
                 HStack(alignment: .top, spacing: 14) {
                     CleanupList(result: result)
                     CleanupActionCard(library: library, result: result, store: store)
-                        .frame(width: 270)
+                        .frame(width: LayoutMetrics.cleanupActionCardWidth)
                 }
 
                 CleanupStatus(library: library, store: store)
@@ -855,21 +853,11 @@ private struct MetricCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background {
-            if emphasized {
-                LinearGradient(
-                    colors: [AppColor.accent.opacity(0.30), AppColor.panel.opacity(0.55)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            } else {
-                AppColor.panel
-            }
-        }
+        .background(AppColor.panel)
         .overlay {
             if emphasized {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(AppColor.accent.opacity(0.45), lineWidth: 1)
+                    .stroke(AppColor.accent.opacity(0.25), lineWidth: 1)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -898,9 +886,15 @@ private struct CleanupList: View {
                     Text(category.chineseName)
                         .font(.system(size: 13, weight: .medium))
                     Spacer()
-                    Text(format(size))
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(AppColor.secondaryText)
+                    if items.isEmpty {
+                        Text("—")
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(AppColor.tertiaryText)
+                    } else {
+                        Text(FormatHelpers.bytes(size))
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(AppColor.secondaryText)
+                    }
                 }
                 .padding(.vertical, 10)
                 .opacity(items.isEmpty ? 0.45 : 1)
@@ -925,12 +919,16 @@ private struct CleanupActionCard: View {
         result.observedCacheItems.reduce(0) { $0 + $1.allocatedSize }
     }
 
+    private var isBelowThreshold: Bool {
+        library.spaceToFree < LibraryStore.minimumCleanableSize
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
             Text("可释放空间")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AppColor.secondaryText)
-            Text(format(library.spaceToFree))
+            Text(FormatHelpers.bytes(library.spaceToFree))
                 .font(.system(size: 32, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .contentTransition(.numericText())
@@ -940,11 +938,25 @@ private struct CleanupActionCard: View {
             Button(actionTitle) {
                 store.requestClean(library)
             }
-            .buttonStyle(PrimaryActionButtonStyle())
-            .disabled(library.spaceToFree < LibraryStore.minimumCleanableSize || store.isPreflighting || store.isBatchCleaning)
+            .buttonStyle(PrimaryActionButtonStyle(enabled: !isBelowThreshold && !store.isPreflighting && !store.isCleaning))
+            .disabled(isBelowThreshold || store.isPreflighting || store.isCleaning)
+            .help(isBelowThreshold ? "可清理空间低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize))，已自动跳过" : "将生成文件移入废纸篓")
+
+            if isBelowThreshold && !store.isPreflighting && !store.isCleaning {
+                Label("低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)) 的资源库会自动跳过", systemImage: "info.circle")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AppColor.tertiaryText)
+                    .lineLimit(1)
+            }
 
             if protectedAnalysisSize > 0 {
-                Label("已保护分析文件 \(format(protectedAnalysisSize))", systemImage: "lock.fill")
+                Label("已保护分析文件 \(FormatHelpers.bytes(protectedAnalysisSize))", systemImage: "lock.fill")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AppColor.tertiaryText)
+                    .lineLimit(1)
+            }
+            if let seconds = store.estimatedCleanupDuration(forBytes: library.spaceToFree) {
+                Label("预计耗时 \(FormatHelpers.estimatedTime(seconds))", systemImage: "clock")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(AppColor.tertiaryText)
                     .lineLimit(1)
@@ -962,6 +974,9 @@ private struct CleanupActionCard: View {
         if store.isBatchCleaning {
             return "正在清理 \(store.batchCleanupCompleted)/\(store.batchCleanupTotal)"
         }
+        if isBelowThreshold {
+            return "低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize))"
+        }
         return "开始清理"
     }
 }
@@ -977,9 +992,9 @@ private struct CleanupStatus: View {
                     HStack(spacing: 8) {
                         Image(systemName: cleanup.errors.isEmpty ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                             .foregroundStyle(cleanup.errors.isEmpty ? AppColor.success : AppColor.danger)
-                        Text("已清理 \(format(cleanup.freedAllocatedSize))")
+                        Text("已清理 \(FormatHelpers.bytes(cleanup.freedAllocatedSize))")
                         if let before = library.cleanupBeforeSize, let after = library.cleanupAfterSize {
-                            Text("\(format(before)) → \(format(after))")
+                            Text("\(FormatHelpers.bytes(before)) → \(FormatHelpers.bytes(after))")
                                 .foregroundStyle(AppColor.secondaryText)
                         }
                     }
@@ -998,7 +1013,7 @@ private struct CleanupStatus: View {
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(AppColor.accent)
-                .disabled(store.isPreflighting || store.isBatchCleaning)
+            .disabled(store.isPreflighting || store.isCleaning)
             }
         }
     }
@@ -1008,6 +1023,7 @@ private struct SingleCleanConfirmationSheet: View {
     let confirmation: CleanConfirmation
     let store: LibraryStore
     @Environment(\.dismiss) private var dismiss
+    @State private var collapsed: Set<CacheCategory> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1028,40 +1044,95 @@ private struct SingleCleanConfirmationSheet: View {
                 }
             }
 
-            VStack(spacing: 0) {
-                ForEach(CacheCategory.cleanableCases, id: \.self) { category in
-                    let size = confirmation.plan.entries
-                        .filter { $0.item.category == category }
-                        .reduce(Int64(0)) { $0 + $1.item.allocatedSize }
-                    if size > 0 {
-                        HStack(spacing: 10) {
-                            Image(systemName: category.iconName)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(AppColor.accent)
-                                .frame(width: 24)
-                            Text(category.chineseName)
-                                .font(.system(size: 12, weight: .medium))
-                            Spacer()
-                            Text(format(size))
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundStyle(AppColor.secondaryText)
+            ScrollView {
+                VStack(spacing: 0) {
+                    let groups = CleanupPreview.groups(from: confirmation.plan)
+                    ForEach(groups, id: \.category) { group in
+                        DisclosureGroup(isExpanded: Binding(
+                            get: { !collapsed.contains(group.category) },
+                            set: { expanded in
+                                if expanded { collapsed.remove(group.category) }
+                                else { collapsed.insert(group.category) }
+                            }
+                        )) {
+                            ForEach(group.entries) { item in
+                                HStack(spacing: 8) {
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        HStack(spacing: 5) {
+                                            Text(item.locationLabel)
+                                                .font(.system(size: 12, weight: .medium))
+                                                .lineLimit(1)
+                                            if item.entry.item.storage == .external {
+                                                Text("外置")
+                                                    .font(.system(size: 9, weight: .semibold))
+                                                    .foregroundStyle(AppColor.accent)
+                                                    .padding(.horizontal, 4).padding(.vertical, 1)
+                                                    .background(AppColor.accent.opacity(0.16))
+                                                    .clipShape(Capsule())
+                                            }
+                                        }
+                                        Text(item.pathDetail)
+                                            .font(.system(size: 10, design: .monospaced))
+                                            .foregroundStyle(AppColor.tertiaryText)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer(minLength: 6)
+                                    Text("\(item.entry.item.fingerprint.entryCount) 个文件")
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(AppColor.tertiaryText)
+                                    Text(FormatHelpers.bytes(item.entry.item.allocatedSize))
+                                        .font(.system(size: 12, design: .monospaced))
+                                        .foregroundStyle(AppColor.secondaryText)
+                                }
+                                .padding(.vertical, 5)
+                                .padding(.leading, 22)
+                            }
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: group.category.iconName)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(AppColor.accent)
+                                    .frame(width: 24)
+                                Text(group.category.chineseName)
+                                    .font(.system(size: 12, weight: .medium))
+                                Text("\(group.entries.count) 项")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(AppColor.tertiaryText)
+                                Spacer()
+                                Text(FormatHelpers.bytes(group.total))
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundStyle(AppColor.secondaryText)
+                            }
+                            .padding(.vertical, 8)
                         }
-                        .padding(.vertical, 8)
+                        .tint(AppColor.secondaryText)
+                        if group.category != groups.last?.category {
+                            Divider().overlay(AppColor.border)
+                        }
+                    }
+                    Divider().overlay(AppColor.border)
+                    HStack {
+                        Text("合计")
+                            .font(.system(size: 12, weight: .semibold))
+                        Spacer()
+                        Text(FormatHelpers.bytes(confirmation.plan.spaceToFree))
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                    }
+                    .padding(.top, 10)
+                    if let seconds = store.estimatedCleanupDuration(forBytes: confirmation.plan.spaceToFree) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                            Text("预计耗时 \(FormatHelpers.estimatedTime(seconds))")
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(AppColor.tertiaryText)
+                        .padding(.top, 6)
                     }
                 }
-                Divider().overlay(AppColor.border)
-                HStack {
-                    Text("合计")
-                        .font(.system(size: 12, weight: .semibold))
-                    Spacer()
-                    Text(format(confirmation.plan.spaceToFree))
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                }
-                .padding(.top, 10)
+                .padding(.horizontal, 14)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
+            .frame(maxHeight: 280)
             .background(AppColor.panel)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
@@ -1083,7 +1154,7 @@ private struct SingleCleanConfirmationSheet: View {
             }
         }
         .padding(22)
-        .frame(width: 400)
+        .frame(width: LayoutMetrics.singleConfirmSheetWidth)
     }
 }
 
@@ -1091,6 +1162,7 @@ private struct BatchCleanConfirmationSheet: View {
     let confirmation: BatchCleanConfirmation
     let store: LibraryStore
     @Environment(\.dismiss) private var dismiss
+    @State private var expandedLibraryIDs: Set<UUID> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1104,28 +1176,66 @@ private struct BatchCleanConfirmationSheet: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("批量清理 \(confirmation.entries.count) 个资源库？")
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    Text("共 \(format(confirmation.totalSpaceToFree))")
+                    Text("共 \(FormatHelpers.bytes(confirmation.totalSpaceToFree))")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(AppColor.secondaryText)
+                    if let seconds = store.estimatedCleanupDuration(forBytes: confirmation.totalSpaceToFree) {
+                        Text("预计耗时 \(FormatHelpers.estimatedTime(seconds))")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(AppColor.tertiaryText)
+                    }
                 }
             }
 
             ScrollView {
                 VStack(spacing: 0) {
                     ForEach(confirmation.entries, id: \.record.id) { entry in
-                        HStack(spacing: 10) {
-                            Image(systemName: "square.stack.3d.up.fill")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(AppColor.accent)
-                            Text(entry.record.displayName)
-                                .font(.system(size: 12, weight: .medium))
-                                .lineLimit(1)
-                            Spacer()
-                            Text(format(entry.plan.spaceToFree))
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundStyle(AppColor.secondaryText)
+                        DisclosureGroup(isExpanded: Binding(
+                            get: { expandedLibraryIDs.contains(entry.record.id) },
+                            set: { expanded in
+                                if expanded { expandedLibraryIDs.insert(entry.record.id) }
+                                else { expandedLibraryIDs.remove(entry.record.id) }
+                            }
+                        )) {
+                            VStack(spacing: 0) {
+                                ForEach(CacheCategory.cleanableCases, id: \.self) { category in
+                                    let size = entry.plan.entries
+                                        .filter { $0.item.category == category }
+                                        .reduce(Int64(0)) { $0 + $1.item.allocatedSize }
+                                    if size > 0 {
+                                        HStack(spacing: 10) {
+                                            Image(systemName: category.iconName)
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundStyle(AppColor.accent)
+                                                .frame(width: 20)
+                                            Text(category.chineseName)
+                                                .font(.system(size: 11, weight: .medium))
+                                            Spacer()
+                                            Text(FormatHelpers.bytes(size))
+                                                .font(.system(size: 11, design: .monospaced))
+                                                .foregroundStyle(AppColor.secondaryText)
+                                        }
+                                        .padding(.vertical, 4)
+                                        .padding(.leading, 22)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "square.stack.3d.up.fill")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(AppColor.accent)
+                                Text(entry.record.displayName)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(FormatHelpers.bytes(entry.plan.spaceToFree))
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundStyle(AppColor.secondaryText)
+                            }
+                            .padding(.vertical, 7)
                         }
-                        .padding(.vertical, 7)
+                        .tint(AppColor.secondaryText)
                         if entry.record.id != confirmation.entries.last?.record.id {
                             Divider().overlay(AppColor.border)
                         }
@@ -1133,7 +1243,7 @@ private struct BatchCleanConfirmationSheet: View {
                 }
                 .padding(.horizontal, 14)
             }
-            .frame(maxHeight: 240)
+            .frame(maxHeight: 280)
             .background(AppColor.panel)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
@@ -1155,33 +1265,65 @@ private struct BatchCleanConfirmationSheet: View {
             }
         }
         .padding(22)
-        .frame(width: 440)
+        .frame(width: LayoutMetrics.batchConfirmSheetWidth)
     }
 }
 
-private struct SheetSecondaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(AppColor.primaryText)
-            .frame(height: 38)
-            .frame(maxWidth: .infinity)
-            .background(AppColor.control)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .opacity(configuration.isPressed ? 0.75 : 1)
-    }
-}
+private struct CleanupSummarySheet: View {
+    let summary: CleanupSummary
+    @Environment(\.dismiss) private var dismiss
 
-private struct SheetDestructiveButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(height: 38)
-            .frame(maxWidth: .infinity)
-            .background(AppColor.danger)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .opacity(configuration.isPressed ? 0.75 : 1)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Image(systemName: summary.errorCount == 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                    .font(.system(size: 23, weight: .semibold))
+                    .foregroundStyle(summary.errorCount == 0 ? AppColor.success : AppColor.danger)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(summary.title)
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    Text("释放 \(FormatHelpers.bytes(summary.totalFreedSize)) · \(summary.totalItemCount) 项 · \(FormatHelpers.duration(summary.elapsedSeconds))")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AppColor.secondaryText)
+                }
+            }
+
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    ForEach(summary.libraries) { library in
+                        HStack(spacing: 10) {
+                            Image(systemName: library.succeeded ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                                .foregroundStyle(library.succeeded ? AppColor.success : AppColor.danger)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(library.name)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .lineLimit(1)
+                                if let errorMessage = library.errorMessage {
+                                    Text(errorMessage)
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(AppColor.danger)
+                                        .lineLimit(2)
+                                }
+                            }
+                            Spacer(minLength: 8)
+                            Text("\(FormatHelpers.bytes(library.freedSize)) · \(library.itemCount) 项")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundStyle(AppColor.secondaryText)
+                        }
+                        .padding(11)
+                        .background(AppColor.control)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+            .frame(maxHeight: 280)
+
+            Button("完成") { dismiss() }
+                .buttonStyle(HeaderButtonStyle(emphasized: true))
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(22)
+        .frame(width: LayoutMetrics.batchConfirmSheetWidth)
     }
 }
 
@@ -1224,9 +1366,10 @@ private struct CleanupNoticeView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(AppColor.secondaryText)
+            .accessibilityLabel("关闭通知")
         }
         .padding(14)
-        .frame(width: 390, alignment: .leading)
+        .frame(width: LayoutMetrics.noticeWidth, alignment: .leading)
         .background(AppColor.panel.opacity(0.72))
         .background(.ultraThinMaterial)
         .overlay {
@@ -1238,7 +1381,7 @@ private struct CleanupNoticeView: View {
     }
 
     private var summary: String {
-        var parts = ["释放 \(format(notice.freedSize))", "\(notice.cleanedItemCount) 项"]
+        var parts = ["释放 \(FormatHelpers.bytes(notice.freedSize))", "\(notice.cleanedItemCount) 项"]
         if notice.libraryCount > 1 { parts.append("\(notice.libraryCount) 个资源库") }
         if notice.errorCount > 0 { parts.append("\(notice.errorCount) 项失败") }
         return parts.joined(separator: " · ")
@@ -1260,6 +1403,7 @@ private struct AppSettings: View {
             Text("设置")
                 .font(.system(size: 17, weight: .semibold, design: .rounded))
 
+            sectionHeader("通用")
             HStack {
                 Text("工作目录")
                     .font(.system(size: 13, weight: .semibold))
@@ -1296,6 +1440,7 @@ private struct AppSettings: View {
                             }
                             .buttonStyle(.plain)
                             .foregroundStyle(AppColor.secondaryText)
+                            .accessibilityLabel("移除 \(url.lastPathComponent)")
                         }
                         .padding(9)
                         .background(AppColor.control)
@@ -1310,19 +1455,34 @@ private struct AppSettings: View {
             }
 
             Divider()
+            sectionHeader("外观")
             Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
                 .toggleStyle(.switch)
+            Picker("外观", selection: $store.appearanceMode) {
+                Text("跟随系统").tag(AppearanceMode.system)
+                Text("暗色").tag(AppearanceMode.dark)
+                Text("亮色").tag(AppearanceMode.light)
+            }
+            .pickerStyle(.segmented)
             Stepper("磁盘预警：\(store.lowSpaceWarningGB) GB", value: $store.lowSpaceWarningGB, in: 10...500, step: 10)
                 .font(.system(size: 12, weight: .medium))
 
             Divider()
+            sectionHeader("关于")
             Button("检查更新") {
                 UpdateController.shared.checkForUpdates()
             }
             .disabled(!UpdateController.shared.isConfigured)
         }
         .padding(20)
-        .frame(width: 340)
+        .frame(width: LayoutMetrics.settingsPopoverWidth)
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(AppColor.tertiaryText)
+            .textCase(.uppercase)
     }
 }
 
@@ -1337,6 +1497,15 @@ private struct CleanupHistoryView: View {
                     .font(.system(size: 17, weight: .semibold, design: .rounded))
                 Spacer()
                 if !store.entries.isEmpty {
+                    Menu {
+                        Button("导出 CSV") { store.presentExportPanel(as: .csv) }
+                        Button("导出 JSON") { store.presentExportPanel(as: .json) }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
                     Button("清空") { store.clear() }
                         .buttonStyle(.borderless)
                 }
@@ -1357,7 +1526,7 @@ private struct CleanupHistoryView: View {
                                     Text(entry.libraryName)
                                         .font(.system(size: 12, weight: .semibold))
                                         .lineLimit(1)
-                                    Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · \(format(entry.freedSize))")
+                                    Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · \(FormatHelpers.bytes(entry.freedSize))")
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(AppColor.secondaryText)
                                 }
@@ -1384,7 +1553,7 @@ private struct CleanupHistoryView: View {
             }
         }
         .padding(18)
-        .frame(width: 370)
+        .frame(width: LayoutMetrics.historyPopoverWidth)
     }
 }
 
@@ -1411,45 +1580,44 @@ private struct LibrarySettings: View {
     }
 }
 
-private struct HeaderButtonStyle: ButtonStyle {
-    var emphasized = false
+private struct CleanupPreviewEntry: Identifiable {
+    let entry: CleanupPlanEntry
+    let locationLabel: String
+    let pathDetail: String
+    var id: URL { entry.item.url }
+}
 
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(emphasized ? Color.white : AppColor.primaryText)
-            .padding(.horizontal, 17)
-            .frame(height: 42)
-            .background(emphasized ? AppColor.accent.opacity(configuration.isPressed ? 0.72 : 1) : AppColor.control)
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(emphasized ? Color.clear : AppColor.border, lineWidth: 1)
+private enum CleanupPreview {
+    static func groups(from plan: CleanupPlan) -> [(category: CacheCategory, total: Int64, entries: [CleanupPreviewEntry])] {
+        CacheCategory.cleanableCases.compactMap { category in
+            let entries = plan.entries.filter { $0.item.category == category }
+            guard !entries.isEmpty else { return nil }
+            let preview = entries.map { entry -> CleanupPreviewEntry in
+                let location = FCPStructureRules.candidateLocation(for: entry.item.url, ruleID: entry.item.ruleID)
+                let label = location?.eventName ?? "共享"
+                let detail = location?.categoryPath ?? entry.item.url.lastPathComponent
+                return CleanupPreviewEntry(entry: entry, locationLabel: label, pathDetail: detail)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .opacity(configuration.isPressed ? 0.78 : 1)
+            return (category, entries.reduce(0) { $0 + $1.item.allocatedSize }, preview)
+        }
     }
 }
 
-private struct PrimaryActionButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 44)
-            .background(AppColor.accent)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .opacity(configuration.isPressed ? 0.75 : 1)
-    }
+private func shortPath(_ url: URL, maxComponents: Int = 3) -> String {
+    let components = url.pathComponents.filter { $0 != "/" }
+    if components.count <= maxComponents { return url.path }
+    return ".../" + components.suffix(maxComponents).joined(separator: "/")
 }
 
 private extension LibraryRecord {
     var cleanableDisplaySize: Int64 {
-        scanResult?.confirmedCleanableSize ?? lastKnownCleanableSize ?? 0
+        let base = scanResult?.confirmedCleanableSize ?? lastKnownCleanableSize ?? 0
+        let penalty = scanResult != nil ? pendingFreedSize : 0
+        return max(0, base - penalty)
     }
 }
 
-private extension CacheCategory {
+extension CacheCategory {
     var chineseName: String {
         switch self {
         case .renderFiles: "渲染文件"
@@ -1472,36 +1640,4 @@ private extension CacheCategory {
         default: "folder"
         }
     }
-}
-
-private enum AppColor {
-    static let canvas = Color(hex: "242424")
-    static let workspace = Color(hex: "202020")
-    static let panel = Color(hex: "2A2A2A")
-    static let control = Color(hex: "303030")
-    static let primaryText = Color(hex: "E7E7E7")
-    static let secondaryText = Color(hex: "A0A0A0")
-    static let tertiaryText = Color(hex: "747474")
-    static let border = Color(hex: "3C3C3C")
-    static let dashedBorder = Color(hex: "747474")
-    static let accent = Color(hex: "5D72D8")
-    static let success = Color(hex: "35B85A")
-    static let danger = Color(hex: "D45C57")
-}
-
-private extension Color {
-    init(hex: String) {
-        let value = UInt64(hex, radix: 16) ?? 0
-        self.init(
-            .sRGB,
-            red: Double((value >> 16) & 0xFF) / 255,
-            green: Double((value >> 8) & 0xFF) / 255,
-            blue: Double(value & 0xFF) / 255,
-            opacity: 1
-        )
-    }
-}
-
-func format(_ bytes: Int64) -> String {
-    ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
 }

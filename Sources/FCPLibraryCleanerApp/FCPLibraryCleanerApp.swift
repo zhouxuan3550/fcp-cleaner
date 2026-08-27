@@ -6,6 +6,7 @@ struct FCPLibraryCleanerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
+        LibraryStore.shared.appearanceMode.applyToApplication()
         UpdateController.shared.startIfConfigured()
     }
 
@@ -13,7 +14,7 @@ struct FCPLibraryCleanerApp: App {
         WindowGroup("FCP Cleaner") {
             ContentView()
         }
-        .defaultSize(width: 1_080, height: 760)
+        .defaultSize(width: LayoutMetrics.windowDefaultWidth, height: LayoutMetrics.windowDefaultHeight)
         .commands {
             CommandGroup(after: .newItem) {
                 Button("选择资源库…") {
@@ -34,7 +35,8 @@ struct FCPLibraryCleanerApp: App {
                         store.requestClean(selected)
                     }
                 }
-                .keyboardShortcut(.return, modifiers: [.command])
+                .keyboardShortcut(.delete, modifiers: [.command])
+                .disabled(LibraryStore.shared.isPreflighting || LibraryStore.shared.isCleaning)
 
                 Button("重新扫描当前资源库") {
                     if let selected = LibraryStore.shared.selectedLibrary {
@@ -68,11 +70,13 @@ private struct MenuBarPanel: View {
                 Text("FCP Cleaner")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                 Spacer()
-                Text(format(store.totalCleanableSize))
+                Text(FormatHelpers.bytes(store.totalCleanableSize))
                     .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: store.totalCleanableSize)
             }
             if let warning = store.lowSpaceWarnings.first {
-                Label("\(warning.name) 剩余 \(format(warning.availableSize))", systemImage: "exclamationmark.triangle.fill")
+                Label("\(warning.name) 剩余 \(FormatHelpers.bytes(warning.availableSize))", systemImage: "exclamationmark.triangle.fill")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.orange)
             }
@@ -87,7 +91,7 @@ private struct MenuBarPanel: View {
             }
         }
         .padding(14)
-        .frame(width: 280)
+        .frame(width: LayoutMetrics.menuBarPanelWidth)
     }
 }
 
@@ -96,7 +100,7 @@ private struct CleanerMenuMark: View {
         Image(systemName: "paintbrush.pointed.fill")
             .foregroundStyle(.white)
             .frame(width: 28, height: 28)
-            .background(Color(red: 0.39, green: 0.30, blue: 0.85))
+            .background(AppColor.brand)
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
