@@ -774,6 +774,11 @@ final class LibraryStore: NSObject {
                 record.lastKnownCleanableSize = record.scanResult?.confirmedCleanableSize
                 record.lastActivity = LibraryRecord.activityDate(for: record.url)
                 record.lastAccessibleAt = Date()
+                LibrarySizeTrend.record(
+                    libraryURL: record.url,
+                    totalAllocatedSize: result.totalAllocatedSize,
+                    cleanableSize: result.confirmedCleanableSize
+                )
                 saveRecents()
                 evaluateLowSpace()
                 if request.preserveLastCleanup, record.lastCleanup != nil {
@@ -1143,6 +1148,23 @@ final class LibraryStore: NSObject {
     func knownCleanableSize(for record: LibraryRecord) -> Int64 {
         if record.scanResult != nil { return record.spaceToFree }
         return record.lastKnownCleanableSize ?? 0
+    }
+
+    /// 该库相对约一周前的总体积增长；采样不足返回 nil。
+    func weeklyGrowth(for record: LibraryRecord) -> Int64? {
+        LibrarySizeTrend.weeklyGrowth(samples: LibrarySizeTrend.samples(for: record.url))
+    }
+
+    /// 待清理列表中周增长最大者（须为正增长），供列表突出显示。
+    var fastestGrowingLibraryID: LibraryRecord.ID? {
+        var bestID: LibraryRecord.ID?
+        var bestGrowth: Int64 = 0
+        for record in waitingLibraries {
+            guard let growth = weeklyGrowth(for: record), growth > bestGrowth else { continue }
+            bestGrowth = growth
+            bestID = record.id
+        }
+        return bestID
     }
 
     func effectiveCleanableSize(for record: LibraryRecord) -> Int64 {

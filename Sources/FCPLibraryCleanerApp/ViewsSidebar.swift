@@ -41,6 +41,7 @@ struct LibrarySidebar: View {
     var searchFocused: FocusState<Bool>.Binding
 
     var body: some View {
+        let fastestGrowingID = store.fastestGrowingLibraryID
         VStack(spacing: 0) {
             controls
             Divider().overlay(AppColor.border)
@@ -49,7 +50,7 @@ struct LibrarySidebar: View {
                     ForEach(sections) { section in
                         Section {
                             ForEach(section.libraries) { library in
-                                LibraryRow(library: library, store: store)
+                                LibraryRow(library: library, store: store, isFastestGrowing: library.id == fastestGrowingID)
                             }
                         } header: {
                             SidebarDiskHeader(section: section, store: store)
@@ -249,6 +250,7 @@ struct SidebarDiskHeader: View {
 struct LibraryRow: View {
     let library: LibraryRecord
     let store: LibraryStore
+    var isFastestGrowing = false
     @State private var isHovered = false
 
     private var isSelected: Bool { library.id == store.selectedID }
@@ -262,10 +264,22 @@ struct LibraryRow: View {
             } label: {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(library.displayName)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(AppColor.primaryText)
-                            .lineLimit(1)
+                        HStack(spacing: 5) {
+                            Text(library.displayName)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(AppColor.primaryText)
+                                .lineLimit(1)
+                            if isFastestGrowing {
+                                Label("增长最快", systemImage: "arrow.up.forward")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(AppColor.accent)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(AppColor.accent.opacity(0.14))
+                                    .clipShape(Capsule())
+                                    .help("该资源库一周内体积增长最快")
+                            }
+                        }
                         Text(subtitle)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(library.scanError != nil || library.cleanupError != nil ? AppColor.danger : AppColor.tertiaryText)

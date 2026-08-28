@@ -205,6 +205,14 @@ struct ScanResultsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
+                if let growth = store.weeklyGrowth(for: library), growth > 0 {
+                    Label("本周增长 \(FormatHelpers.bytes(growth))", systemImage: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.orange)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .help("与约一周前的扫描采样相比，资源库总体积的增长量")
+                }
+
                 HStack(alignment: .top, spacing: 14) {
                     CleanupList(result: result)
                     CleanupActionCard(library: library, result: result, store: store)
