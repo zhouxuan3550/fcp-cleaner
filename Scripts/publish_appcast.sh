@@ -50,6 +50,8 @@ for index, item in enumerate(items, 1):
     else:
         builds.append(int(version.group(1)))
 
+if len(builds) != len(set(builds)):
+        problems.append(f"存在重复的 sparkle:version: {sorted(builds)}")
 if builds and str(max(builds)) != expected_build:
     problems.append(
         f"最新 sparkle:version={max(builds)} 与期望构建号 {expected_build} 不一致"
