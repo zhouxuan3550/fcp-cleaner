@@ -73,6 +73,32 @@ struct AppSettings: View {
             }
 
             Divider()
+            sectionHeader("扫描健康")
+            let health = store.scanHealthSummary
+            VStack(alignment: .leading, spacing: 4) {
+                Text("资源库 \(health.total) 个 · 已扫描 \(health.scanned) 个（缓存复用 \(health.cacheReused)）")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AppColor.secondaryText)
+                if health.failed.isEmpty && health.neverScanned == 0 {
+                    Label("全部扫描完成", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(AppColor.success)
+                } else {
+                    if health.neverScanned > 0 {
+                        Text("待扫描 \(health.neverScanned) 个")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(AppColor.tertiaryText)
+                    }
+                    if !health.failed.isEmpty {
+                        Text("扫描失败 \(health.failed.count) 个：\(health.failed.joined(separator: "、"))")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(AppColor.danger)
+                            .lineLimit(2)
+                    }
+                }
+            }
+
+            Divider()
             sectionHeader("外观")
             Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
                 .toggleStyle(.switch)

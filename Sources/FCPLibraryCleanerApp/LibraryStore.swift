@@ -215,6 +215,7 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var lastAutomaticLowSpaceScan: [URL: Date] = [:]
     @ObservationIgnored private var spaceMonitorTask: Task<Void, Never>?
     @ObservationIgnored private var isEvaluatingLowSpace = false
+    @ObservationIgnored private var workDirectoryMonitor: WorkDirectoryMonitor?
     private let maximumConcurrentScans = 3
 
     private override init() {
@@ -376,6 +377,8 @@ final class LibraryStore: NSObject {
         didBeginAutomaticDiscovery = true
         NotificationController.shared.requestAuthorizationIfNeeded(enabled: notificationsEnabled)
         startSpaceMonitoring()
+        if workDirectoryMonitor == nil { workDirectoryMonitor = WorkDirectoryMonitor(store: self) }
+        workDirectoryMonitor?.updateWatched(paths: workDirectories.map(\.path))
 
         for library in libraries where library.scanResult == nil && !library.isScanning {
             scan(library, force: false)
@@ -502,6 +505,7 @@ final class LibraryStore: NSObject {
         workDirectories.append(contentsOf: urls.map(\.standardizedFileURL).filter { !existing.contains($0) })
         workDirectories.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
         bookmarks.saveWorkDirectories(workDirectories)
+        workDirectoryMonitor?.updateWatched(paths: workDirectories.map(\.path))
         discoverLibraries()
     }
 
@@ -510,6 +514,7 @@ final class LibraryStore: NSObject {
         workDirectoryStatuses.removeValue(forKey: url.standardizedFileURL)
         workDirectoryStatuses.removeValue(forKey: url)
         bookmarks.saveWorkDirectories(workDirectories)
+        workDirectoryMonitor?.updateWatched(paths: workDirectories.map(\.path))
         discoverLibraries()
     }
 
@@ -1122,6 +1127,18 @@ final class LibraryStore: NSObject {
         return lastActivity <= cutoff
     }
 
+    /// 扫描健康度：让"自动扫描是否真正完成"不依赖日志即可判断。
+    var scanHealthSummary: ScanHealthSummary {
+        let failed = libraries.filter { $0.scanError != nil }.map(\.displayName)
+        return ScanHealthSummary(
+            total: libraries.count,
+            scanned: libraries.count(where: { $0.scanResult != nil }),
+            cacheReused: libraries.count(where: { $0.usedCachedScan }),
+            failed: failed,
+            neverScanned: libraries.count(where: { $0.scanResult == nil && $0.scanError == nil && !$0.isScanning && !$0.isQueued })
+        )
+    }
+
     var totalCleanableSize: Int64 {
         libraries.reduce(Int64(0)) { partial, record in
             let size = effectiveCleanableSize(for: record)
@@ -1367,6 +1384,14 @@ struct DiskCleanupSummary: Identifiable {
     let name: String
     let cleanableSize: Int64
     let libraryCount: Int
+}
+
+struct ScanHealthSummary: Sendable {
+    let total: Int
+    let scanned: Int
+    let cacheReused: Int
+    let failed: [String]
+    let neverScanned: Int
 }
 
 struct WorkDirectoryStatus: Sendable {

@@ -388,6 +388,15 @@ struct CleanupStatus: View {
                         if let before = library.cleanupBeforeSize, let after = library.cleanupAfterSize {
                             Text("\(FormatHelpers.bytes(before)) → \(FormatHelpers.bytes(after))")
                                 .foregroundStyle(AppColor.secondaryText)
+                            // APFS 延迟回收或废纸篓未清空时，实际统计可能小于计划释放
+                            let actual = max(0, before - after)
+                            if cleanup.freedAllocatedSize > 0,
+                               Double(actual) < Double(cleanup.freedAllocatedSize) * 0.9 {
+                                Text("空间统计待系统刷新（计划释放 \(FormatHelpers.bytes(cleanup.freedAllocatedSize))）")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(AppColor.tertiaryText)
+                                    .lineLimit(1)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
