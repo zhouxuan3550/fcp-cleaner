@@ -1,0 +1,755 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		04782B070183732A12AC8CFC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E90935002C1734277CD748 /* ContentView.swift */; };
+		0F875F3B44C6757DF59852B6 /* ViewsHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3486FC3B869DF3393C08CE /* ViewsHeader.swift */; };
+		224DAED5E9B883D8A9060AB9 /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CF33F12F44DAEA254BC3207 /* UpdateController.swift */; };
+		279908DD403D26FCFC762DD8 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = DED1D012EED61A02B78A73E2 /* Sparkle */; };
+		3163A3394F98D42AD9CACCB6 /* LibraryInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 040A6B9CBE336F1FF851B417 /* LibraryInspector.swift */; };
+		38EE0BFADBE8E33268E48FC8 /* FCPLibraryCleanerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25489A68BC788A62C28C0402 /* FCPLibraryCleanerApp.swift */; };
+		3CA7DC924D29FFD540D9C0F9 /* CleanupSummaryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CCF038B12C81C6A16E8CB8 /* CleanupSummaryModels.swift */; };
+		3D35DDCF8B522ED7584795F1 /* LibraryScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A81F92C1AE2CD7F46C5DD5 /* LibraryScanner.swift */; };
+		491FC2B28AEE0892BCE080C5 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551DC8F234B31D7D7EDDA135 /* AppIntents.swift */; };
+		512F7E263D817A8471FDBA14 /* CleanupEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7063734E2929AA7B4312BF0F /* CleanupEngine.swift */; };
+		5431CA6F560233A994C810B0 /* SecurityScopedBookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C75F3FCB9B85C9B4E79DF50B /* SecurityScopedBookmarkManager.swift */; };
+		58E2CA3281472131F0B9ED09 /* FCP-Cleaner-Workflow.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E6BD3337D1822E9FFA007134 /* FCP-Cleaner-Workflow.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5998BBE14AD7A84886CADBDC /* ScheduledCheckController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5180CB580168BACF645FE479 /* ScheduledCheckController.swift */; };
+		5D466E8EB2CC005ACB48D81A /* CleanupTransactionJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = F797C3263736A1B2858FA606 /* CleanupTransactionJournal.swift */; };
+		6CF7E47591B2A41AE9649B5C /* FCPStructureRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D262894F14868D71757406F /* FCPStructureRules.swift */; };
+		6E7A0DBF69530563B7324DF0 /* DiagnosticsExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EFF56D74707AFC00861081E /* DiagnosticsExporter.swift */; };
+		75B5EC6E87E9FF1642FC43C3 /* LibraryDiscoveryRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80818EE200BA4F6AB84B1C7 /* LibraryDiscoveryRules.swift */; };
+		7F656FB8FFE58A487ED11015 /* ViewsConfirmationSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1E71608CA72D3447D623286 /* ViewsConfirmationSheets.swift */; };
+		99B29B6801B09C7D4705DC56 /* ScanResultCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81EB5DC90E9B88546895664A /* ScanResultCache.swift */; };
+		9AB6FC795B09F23F0A948AF5 /* CleanupPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C29ECC8919286217046F324 /* CleanupPlan.swift */; };
+		A63DF8C33F00F00B92E6E66D /* VolumeMountRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = E220AADA0ED9683AB76C35EA /* VolumeMountRules.swift */; };
+		A6A1BA2773F8A75980E8245C /* CleanupHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8075F67CDDC264BF874059 /* CleanupHistoryStore.swift */; };
+		AA0F6A93CD1A591351CAE68C /* ViewsSettingsAndHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6680A0EDE42C4C288658B92 /* ViewsSettingsAndHistory.swift */; };
+		AD064462F3DAFF18E9ACDC9C /* CleanupThroughputStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04ACE23C54E26A89E4A33633 /* CleanupThroughputStore.swift */; };
+		B00D87CDDE7B2F62C62A7636 /* ButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A733653E2977D21F85EA8BCA /* ButtonStyles.swift */; };
+		B65ADD2B00691BA749433C79 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934233315FECA82E62393048 /* DesignTokens.swift */; };
+		BF14F57C3D2FA79DA2509CD1 /* WorkflowExtensionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 531F110D7A7F711444016C18 /* WorkflowExtensionViewController.swift */; };
+		C4E6906160BD7925952E80AB /* ViewsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 683A2E97617D5284B4AC08AB /* ViewsSidebar.swift */; };
+		C5FAD86599D8634351D55A22 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F4BAEDF30E9682EC3E4064B /* LibraryStore.swift */; };
+		C694F53D05657C220091A50D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A41CD3B33EC9E13FA962758A /* Models.swift */; };
+		CA57A1E4B461A35687235450 /* FinderServiceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2644C26BD439C850C55D802 /* FinderServiceProvider.swift */; };
+		D08564013DFC54025BAAB39B /* LibrarySizeTrend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947C6884FB3D862541C66D95 /* LibrarySizeTrend.swift */; };
+		D334EC8256858DAF5DB91083 /* CleanupThroughputIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187A9BF53C11F26C3BD4DBB3 /* CleanupThroughputIndex.swift */; };
+		D35697E21F52EF473D1C1544 /* VolumeMountMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E4CC4306A2B40AE8CFA6C8C /* VolumeMountMonitor.swift */; };
+		D6C327677FE1DFC3D348397D /* ViewsLibraryDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D10701416C9D622A811DD3 /* ViewsLibraryDetail.swift */; };
+		DAE223BF79B70FA5DE1D6E87 /* WorkDirectoryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3189BC5DF66913D99AEB4260 /* WorkDirectoryMonitor.swift */; };
+		DD0DF789FD3A7498F3423D15 /* NotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AA5FD7044919316E9262A01 /* NotificationController.swift */; };
+		DD455D1BD50CC41B37178947 /* ScanControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD4EAC01E2A08D2DE7620F3 /* ScanControl.swift */; };
+		E592D8BA0B5205A65AE2E7AB /* CacheClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6AD339C930D2AF8BCA3903 /* CacheClassifier.swift */; };
+		EE498745B81537AAA82A8CE7 /* LibraryUseDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E97A6204629DCAFA53146A /* LibraryUseDetector.swift */; };
+		F3E2728BD14D09C08CFA7441 /* ScanProgressCoalescer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD611C7E0251B543CD82AB80 /* ScanProgressCoalescer.swift */; };
+		FB64447B090718D860E07B14 /* libFCPLibraryCleanerCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A80AE49AFEA3673EA904FCF9 /* libFCPLibraryCleanerCore.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		71D054D0F623778D73D16BB4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B58784C80B8932E5613BCB1C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 599286617A9DD793EB0DE88F;
+			remoteInfo = "FCP-Cleaner-Workflow";
+		};
+		DB813C54D8BAB8059CDBBDB1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B58784C80B8932E5613BCB1C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 69EA71B3606072479AC82E5A;
+			remoteInfo = FCPLibraryCleanerCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B0919BEF092DB5EA0EB16257 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				58E2CA3281472131F0B9ED09 /* FCP-Cleaner-Workflow.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		040A6B9CBE336F1FF851B417 /* LibraryInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryInspector.swift; sourceTree = "<group>"; };
+		04ACE23C54E26A89E4A33633 /* CleanupThroughputStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupThroughputStore.swift; sourceTree = "<group>"; };
+		0D182D4C05F124B90FD54B91 /* FCP-Cleaner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FCP-Cleaner.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		187A9BF53C11F26C3BD4DBB3 /* CleanupThroughputIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupThroughputIndex.swift; sourceTree = "<group>"; };
+		1C29ECC8919286217046F324 /* CleanupPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupPlan.swift; sourceTree = "<group>"; };
+		1E4CC4306A2B40AE8CFA6C8C /* VolumeMountMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeMountMonitor.swift; sourceTree = "<group>"; };
+		20E90935002C1734277CD748 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		25489A68BC788A62C28C0402 /* FCPLibraryCleanerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FCPLibraryCleanerApp.swift; sourceTree = "<group>"; };
+		3189BC5DF66913D99AEB4260 /* WorkDirectoryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkDirectoryMonitor.swift; sourceTree = "<group>"; };
+		3EFF56D74707AFC00861081E /* DiagnosticsExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsExporter.swift; sourceTree = "<group>"; };
+		4A3486FC3B869DF3393C08CE /* ViewsHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsHeader.swift; sourceTree = "<group>"; };
+		4CF33F12F44DAEA254BC3207 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
+		4D6AD339C930D2AF8BCA3903 /* CacheClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheClassifier.swift; sourceTree = "<group>"; };
+		5180CB580168BACF645FE479 /* ScheduledCheckController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduledCheckController.swift; sourceTree = "<group>"; };
+		51CCF038B12C81C6A16E8CB8 /* CleanupSummaryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupSummaryModels.swift; sourceTree = "<group>"; };
+		531F110D7A7F711444016C18 /* WorkflowExtensionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowExtensionViewController.swift; sourceTree = "<group>"; };
+		551DC8F234B31D7D7EDDA135 /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
+		5F4BAEDF30E9682EC3E4064B /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
+		67E97A6204629DCAFA53146A /* LibraryUseDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryUseDetector.swift; sourceTree = "<group>"; };
+		683A2E97617D5284B4AC08AB /* ViewsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsSidebar.swift; sourceTree = "<group>"; };
+		6AA5FD7044919316E9262A01 /* NotificationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationController.swift; sourceTree = "<group>"; };
+		7063734E2929AA7B4312BF0F /* CleanupEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupEngine.swift; sourceTree = "<group>"; };
+		74CEDAF42E2A77D1E115DF2B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7D262894F14868D71757406F /* FCPStructureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FCPStructureRules.swift; sourceTree = "<group>"; };
+		81EB5DC90E9B88546895664A /* ScanResultCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultCache.swift; sourceTree = "<group>"; };
+		934233315FECA82E62393048 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		947C6884FB3D862541C66D95 /* LibrarySizeTrend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySizeTrend.swift; sourceTree = "<group>"; };
+		9FD4EAC01E2A08D2DE7620F3 /* ScanControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanControl.swift; sourceTree = "<group>"; };
+		A1E71608CA72D3447D623286 /* ViewsConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsConfirmationSheets.swift; sourceTree = "<group>"; };
+		A2644C26BD439C850C55D802 /* FinderServiceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderServiceProvider.swift; sourceTree = "<group>"; };
+		A41CD3B33EC9E13FA962758A /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A733653E2977D21F85EA8BCA /* ButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonStyles.swift; sourceTree = "<group>"; };
+		A80818EE200BA4F6AB84B1C7 /* LibraryDiscoveryRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDiscoveryRules.swift; sourceTree = "<group>"; };
+		A80AE49AFEA3673EA904FCF9 /* libFCPLibraryCleanerCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libFCPLibraryCleanerCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		B0A81F92C1AE2CD7F46C5DD5 /* LibraryScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryScanner.swift; sourceTree = "<group>"; };
+		C75F3FCB9B85C9B4E79DF50B /* SecurityScopedBookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecurityScopedBookmarkManager.swift; sourceTree = "<group>"; };
+		CD611C7E0251B543CD82AB80 /* ScanProgressCoalescer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanProgressCoalescer.swift; sourceTree = "<group>"; };
+		D6680A0EDE42C4C288658B92 /* ViewsSettingsAndHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsSettingsAndHistory.swift; sourceTree = "<group>"; };
+		DC50F604F1FB8DDF2D27CB54 /* WorkflowExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WorkflowExtension.entitlements; sourceTree = "<group>"; };
+		E1D10701416C9D622A811DD3 /* ViewsLibraryDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsLibraryDetail.swift; sourceTree = "<group>"; };
+		E220AADA0ED9683AB76C35EA /* VolumeMountRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeMountRules.swift; sourceTree = "<group>"; };
+		E6BD3337D1822E9FFA007134 /* FCP-Cleaner-Workflow.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "FCP-Cleaner-Workflow.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F797C3263736A1B2858FA606 /* CleanupTransactionJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupTransactionJournal.swift; sourceTree = "<group>"; };
+		FA8075F67CDDC264BF874059 /* CleanupHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupHistoryStore.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FC9B2817D646E8D0522C854A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB64447B090718D860E07B14 /* libFCPLibraryCleanerCore.a in Frameworks */,
+				279908DD403D26FCFC762DD8 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3065CC66F3DE03843B5F4F99 /* FCPLibraryCleanerApp */ = {
+			isa = PBXGroup;
+			children = (
+				551DC8F234B31D7D7EDDA135 /* AppIntents.swift */,
+				A733653E2977D21F85EA8BCA /* ButtonStyles.swift */,
+				FA8075F67CDDC264BF874059 /* CleanupHistoryStore.swift */,
+				51CCF038B12C81C6A16E8CB8 /* CleanupSummaryModels.swift */,
+				04ACE23C54E26A89E4A33633 /* CleanupThroughputStore.swift */,
+				F797C3263736A1B2858FA606 /* CleanupTransactionJournal.swift */,
+				20E90935002C1734277CD748 /* ContentView.swift */,
+				934233315FECA82E62393048 /* DesignTokens.swift */,
+				3EFF56D74707AFC00861081E /* DiagnosticsExporter.swift */,
+				25489A68BC788A62C28C0402 /* FCPLibraryCleanerApp.swift */,
+				A2644C26BD439C850C55D802 /* FinderServiceProvider.swift */,
+				947C6884FB3D862541C66D95 /* LibrarySizeTrend.swift */,
+				5F4BAEDF30E9682EC3E4064B /* LibraryStore.swift */,
+				6AA5FD7044919316E9262A01 /* NotificationController.swift */,
+				CD611C7E0251B543CD82AB80 /* ScanProgressCoalescer.swift */,
+				81EB5DC90E9B88546895664A /* ScanResultCache.swift */,
+				5180CB580168BACF645FE479 /* ScheduledCheckController.swift */,
+				C75F3FCB9B85C9B4E79DF50B /* SecurityScopedBookmarkManager.swift */,
+				4CF33F12F44DAEA254BC3207 /* UpdateController.swift */,
+				A1E71608CA72D3447D623286 /* ViewsConfirmationSheets.swift */,
+				4A3486FC3B869DF3393C08CE /* ViewsHeader.swift */,
+				E1D10701416C9D622A811DD3 /* ViewsLibraryDetail.swift */,
+				D6680A0EDE42C4C288658B92 /* ViewsSettingsAndHistory.swift */,
+				683A2E97617D5284B4AC08AB /* ViewsSidebar.swift */,
+				1E4CC4306A2B40AE8CFA6C8C /* VolumeMountMonitor.swift */,
+				3189BC5DF66913D99AEB4260 /* WorkDirectoryMonitor.swift */,
+			);
+			path = FCPLibraryCleanerApp;
+			sourceTree = "<group>";
+		};
+		4F00121C1FA84BBAFCB1E51B /* WorkflowExtension */ = {
+			isa = PBXGroup;
+			children = (
+				74CEDAF42E2A77D1E115DF2B /* Info.plist */,
+				DC50F604F1FB8DDF2D27CB54 /* WorkflowExtension.entitlements */,
+				531F110D7A7F711444016C18 /* WorkflowExtensionViewController.swift */,
+			);
+			path = WorkflowExtension;
+			sourceTree = "<group>";
+		};
+		7AD5B4B872878DB882720E71 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				3065CC66F3DE03843B5F4F99 /* FCPLibraryCleanerApp */,
+				91488FD41AB8A8174213CB32 /* FCPLibraryCleanerCore */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		7CF893E96DACCD443EE0C21C = {
+			isa = PBXGroup;
+			children = (
+				7AD5B4B872878DB882720E71 /* Sources */,
+				4F00121C1FA84BBAFCB1E51B /* WorkflowExtension */,
+				AAEF49FE0F048F5A804AA6CD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		91488FD41AB8A8174213CB32 /* FCPLibraryCleanerCore */ = {
+			isa = PBXGroup;
+			children = (
+				4D6AD339C930D2AF8BCA3903 /* CacheClassifier.swift */,
+				7063734E2929AA7B4312BF0F /* CleanupEngine.swift */,
+				1C29ECC8919286217046F324 /* CleanupPlan.swift */,
+				187A9BF53C11F26C3BD4DBB3 /* CleanupThroughputIndex.swift */,
+				7D262894F14868D71757406F /* FCPStructureRules.swift */,
+				A80818EE200BA4F6AB84B1C7 /* LibraryDiscoveryRules.swift */,
+				040A6B9CBE336F1FF851B417 /* LibraryInspector.swift */,
+				B0A81F92C1AE2CD7F46C5DD5 /* LibraryScanner.swift */,
+				67E97A6204629DCAFA53146A /* LibraryUseDetector.swift */,
+				A41CD3B33EC9E13FA962758A /* Models.swift */,
+				9FD4EAC01E2A08D2DE7620F3 /* ScanControl.swift */,
+				E220AADA0ED9683AB76C35EA /* VolumeMountRules.swift */,
+			);
+			path = FCPLibraryCleanerCore;
+			sourceTree = "<group>";
+		};
+		AAEF49FE0F048F5A804AA6CD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E6BD3337D1822E9FFA007134 /* FCP-Cleaner-Workflow.appex */,
+				0D182D4C05F124B90FD54B91 /* FCP-Cleaner.app */,
+				A80AE49AFEA3673EA904FCF9 /* libFCPLibraryCleanerCore.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		599286617A9DD793EB0DE88F /* FCP-Cleaner-Workflow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F434A78972E34FA0DD39803A /* Build configuration list for PBXNativeTarget "FCP-Cleaner-Workflow" */;
+			buildPhases = (
+				0A0CE607756C6D687BFF1242 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "FCP-Cleaner-Workflow";
+			packageProductDependencies = (
+			);
+			productName = "FCP-Cleaner-Workflow";
+			productReference = E6BD3337D1822E9FFA007134 /* FCP-Cleaner-Workflow.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		69EA71B3606072479AC82E5A /* FCPLibraryCleanerCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 721EA177FB1E21B8E3AB066A /* Build configuration list for PBXNativeTarget "FCPLibraryCleanerCore" */;
+			buildPhases = (
+				93E114D25A8FB35F64078B94 /* Sources */,
+				B12BEEE9DC998C4740CCE669 /* Copy Swift Objective-C Interface Header */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FCPLibraryCleanerCore;
+			packageProductDependencies = (
+			);
+			productName = FCPLibraryCleanerCore;
+			productReference = A80AE49AFEA3673EA904FCF9 /* libFCPLibraryCleanerCore.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		6E3C92A077E2CFBD492AA5D3 /* FCP-Cleaner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 498F67084D4D021843AC56AB /* Build configuration list for PBXNativeTarget "FCP-Cleaner" */;
+			buildPhases = (
+				1C6988067F380DA8181FDC7A /* Sources */,
+				FC9B2817D646E8D0522C854A /* Frameworks */,
+				B0919BEF092DB5EA0EB16257 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ED0790A01BD856FC61CFB709 /* PBXTargetDependency */,
+				13E621573465B0804BD8B55E /* PBXTargetDependency */,
+			);
+			name = "FCP-Cleaner";
+			packageProductDependencies = (
+				DED1D012EED61A02B78A73E2 /* Sparkle */,
+			);
+			productName = "FCP-Cleaner";
+			productReference = 0D182D4C05F124B90FD54B91 /* FCP-Cleaner.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B58784C80B8932E5613BCB1C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					6E3C92A077E2CFBD492AA5D3 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 60E0177E7842BB5AAF06B09D /* Build configuration list for PBXProject "FCPLibraryCleaner" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7CF893E96DACCD443EE0C21C;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C630B4EA1EA6D6156694FB3E /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AAEF49FE0F048F5A804AA6CD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				69EA71B3606072479AC82E5A /* FCPLibraryCleanerCore */,
+				599286617A9DD793EB0DE88F /* FCP-Cleaner-Workflow */,
+				6E3C92A077E2CFBD492AA5D3 /* FCP-Cleaner */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		B12BEEE9DC998C4740CCE669 /* Copy Swift Objective-C Interface Header */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(DERIVED_SOURCES_DIR)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)",
+			);
+			name = "Copy Swift Objective-C Interface Header";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/include/$(PRODUCT_MODULE_NAME)/$(SWIFT_OBJC_INTERFACE_HEADER_NAME)",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "ditto \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0A0CE607756C6D687BFF1242 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF14F57C3D2FA79DA2509CD1 /* WorkflowExtensionViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1C6988067F380DA8181FDC7A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				491FC2B28AEE0892BCE080C5 /* AppIntents.swift in Sources */,
+				B00D87CDDE7B2F62C62A7636 /* ButtonStyles.swift in Sources */,
+				A6A1BA2773F8A75980E8245C /* CleanupHistoryStore.swift in Sources */,
+				3CA7DC924D29FFD540D9C0F9 /* CleanupSummaryModels.swift in Sources */,
+				AD064462F3DAFF18E9ACDC9C /* CleanupThroughputStore.swift in Sources */,
+				5D466E8EB2CC005ACB48D81A /* CleanupTransactionJournal.swift in Sources */,
+				04782B070183732A12AC8CFC /* ContentView.swift in Sources */,
+				B65ADD2B00691BA749433C79 /* DesignTokens.swift in Sources */,
+				6E7A0DBF69530563B7324DF0 /* DiagnosticsExporter.swift in Sources */,
+				38EE0BFADBE8E33268E48FC8 /* FCPLibraryCleanerApp.swift in Sources */,
+				CA57A1E4B461A35687235450 /* FinderServiceProvider.swift in Sources */,
+				D08564013DFC54025BAAB39B /* LibrarySizeTrend.swift in Sources */,
+				C5FAD86599D8634351D55A22 /* LibraryStore.swift in Sources */,
+				DD0DF789FD3A7498F3423D15 /* NotificationController.swift in Sources */,
+				F3E2728BD14D09C08CFA7441 /* ScanProgressCoalescer.swift in Sources */,
+				99B29B6801B09C7D4705DC56 /* ScanResultCache.swift in Sources */,
+				5998BBE14AD7A84886CADBDC /* ScheduledCheckController.swift in Sources */,
+				5431CA6F560233A994C810B0 /* SecurityScopedBookmarkManager.swift in Sources */,
+				224DAED5E9B883D8A9060AB9 /* UpdateController.swift in Sources */,
+				7F656FB8FFE58A487ED11015 /* ViewsConfirmationSheets.swift in Sources */,
+				0F875F3B44C6757DF59852B6 /* ViewsHeader.swift in Sources */,
+				D6C327677FE1DFC3D348397D /* ViewsLibraryDetail.swift in Sources */,
+				AA0F6A93CD1A591351CAE68C /* ViewsSettingsAndHistory.swift in Sources */,
+				C4E6906160BD7925952E80AB /* ViewsSidebar.swift in Sources */,
+				D35697E21F52EF473D1C1544 /* VolumeMountMonitor.swift in Sources */,
+				DAE223BF79B70FA5DE1D6E87 /* WorkDirectoryMonitor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		93E114D25A8FB35F64078B94 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E592D8BA0B5205A65AE2E7AB /* CacheClassifier.swift in Sources */,
+				512F7E263D817A8471FDBA14 /* CleanupEngine.swift in Sources */,
+				9AB6FC795B09F23F0A948AF5 /* CleanupPlan.swift in Sources */,
+				D334EC8256858DAF5DB91083 /* CleanupThroughputIndex.swift in Sources */,
+				6CF7E47591B2A41AE9649B5C /* FCPStructureRules.swift in Sources */,
+				75B5EC6E87E9FF1642FC43C3 /* LibraryDiscoveryRules.swift in Sources */,
+				3163A3394F98D42AD9CACCB6 /* LibraryInspector.swift in Sources */,
+				3D35DDCF8B522ED7584795F1 /* LibraryScanner.swift in Sources */,
+				EE498745B81537AAA82A8CE7 /* LibraryUseDetector.swift in Sources */,
+				C694F53D05657C220091A50D /* Models.swift in Sources */,
+				DD455D1BD50CC41B37178947 /* ScanControl.swift in Sources */,
+				A63DF8C33F00F00B92E6E66D /* VolumeMountRules.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		13E621573465B0804BD8B55E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 599286617A9DD793EB0DE88F /* FCP-Cleaner-Workflow */;
+			targetProxy = 71D054D0F623778D73D16BB4 /* PBXContainerItemProxy */;
+		};
+		ED0790A01BD856FC61CFB709 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 69EA71B3606072479AC82E5A /* FCPLibraryCleanerCore */;
+			targetProxy = DB813C54D8BAB8059CDBBDB1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		3B1672C9172C3A74C90C66BD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 391;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Applications/Final\\ Cut\\ Pro.app/Contents/Frameworks",
+				);
+				INFOPLIST_FILE = WorkflowExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 3.9.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-u",
+					_ProExtensionMain,
+					"-weak_framework",
+					ProExtension,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.fcpcleaner.app.workflow-extension";
+				PRODUCT_MODULE_NAME = FCPCleanerWorkflow;
+				PRODUCT_NAME = "FCP-Cleaner-Workflow";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		44497C2B9C8CE3A8ACAEFD9D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcpcleaner.FCPLibraryCleanerCore;
+				PRODUCT_MODULE_NAME = FCPLibraryCleanerCore;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		54BA65633BC42D9C1F11A645 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 391;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Applications/Final\\ Cut\\ Pro.app/Contents/Frameworks",
+				);
+				INFOPLIST_FILE = WorkflowExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 3.9.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-u",
+					_ProExtensionMain,
+					"-weak_framework",
+					ProExtension,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.fcpcleaner.app.workflow-extension";
+				PRODUCT_MODULE_NAME = FCPCleanerWorkflow;
+				PRODUCT_NAME = "FCP-Cleaner-Workflow";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		66D935FF400B5A824D40CDD8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 391;
+				EXECUTABLE_NAME = "FCP-Cleaner";
+				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 3.9.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcpcleaner.app;
+				PRODUCT_MODULE_NAME = FCPLibraryCleanerApp;
+				PRODUCT_NAME = "FCP Cleaner";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		90A05D65D6800CE8A6B875B0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 391;
+				EXECUTABLE_NAME = "FCP-Cleaner";
+				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 3.9.1;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcpcleaner.app;
+				PRODUCT_MODULE_NAME = FCPLibraryCleanerApp;
+				PRODUCT_NAME = "FCP Cleaner";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		ADE8E24602BD349251C46141 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fcpcleaner.FCPLibraryCleanerCore;
+				PRODUCT_MODULE_NAME = FCPLibraryCleanerCore;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		C067C16136B3A6B112E5358E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		FF1C81C1AF2D60976077D4B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		498F67084D4D021843AC56AB /* Build configuration list for PBXNativeTarget "FCP-Cleaner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66D935FF400B5A824D40CDD8 /* Debug */,
+				90A05D65D6800CE8A6B875B0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		60E0177E7842BB5AAF06B09D /* Build configuration list for PBXProject "FCPLibraryCleaner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C067C16136B3A6B112E5358E /* Debug */,
+				FF1C81C1AF2D60976077D4B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		721EA177FB1E21B8E3AB066A /* Build configuration list for PBXNativeTarget "FCPLibraryCleanerCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				44497C2B9C8CE3A8ACAEFD9D /* Debug */,
+				ADE8E24602BD349251C46141 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F434A78972E34FA0DD39803A /* Build configuration list for PBXNativeTarget "FCP-Cleaner-Workflow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B1672C9172C3A74C90C66BD /* Debug */,
+				54BA65633BC42D9C1F11A645 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C630B4EA1EA6D6156694FB3E /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.9.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DED1D012EED61A02B78A73E2 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C630B4EA1EA6D6156694FB3E /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B58784C80B8932E5613BCB1C /* Project object */;
+}

@@ -37,4 +37,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         LibraryStore.shared.showMainWindow()
         sender.reply(toOpenOrPrint: .success)
     }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        let libraryURLs = urls.compactMap(Self.libraryURL(from:))
+        if !libraryURLs.isEmpty {
+            LibraryStore.shared.add(libraryURLs: libraryURLs)
+        }
+        LibraryStore.shared.showMainWindow()
+    }
+
+    nonisolated static func libraryURL(from callbackURL: URL) -> URL? {
+        guard callbackURL.scheme == "fcp-cleaner",
+              callbackURL.host == "library",
+              let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+              let path = components.queryItems?.first(where: { $0.name == "path" })?.value else {
+            return nil
+        }
+        let url = URL(fileURLWithPath: path).standardizedFileURL
+        return url.pathExtension.lowercased() == "fcpbundle" ? url : nil
+    }
 }

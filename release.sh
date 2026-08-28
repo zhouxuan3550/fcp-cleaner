@@ -12,15 +12,13 @@ APP_NAME="FCP Cleaner"
 BUNDLE_ID="com.fcpcleaner.app"
 EXECUTABLE="FCP-Cleaner"
 REPO_NAME="fcp-cleaner"
-BUNDLE_TEMPLATE="Distribution/${APP_NAME}.app"
-PLIST="${BUNDLE_TEMPLATE}/Contents/Info.plist"
-
 VERSION="${1:?用法: ./release.sh <版本号> <构建号>  例如 3.2.0 320}"
 BUILD="${2:?用法: ./release.sh <版本号> <构建号>  例如 3.2.0 320}"
 DMG_NAME="FCP-Cleaner-${VERSION}-universal.dmg"
 STAGING_DIR="Distribution/dmg-staging-$(date +%Y%m%d)-v${BUILD}"
-
-SPARKLE_TOOLS=".build/artifacts/sparkle/Sparkle/bin"
+DERIVED_DATA="build/XcodeRelease"
+PRODUCT_APP="${DERIVED_DATA}/Build/Products/Release/${APP_NAME}.app"
+RELEASE_APP="build/release-product/${APP_NAME}.app"
 
 echo "═══════════════════════════════════════════════"
 echo "  FCP Cleaner Release Build"
@@ -29,89 +27,90 @@ echo "════════════════════════�
 
 # ─── 1. 运行测试 ───
 echo ""
-echo "▶ [1/8] 运行测试..."
+echo "▶ [1/7] 运行测试..."
 swift test
 echo "  ✓ 测试通过"
 
-# ─── 2. 更新 Info.plist 版本号 ───
+# ─── 2. 生成 Xcode 工程 ───
 echo ""
-echo "▶ [2/8] 更新版本号..."
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION}" "$PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD}" "$PLIST"
-echo "  ✓ ${VERSION} (${BUILD})"
+echo "▶ [2/7] 生成 Xcode 工程..."
+command -v xcodegen >/dev/null || {
+    echo "  ✗ 需要先安装 XcodeGen: brew install xcodegen"
+    exit 1
+}
+xcodegen generate --spec project.yml
+echo "  ✓ 工程已生成"
 
-# ─── 3. 构建 universal2 Release ───
+# ─── 3. 构建完整 universal2 App ───
 echo ""
-echo "▶ [3/8] 构建 universal2 Release..."
-swift build -c release --product "${EXECUTABLE}" --arch arm64 --arch x86_64
+echo "▶ [3/7] 构建 universal2 Release..."
+rm -rf "${DERIVED_DATA}" "build/release-product"
+xcodebuild \
+    -project FCPLibraryCleaner.xcodeproj \
+    -scheme FCP-Cleaner \
+    -configuration Release \
+    -derivedDataPath "${DERIVED_DATA}" \
+    -destination 'generic/platform=macOS' \
+    ARCHS='arm64 x86_64' \
+    ONLY_ACTIVE_ARCH=NO \
+    MARKETING_VERSION="${VERSION}" \
+    CURRENT_PROJECT_VERSION="${BUILD}" \
+    CODE_SIGNING_ALLOWED=NO \
+    build
 
-BUILD_DIR=".build/apple/Products/Release"
-if [ ! -f "${BUILD_DIR}/${EXECUTABLE}" ]; then
-    echo "  ✗ 构建失败: 找不到 ${BUILD_DIR}/${EXECUTABLE}"
+if [ ! -x "${PRODUCT_APP}/Contents/MacOS/${EXECUTABLE}" ]; then
+    echo "  ✗ 构建失败: 找不到完整 App 产物"
     exit 1
 fi
 
-ARCH_CHECK=$(file "${BUILD_DIR}/${EXECUTABLE}")
-echo "  架构: ${ARCH_CHECK}"
-if ! echo "$ARCH_CHECK" | grep -q "universal"; then
-    echo "  ✗ 不是 universal 二进制!"
+# ─── 4. 验证嵌入组件和架构 ───
+echo ""
+echo "▶ [4/7] 验证构建产物..."
+WORKFLOW_APPEX="${PRODUCT_APP}/Contents/PlugIns/FCP-Cleaner-Workflow.appex"
+WORKFLOW_EXECUTABLE="${WORKFLOW_APPEX}/Contents/MacOS/FCP-Cleaner-Workflow"
+if [ ! -x "${WORKFLOW_EXECUTABLE}" ]; then
+    echo "  ✗ Workflow Extension 未嵌入"
     exit 1
 fi
-echo "  ✓ universal2 构建成功"
-
-# ─── 4. 组装 App Bundle ───
-echo ""
-echo "▶ [4/8] 组装 App Bundle..."
-
-# 清理旧的构建产物
-rm -rf "${BUNDLE_TEMPLATE}/Contents/MacOS"
-rm -rf "${BUNDLE_TEMPLATE}/Contents/Frameworks"
-rm -rf "${BUNDLE_TEMPLATE}/Contents/Resources"
-rm -rf "${BUNDLE_TEMPLATE}/_CodeSignature"
-
-mkdir -p "${BUNDLE_TEMPLATE}/Contents/MacOS"
-mkdir -p "${BUNDLE_TEMPLATE}/Contents/Frameworks"
-mkdir -p "${BUNDLE_TEMPLATE}/Contents/Resources"
-
-# 复制可执行文件
-cp "${BUILD_DIR}/${EXECUTABLE}" "${BUNDLE_TEMPLATE}/Contents/MacOS/${EXECUTABLE}"
-
-# 复制 Sparkle.framework (universal)
-SPARKLE_FW="${BUILD_DIR}/Sparkle.framework"
-if [ ! -d "$SPARKLE_FW" ]; then
-    echo "  ✗ 找不到 Sparkle.framework"
+if [ ! -d "${PRODUCT_APP}/Contents/Resources/Metadata.appintents" ]; then
+    echo "  ✗ App Intents 元数据未生成"
     exit 1
 fi
-cp -R "$SPARKLE_FW" "${BUNDLE_TEMPLATE}/Contents/Frameworks/Sparkle.framework"
+for BINARY in "${PRODUCT_APP}/Contents/MacOS/${EXECUTABLE}" "${WORKFLOW_EXECUTABLE}"; do
+    ARCHS_FOUND=$(lipo -archs "${BINARY}")
+    if [[ " ${ARCHS_FOUND} " != *" arm64 "* || " ${ARCHS_FOUND} " != *" x86_64 "* ]]; then
+        echo "  ✗ 非 universal2 二进制: ${BINARY} (${ARCHS_FOUND})"
+        exit 1
+    fi
+done
+echo "  ✓ 主程序、Workflow Extension、App Intents 完整"
 
-# 复制图标
-cp "Assets/FCP-Cleaner.icns" "${BUNDLE_TEMPLATE}/Contents/Resources/FCP-Cleaner.icns"
-
-echo "  ✓ App Bundle 组装完成"
-
-# ─── 5. 设置 rpath ───
+# ─── 5. 复制并签名完整 App ───
 echo ""
-echo "▶ [5/8] 设置 rpath..."
-install_name_tool -add_rpath '@executable_path/../Frameworks' \
-    "${BUNDLE_TEMPLATE}/Contents/MacOS/${EXECUTABLE}" 2>/dev/null || true
-echo "  ✓ rpath 已设置"
+echo "▶ [5/7] 代码签名..."
+mkdir -p "$(dirname "${RELEASE_APP}")"
+ditto "${PRODUCT_APP}" "${RELEASE_APP}"
+xattr -cr "${RELEASE_APP}"
 
-# ─── 6. 签名 ───
-echo ""
-echo "▶ [6/8] 代码签名..."
-xattr -cr "${BUNDLE_TEMPLATE}"
-codesign --force --deep --sign - "${BUNDLE_TEMPLATE}"
-codesign --verify --deep --strict --verbose=1 "${BUNDLE_TEMPLATE}"
+# 先签嵌套代码，最后签主 App，避免嵌入扩展签名失效。
+if [ -d "${RELEASE_APP}/Contents/Frameworks/Sparkle.framework" ]; then
+    codesign --force --deep --sign - "${RELEASE_APP}/Contents/Frameworks/Sparkle.framework"
+fi
+codesign --force --sign - \
+    --entitlements WorkflowExtension/WorkflowExtension.entitlements \
+    "${RELEASE_APP}/Contents/PlugIns/FCP-Cleaner-Workflow.appex"
+codesign --force --sign - "${RELEASE_APP}"
+codesign --verify --deep --strict --verbose=1 "${RELEASE_APP}"
 echo "  ✓ 签名完成"
 
-# ─── 7. 创建 DMG ───
+# ─── 6. 创建 DMG ───
 echo ""
-echo "▶ [7/8] 创建 DMG..."
+echo "▶ [6/7] 创建 DMG..."
 # 只保留本次构建的 staging；历史安装包由 GitHub Releases 托管
 find Distribution -maxdepth 1 -type d -name 'dmg-staging-*' -exec rm -rf {} +
 rm -rf "${STAGING_DIR}"
 mkdir -p "${STAGING_DIR}"
-cp -R "${BUNDLE_TEMPLATE}" "${STAGING_DIR}/${APP_NAME}.app"
+ditto "${RELEASE_APP}" "${STAGING_DIR}/${APP_NAME}.app"
 
 # 创建 Applications 软链接
 ln -s /Applications "${STAGING_DIR}/Applications"
@@ -129,10 +128,12 @@ hdiutil create \
 DMG_SIZE=$(du -h "Distribution/${DMG_NAME}" | cut -f1)
 echo "  ✓ DMG 创建完成: Distribution/${DMG_NAME} (${DMG_SIZE})"
 
-# ─── 8. 生成 Appcast ───
+# ─── 7. 生成 Appcast ───
 echo ""
-echo "▶ [8/8] 生成 Sparkle Appcast..."
+echo "▶ [7/7] 生成 Sparkle Appcast..."
 UPDATES_DIR="Distribution/updates"
+SPARKLE_TOOLS=$(find "${DERIVED_DATA}/SourcePackages/artifacts" .build/artifacts \
+    -type d -path '*/Sparkle/bin' -print -quit 2>/dev/null || true)
 if [ -x "${SPARKLE_TOOLS}/generate_appcast" ]; then
     rm -rf "${UPDATES_DIR}"
     mkdir -p "${UPDATES_DIR}"

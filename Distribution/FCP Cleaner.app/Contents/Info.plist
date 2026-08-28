@@ -21,6 +21,17 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.fcpcleaner.app.workflow</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fcp-cleaner</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>FCP-Cleaner</string>
 	<key>CFBundleIconFile</key>

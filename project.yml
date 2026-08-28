@@ -1,0 +1,97 @@
+name: FCPLibraryCleaner
+options:
+  bundleIdPrefix: com.fcpcleaner
+  deploymentTarget:
+    macOS: "15.0"
+  xcodeVersion: "26.0"
+  createIntermediateGroups: true
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle.git
+    exactVersion: 2.9.6
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+
+targets:
+  FCPLibraryCleanerCore:
+    type: library.static
+    platform: macOS
+    sources:
+      - Sources/FCPLibraryCleanerCore
+    settings:
+      base:
+        PRODUCT_MODULE_NAME: FCPLibraryCleanerCore
+
+  FCP-Cleaner-Workflow:
+    type: app-extension
+    platform: macOS
+    sources:
+      - WorkflowExtension
+    resources:
+      - Assets/FCP-Cleaner.icns
+    settings:
+      base:
+        INFOPLIST_FILE: WorkflowExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: WorkflowExtension/WorkflowExtension.entitlements
+        MACOSX_DEPLOYMENT_TARGET: "15.6"
+        PRODUCT_BUNDLE_IDENTIFIER: com.fcpcleaner.app.workflow-extension
+        PRODUCT_NAME: FCP-Cleaner-Workflow
+        PRODUCT_MODULE_NAME: FCPCleanerWorkflow
+        MARKETING_VERSION: "3.9.1"
+        CURRENT_PROJECT_VERSION: "391"
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
+        FRAMEWORK_SEARCH_PATHS:
+          - $(inherited)
+          - '/Applications/Final\ Cut\ Pro.app/Contents/Frameworks'
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - '@executable_path/../../../../Frameworks'
+        OTHER_LDFLAGS:
+          - $(inherited)
+          - -u
+          - _ProExtensionMain
+          - -weak_framework
+          - ProExtension
+
+  FCP-Cleaner:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/FCPLibraryCleanerApp
+    resources:
+      - Assets/FCP-Cleaner.icns
+    dependencies:
+      - target: FCPLibraryCleanerCore
+      - package: Sparkle
+        product: Sparkle
+      - target: FCP-Cleaner-Workflow
+        embed: true
+    settings:
+      base:
+        INFOPLIST_FILE: Distribution/FCP Cleaner.app/Contents/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.fcpcleaner.app
+        PRODUCT_NAME: FCP Cleaner
+        EXECUTABLE_NAME: FCP-Cleaner
+        PRODUCT_MODULE_NAME: FCPLibraryCleanerApp
+        MARKETING_VERSION: "3.9.1"
+        CURRENT_PROJECT_VERSION: "391"
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - '@executable_path/../Frameworks'
+        CODE_SIGN_STYLE: Automatic
+
+schemes:
+  FCP-Cleaner:
+    build:
+      targets:
+        FCP-Cleaner: all
+        FCP-Cleaner-Workflow: all
+    run:
+      config: Debug
+    archive:
+      config: Release

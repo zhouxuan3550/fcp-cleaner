@@ -8,15 +8,15 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 产品名称 | FCP Cleaner |
-| 当前版本 | 3.6.0（Build 360） |
+| 当前版本 | 3.9.1（Build 391） |
 | 项目路径 | `/Users/macstudio/Documents/VoxCPM2/FCPLibraryCleaner` |
-| 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager |
-| 最低系统 | macOS 15.0 |
+| 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager、XcodeGen |
+| 最低系统 | 主程序 macOS 15.0；Workflow Extension macOS 15.6 |
 | 当前架构 | universal2（arm64 + x86_64） |
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
-| 最新安装包 | `Distribution/FCP-Cleaner-3.6.0-universal.dmg` |
-| 自动测试 | 78 项测试（Core 53 + App 25，swift-testing） |
+| 最新安装包 | `Distribution/FCP-Cleaner-3.9.1-universal.dmg` |
+| 自动测试 | 79 项测试（swift-testing） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
 
@@ -353,39 +353,26 @@ swift test
 ### 发布构建
 
 ```bash
-swift build -c release --product FCP-Cleaner
+./release.sh <版本号> <构建号>
 ```
 
-Swift Package 不会自动生成完整 `.app`，当前发布流程使用：
+发布脚本通过 XcodeGen 生成 `FCPLibraryCleaner.xcodeproj`，再用 Xcode 构建完整 universal2 App：
 
-```text
-Distribution/FCP Cleaner.app
-```
+1. 运行 79 项 Swift 测试。
+2. 构建 arm64 + x86_64 主程序和 Workflow Extension。
+3. 验证 `.appex` 与 `Metadata.appintents` 已嵌入。
+4. 按嵌套组件、扩展、主 App 的顺序签名并保留扩展 entitlements。
+5. 创建带 Applications 软链接的 DMG。
+6. 生成 Sparkle appcast。
 
-作为 App Bundle 模板，更新以下内容：
-
-1. 将 Release 可执行文件复制到 `Contents/MacOS/FCP-Cleaner`。
-2. 将 `.build/arm64-apple-macosx/release/Sparkle.framework` 复制到 `Contents/Frameworks/`。
-3. 将 `Assets/FCP-Cleaner.icns` 复制到 `Contents/Resources/`。
-4. 确认存在 `@executable_path/../Frameworks` rpath。
-5. 清除扩展属性并签名。
-6. 创建带 Applications 软链接的 DMG。
-
-关键命令：
+本地调试构建：
 
 ```bash
-install_name_tool -add_rpath '@executable_path/../Frameworks' \
-  'Distribution/FCP Cleaner.app/Contents/MacOS/FCP-Cleaner'
-
-xattr -cr 'Distribution/FCP Cleaner.app'
-codesign --force --deep --sign - 'Distribution/FCP Cleaner.app'
-codesign --verify --deep --strict --verbose=1 'Distribution/FCP Cleaner.app'
+xcodegen generate --spec project.yml
+xcodebuild -project FCPLibraryCleaner.xcodeproj -scheme FCP-Cleaner build
 ```
 
-发布前必须更新 `Info.plist`：
-
-- `CFBundleShortVersionString`
-- `CFBundleVersion`
+版本通过 `release.sh` 参数传入 `MARKETING_VERSION` 和 `CURRENT_PROJECT_VERSION`，不再修改源码 plist。
 
 ## 11. Sparkle 状态
 
@@ -397,7 +384,7 @@ codesign --verify --deep --strict --verbose=1 'Distribution/FCP Cleaner.app'
 ## 12. 当前限制和技术债务
 
 1. 当前使用 ad-hoc 签名，没有 Apple Developer ID 公证。
-2. 没有 Xcode 工程；App Bundle 与 DMG 由根目录 `release.sh` 自动化（universal2 双架构）。
+2. Xcode 工程由 `project.yml` 和 XcodeGen 生成，修改 Target 配置后必须同步修改 `project.yml`，不要只改生成的 pbxproj。
 3. 没有完整 SwiftUI 自动化测试，现有测试主要覆盖 Core 安全逻辑，App 层状态机测试待 `LibraryStore` 抽取后补充。
 4. Finder 功能使用 macOS Services，不是独立 Finder Sync Extension。
 5. FCP 没有公开的单资源库锁 API，占用检测依赖 `lsof`。
@@ -405,7 +392,7 @@ codesign --verify --deep --strict --verbose=1 'Distribution/FCP Cleaner.app'
 7. Library 总大小只表示资源库包自身大小，外置缓存会单独计入可清理空间。
 8. 大型资源库完整扫描和最终指纹复核仍然需要遍历文件元数据，这是安全要求，不能简单移除。
 9. 项目已是独立 Git 仓库，远程为 `github.com/zhouxuan3550/fcp-cleaner`；历史构建产物仅本地保留于 `Distribution/archive/`。
-10. App Intents 已实现但 Shortcuts 无法发现：SPM/xcbuild 构建不产出 Swift const values，`appintentsmetadataprocessor` 无法提取元数据；Quick Action 扩展同理依赖 Xcode 工程迁移（见 QUICK_ACTION_EVALUATION.md）。
+10. Workflow Extension 依赖 Final Cut Pro 提供的公开 `ProExtension.framework` 运行时；扩展只识别当前 `.fcpbundle` 并打开主程序，清理仍由主程序执行完整预检。
 
 ## 13. 发布验收清单
 
@@ -450,10 +437,7 @@ codesign --verify --deep --strict --verbose=1 'Distribution/FCP Cleaner.app'
 
 按优先级建议：
 
-1. 将项目迁移为独立 Git 仓库。
-2. 创建正式 Xcode 工程和可重复的 Release 脚本。
-3. 配置 Developer ID、Hardened Runtime 和 Apple Notarization。
-4. 增加 LibraryStore 和 SwiftUI 批量清理 UI 自动化测试。
-5. 增加真实外置 APFS、HFS+、ExFAT 卷的集成测试矩阵。
-6. 建立独立更新服务器并配置 `SUFeedURL`。
-7. 构建 universal2 版本并验证 Intel macOS 15。
+1. 配置 Developer ID、Hardened Runtime 和 Apple Notarization。
+2. 增加 LibraryStore 和 SwiftUI 批量清理 UI 自动化测试。
+3. 增加真实外置 APFS、HFS+、ExFAT 卷的集成测试矩阵。
+4. 在 Intel macOS 15 真机验证 universal2 安装包。

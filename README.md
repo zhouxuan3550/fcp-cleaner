@@ -15,12 +15,22 @@
 
 - macOS 15.0 或更高版本
 - Final Cut Pro 资源库，扩展名为 `.fcpbundle`
+- Final Cut Pro 12.3 或更高版本（使用 Workflow Extension 时）
 
 ## 本地开发
 
 ```bash
 swift test
-swift run FCP-Cleaner
+xcodegen generate --spec project.yml
+xcodebuild -project FCPLibraryCleaner.xcodeproj -scheme FCP-Cleaner build
+```
+
+Xcode 构建会同时生成主程序、快捷指令元数据和 Final Cut Pro Workflow Extension。安装后可从 Final Cut Pro 的扩展入口识别当前资源库，并在 FCP Cleaner 中打开；实际清理仍由主程序执行完整预检。
+
+生成 universal2 安装包：
+
+```bash
+./release.sh <版本号> <构建号>
 ```
 
 ## 安全说明
