@@ -240,6 +240,9 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var isEvaluatingLowSpace = false
     @ObservationIgnored private var workDirectoryMonitor: WorkDirectoryMonitor?
     @ObservationIgnored private var volumeMountMonitor: VolumeMountMonitor?
+    @ObservationIgnored private var isExportingDiagnosticsInternal = false
+    /// 菜单项禁用态（诊断导出进行中）。
+    var isExportingDiagnostics: Bool { isExportingDiagnosticsInternal }
     private let maximumConcurrentScans = 3
 
     private override init() {
@@ -1391,6 +1394,77 @@ final class LibraryStore: NSObject {
         selectedID = records.first?.id
         showMainWindow()
         requestBatchClean()
+    }
+
+    /// 诊断包：菜单项「导出诊断信息」→ 保存面板 → 后台收集打包。
+    /// 内存态快照在主线程取值，日志、zip 等 I/O 全部后台执行。
+    func exportDiagnostics() {
+        guard !isExportingDiagnosticsInternal else { return }
+        let panel = NSSavePanel()
+        panel.title = "导出诊断信息"
+        panel.nameFieldStringValue = DiagnosticsWriter.suggestedFileName()
+        panel.allowedContentTypes = [UTType.zip]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+
+        isExportingDiagnosticsInternal = true
+        let volumeReports = libraries.map { record in
+            VolumeDiagnosticsEntry(
+                libraryName: record.displayName,
+                libraryPath: record.url.path,
+                volumeName: record.volumeName,
+                mounted: record.accessReport?.mounted,
+                writable: record.accessReport?.writable,
+                checkedAt: record.accessReport?.checkedAt,
+                lastAccessibleAt: record.lastAccessibleAt,
+                lastKnownTotalSize: record.lastKnownTotalSize,
+                lastKnownCleanableSize: record.lastKnownCleanableSize,
+                scanError: record.scanError,
+                cleanupError: record.cleanupError
+            )
+        }
+        let bookmarkStatus = bookmarks.statusReport()
+        let failures = cleanupHistory.recentFailures()
+        let libraryCount = libraries.count
+        let health = scanHealthSummary
+
+        Task {
+            let outcome = await Task.detached(priority: .utility) {
+                let logText = DiagnosticsWriter.collectRecentLog()
+                let systemInfo = DiagnosticsWriter.systemInfo(libraryCount: libraryCount, scanHealth: health)
+                return DiagnosticsWriter.writeBundle(
+                    to: destination,
+                    logText: logText,
+                    volumeReports: volumeReports,
+                    bookmarkStatus: bookmarkStatus,
+                    failures: failures,
+                    systemInfo: systemInfo
+                )
+            }.value
+            isExportingDiagnosticsInternal = false
+            switch outcome {
+            case .success:
+                showCleanupNotice(CleanupNotice(
+                    title: "诊断信息已导出",
+                    libraryCount: 0,
+                    freedSize: 0,
+                    cleanedItemCount: 0,
+                    categories: [],
+                    errorCount: 0,
+                    errorMessage: nil
+                ))
+            case .failure(let message):
+                showCleanupNotice(CleanupNotice(
+                    title: "诊断信息导出失败",
+                    libraryCount: 0,
+                    freedSize: 0,
+                    cleanedItemCount: 0,
+                    categories: [],
+                    errorCount: 1,
+                    errorMessage: message
+                ))
+            }
+        }
     }
 
     /// 卷容量探测全部在后台执行——网络卷上这类调用可能阻塞数秒，绝不能上主线程。

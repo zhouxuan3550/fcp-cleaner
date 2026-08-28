@@ -143,6 +143,14 @@ final class CleanupHistoryStore {
         }
     }
 
+    /// 诊断包用：最近带错误信息的记录（新 → 旧）。
+    func recentFailures(limit: Int = 20) -> [DiagnosticsFailure] {
+        entries
+            .filter { !$0.errorMessages.isEmpty }
+            .prefix(limit)
+            .map { DiagnosticsFailure(date: $0.date, libraryName: $0.libraryName, errorMessages: $0.errorMessages) }
+    }
+
     @discardableResult
     func presentExportPanel(as format: HistoryExportFormat) -> Bool {
         let panel = NSSavePanel()

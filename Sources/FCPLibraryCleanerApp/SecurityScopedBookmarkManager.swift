@@ -23,6 +23,7 @@ final class SecurityScopedBookmarkManager {
     private static let workDirectoryStorageKey = "workDirectoryBookmarks"
     private var activeURLs = Set<URL>()
     private var libraryBookmarkData: [URL: Data] = [:]
+    private var workDirectoryBookmarkData: [URL: Data] = [:]
 
     private struct StoredBookmark: Codable {
         let data: Data
@@ -119,6 +120,7 @@ final class SecurityScopedBookmarkManager {
     }
 
     func saveWorkDirectories(_ urls: [URL]) {
+        var retained: [URL: Data] = [:]
         let stored = urls.compactMap { url -> StoredURLBookmark? in
             let standardizedURL = url.standardizedFileURL
             _ = standardizedURL.startAccessingSecurityScopedResource()
@@ -128,8 +130,20 @@ final class SecurityScopedBookmarkManager {
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
             ) else { return nil }
+            retained[standardizedURL] = data
             return StoredURLBookmark(data: data)
         }
+        workDirectoryBookmarkData = retained
         UserDefaults.standard.set(try? JSONEncoder().encode(stored), forKey: Self.workDirectoryStorageKey)
+    }
+
+    /// 诊断包用：书签健康度的只读快照。
+    func statusReport() -> BookmarkStatusReport {
+        BookmarkStatusReport(
+            libraryBookmarkCount: libraryBookmarkData.count,
+            workDirectoryBookmarkCount: workDirectoryBookmarkData.count,
+            storedLibraryArchiveBytes: UserDefaults.standard.data(forKey: Self.storageKey)?.count,
+            storedWorkDirectoryArchiveBytes: UserDefaults.standard.data(forKey: Self.workDirectoryStorageKey)?.count
+        )
     }
 }

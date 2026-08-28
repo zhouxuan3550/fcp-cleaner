@@ -52,6 +52,11 @@ struct FCPLibraryCleanerApp: App {
                     UpdateController.shared.checkForUpdates()
                 }
                 .disabled(!UpdateController.shared.isConfigured)
+
+                Button("导出诊断信息…") {
+                    LibraryStore.shared.exportDiagnostics()
+                }
+                .disabled(LibraryStore.shared.isExportingDiagnostics)
             }
         }
 
