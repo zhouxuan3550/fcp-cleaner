@@ -524,9 +524,12 @@ final class LibraryStore: NSObject {
 
     private func merge(libraryURLs: [URL], selectNewest: Bool, source: DiscoverySource) {
         // 候选校验涉及 fileExists/statfs/数据库探测，网络路径可能阻塞——全部后台执行。
+        // 已入库的 URL 跳过重验：Spotlight 的 DidUpdate 会高频触发，
+        // 对几十上百个已知库反复做三次文件系统调用纯属浪费。
+        let knownURLs = Set(libraries.map(\.url.standardizedFileURL))
         Task { [weak self] in
             let candidates = await Task.detached(priority: .utility) {
-                Self.validateCandidates(libraryURLs, source: source)
+                Self.validateCandidates(libraryURLs, source: source, knownURLs: knownURLs)
             }.value
             self?.applyValidatedCandidates(candidates, selectNewest: selectNewest, source: source)
         }
@@ -534,10 +537,12 @@ final class LibraryStore: NSObject {
 
     nonisolated private static func validateCandidates(
         _ libraryURLs: [URL],
-        source: DiscoverySource
+        source: DiscoverySource,
+        knownURLs: Set<URL> = []
     ) -> [URL] {
         Set(libraryURLs.map(\.standardizedFileURL))
             .filter { url in
+                if knownURLs.contains(url) { return true } // 已验证过，直接放行
                 guard url.pathExtension.lowercased() == "fcpbundle" else { return false }
                 var isDirectory: ObjCBool = false
                 guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
@@ -550,6 +555,7 @@ final class LibraryStore: NSObject {
 
     @MainActor
     private func applyValidatedCandidates(_ candidates: [URL], selectNewest: Bool, source: DiscoverySource) {
+        guard !candidates.isEmpty else { return }
         var newRecords: [LibraryRecord] = []
         for url in candidates {
             if let existing = libraries.first(where: { $0.url == url }) {
