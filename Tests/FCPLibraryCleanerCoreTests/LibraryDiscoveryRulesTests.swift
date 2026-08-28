@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 @testable import FCPLibraryCleanerCore
 
 struct LibraryDiscoveryRulesTests {
@@ -23,5 +24,39 @@ struct LibraryDiscoveryRulesTests {
     func gatesVolumeNames() {
         #expect(!LibraryDiscoveryRules.allowsSpotlightDiscovery(localMount: true, volumeName: "Time Machine"))
         #expect(LibraryDiscoveryRules.allowsSpotlightDiscovery(localMount: true, volumeName: "Media SSD"))
+    }
+
+    @Test("snooze expires automatically at the deadline")
+    func snoozeWindow() {
+        let now = Date()
+        #expect(!LibraryIgnoreRules.isSnoozed(until: nil, now: now))
+        #expect(LibraryIgnoreRules.isSnoozed(until: now.addingTimeInterval(60), now: now))
+        #expect(!LibraryIgnoreRules.isSnoozed(until: now.addingTimeInterval(-1), now: now))
+    }
+
+    @Test("directory ignore matches only strict descendants")
+    func directoryIgnoreMembership() {
+        let ignored = ["/Volumes/RAID/旧项目"]
+        #expect(LibraryIgnoreRules.isInsideIgnoredDirectory(
+            recordPath: "/Volumes/RAID/旧项目/采访.fcpbundle",
+            directoryPaths: ignored
+        ))
+        #expect(!LibraryIgnoreRules.isInsideIgnoredDirectory(
+            recordPath: "/Volumes/RAID/旧项目",
+            directoryPaths: ignored
+        ))
+        #expect(!LibraryIgnoreRules.isInsideIgnoredDirectory(
+            recordPath: "/Volumes/RAID/旧项目备份/采访.fcpbundle",
+            directoryPaths: ignored
+        ))
+        #expect(!LibraryIgnoreRules.isInsideIgnoredDirectory(
+            recordPath: "/Users/editor/Movies/素材.fcpbundle",
+            directoryPaths: ignored
+        ))
+    }
+
+    @Test("row snooze defaults to seven days")
+    func defaultSnoozeIsOneWeek() {
+        #expect(LibraryIgnoreRules.defaultSnoozeDays == 7)
     }
 }

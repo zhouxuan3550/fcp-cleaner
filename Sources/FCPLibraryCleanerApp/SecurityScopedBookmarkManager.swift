@@ -9,6 +9,8 @@ struct RecentLibraryMetadata: Codable, Sendable {
     var discoverySourceRaw: String? = nil
     /// 存档时的卷 UUID：恢复时若当前同路径挂载的是另一块盘，则拒绝复活条目。
     var volumeUUIDRaw: String? = nil
+    /// 「稍后提醒」到期时间；旧档案缺字段按 nil 解码，向后兼容。
+    var ignoredUntil: Date? = nil
 }
 
 struct RestoredLibrary: Sendable {
@@ -55,7 +57,8 @@ final class SecurityScopedBookmarkManager {
                 cleanableSize: bookmark.metadata.cleanableSize,
                 lastActivity: bookmark.metadata.lastActivity,
                 discoverySourceRaw: bookmark.metadata.discoverySourceRaw,
-                volumeUUIDRaw: bookmark.metadata.volumeUUIDRaw
+                volumeUUIDRaw: bookmark.metadata.volumeUUIDRaw,
+                ignoredUntil: bookmark.metadata.ignoredUntil
             ))
         }
     }
@@ -87,7 +90,8 @@ final class SecurityScopedBookmarkManager {
                 cleanableSize: entry.cleanableSize,
                 lastActivity: entry.lastActivity,
                 discoverySourceRaw: entry.discoverySourceRaw,
-                volumeUUIDRaw: entry.volumeUUIDRaw
+                volumeUUIDRaw: entry.volumeUUIDRaw,
+                ignoredUntil: entry.ignoredUntil
             ))
         }
         libraryBookmarkData = retainedBookmarkData

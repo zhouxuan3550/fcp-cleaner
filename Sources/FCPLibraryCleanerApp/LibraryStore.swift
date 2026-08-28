@@ -48,6 +48,7 @@ final class LibraryRecord: Identifiable {
     var lastKnownCleanableSize: Int64?
     var pendingFreedSize: Int64 = 0
     var lastActivity: Date?
+    var ignoredUntil: Date?
     let discoverySource: DiscoverySource?
     @ObservationIgnored var scanControl: ScanControl?
 
@@ -61,6 +62,7 @@ final class LibraryRecord: Identifiable {
         lastKnownTotalSize = restored?.metadata.totalAllocatedSize
         lastKnownCleanableSize = restored?.metadata.cleanableSize
         lastActivity = restored?.metadata.lastActivity ?? Self.activityDate(for: url)
+        ignoredUntil = restored?.metadata.ignoredUntil
         discoverySource = restored?.metadata.discoverySourceRaw.flatMap(DiscoverySource.init(rawValue:)) ?? source
     }
 
@@ -81,6 +83,7 @@ enum LibraryFilter: String, CaseIterable, Identifiable {
     case waiting
     case scanning
     case skipped
+    case ignored
 
     var id: Self { self }
 
@@ -89,6 +92,7 @@ enum LibraryFilter: String, CaseIterable, Identifiable {
         case .waiting: "待清理"
         case .scanning: "扫描中"
         case .skipped: "已跳过"
+        case .ignored: "已忽略"
         }
     }
 }
@@ -164,6 +168,13 @@ final class LibraryStore: NSObject {
     var libraries: [LibraryRecord] = []
     var workDirectories: [URL] = []
     var workDirectoryStatuses: [URL: WorkDirectoryStatus] = [:]
+    /// 目录级忽略集（标准化的绝对路径）。仅作用于自动发现与列表分层，
+    /// 手动添加/拖入不受影响；绝不影响清理链路。
+    var ignoredLibraryDirectories: [String] = UserDefaults.standard.stringArray(forKey: "ignoredLibraryDirectories") ?? [] {
+        didSet {
+            UserDefaults.standard.set(ignoredLibraryDirectories, forKey: "ignoredLibraryDirectories")
+        }
+    }
     var selectedID: LibraryRecord.ID?
     var selectedVolumeURL: URL?
     var libraryFilter: LibraryFilter = .waiting
@@ -248,7 +259,9 @@ final class LibraryStore: NSObject {
 
     var waitingLibraries: [LibraryRecord] {
         libraries.filter { record in
-            !record.isScanning && !record.isQueued && knownCleanableSize(for: record) >= Self.minimumCleanableSize
+            !record.isScanning && !record.isQueued
+                && !isLibraryIgnored(record)
+                && knownCleanableSize(for: record) >= Self.minimumCleanableSize
         }
     }
 
@@ -258,7 +271,15 @@ final class LibraryStore: NSObject {
 
     var skippedLibraries: [LibraryRecord] {
         libraries.filter { record in
-            !record.isScanning && !record.isQueued && knownCleanableSize(for: record) < Self.minimumCleanableSize
+            !record.isScanning && !record.isQueued
+                && !isLibraryIgnored(record)
+                && knownCleanableSize(for: record) < Self.minimumCleanableSize
+        }
+    }
+
+    var ignoredLibraries: [LibraryRecord] {
+        libraries.filter { record in
+            !record.isScanning && !record.isQueued && isLibraryIgnored(record)
         }
     }
 
@@ -269,6 +290,8 @@ final class LibraryStore: NSObject {
             base = selectedVolumeURL == nil ? waitingLibraries : waitingLibraries.filter { $0.volumeURL == selectedVolumeURL }
         case .scanning: base = scanningLibraries
         case .skipped: base = skippedLibraries
+        case .ignored:
+            base = selectedVolumeURL == nil ? ignoredLibraries : ignoredLibraries.filter { $0.volumeURL == selectedVolumeURL }
         }
         var result = base.filter(matchesInactivity)
         if !searchText.isEmpty {
@@ -296,6 +319,7 @@ final class LibraryStore: NSObject {
         case .waiting: waitingLibraries.filter(matchesInactivity).count
         case .scanning: scanningLibraries.filter(matchesInactivity).count
         case .skipped: skippedLibraries.filter(matchesInactivity).count
+        case .ignored: ignoredLibraries.filter(matchesInactivity).count
         }
     }
 
@@ -530,23 +554,36 @@ final class LibraryStore: NSObject {
         // 已入库的 URL 跳过重验：Spotlight 的 DidUpdate 会高频触发，
         // 对几十上百个已知库反复做三次文件系统调用纯属浪费。
         let knownURLs = Set(libraries.map(\.url.standardizedFileURL))
+        let ignoredDirectories = ignoredLibraryDirectories
         Task { [weak self] in
             let candidates = await Task.detached(priority: .utility) {
-                Self.validateCandidates(libraryURLs, source: source, knownURLs: knownURLs)
+                Self.validateCandidates(
+                    libraryURLs,
+                    source: source,
+                    knownURLs: knownURLs,
+                    ignoredDirectoryPaths: ignoredDirectories
+                )
             }.value
             self?.applyValidatedCandidates(candidates, selectNewest: selectNewest, source: source)
         }
     }
 
-    nonisolated private static func validateCandidates(
+    /// internal 以便 App 测试直接验证发现层忽略闸门。
+    nonisolated static func validateCandidates(
         _ libraryURLs: [URL],
         source: DiscoverySource,
-        knownURLs: Set<URL> = []
+        knownURLs: Set<URL> = [],
+        ignoredDirectoryPaths: [String] = []
     ) -> [URL] {
         Set(libraryURLs.map(\.standardizedFileURL))
             .filter { url in
                 if knownURLs.contains(url) { return true } // 已验证过，直接放行
                 guard url.pathExtension.lowercased() == "fcpbundle" else { return false }
+                // 目录级忽略只拦自动发现（工作目录/Spotlight）；手动添加是显式意图，不拦。
+                if source != .manualAdd,
+                   LibraryIgnoreRules.isInsideIgnoredDirectory(recordPath: url.path, directoryPaths: ignoredDirectoryPaths) {
+                    return false
+                }
                 var isDirectory: ObjCBool = false
                 guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
                       isDirectory.boolValue else { return false }
@@ -1142,6 +1179,51 @@ final class LibraryStore: NSObject {
         return lastActivity <= cutoff
     }
 
+    // MARK: 忽略与稍后（仅作用于发现/列表分层，绝不进入清理链路）
+
+    func isLibraryIgnored(_ record: LibraryRecord) -> Bool {
+        LibraryIgnoreRules.isSnoozed(until: record.ignoredUntil)
+            || LibraryIgnoreRules.isInsideIgnoredDirectory(recordPath: record.url.path, directoryPaths: ignoredLibraryDirectories)
+    }
+
+    func isDirectoryIgnored(_ url: URL) -> Bool {
+        ignoredLibraryDirectories.contains(url.standardizedFileURL.path)
+    }
+
+    /// 行操作「7 天内不再提醒」：到期后自动回到原分层。
+    func snoozeLibrary(_ record: LibraryRecord, days: Int = LibraryIgnoreRules.defaultSnoozeDays) {
+        record.ignoredUntil = Calendar.current.date(byAdding: .day, value: days, to: Date())
+        reconcileFilteredLibraries()
+        saveRecents()
+    }
+
+    func resumeLibrary(_ record: LibraryRecord) {
+        record.ignoredUntil = nil
+        // 处于目录级忽略中的库被显式恢复时，连同所在目录一起解除，
+        // 否则该库会立即被目录规则重新吞回"已忽略"。
+        if let directory = ignoredLibraryDirectories.first(where: {
+            LibraryIgnoreRules.isInsideIgnoredDirectory(recordPath: record.url.path, directoryPaths: [$0])
+        }) {
+            ignoredLibraryDirectories.removeAll { $0 == directory }
+        }
+        reconcileFilteredLibraries()
+        saveRecents()
+    }
+
+    func ignoreDirectory(_ url: URL) {
+        let path = url.standardizedFileURL.path
+        guard !ignoredLibraryDirectories.contains(path) else { return }
+        ignoredLibraryDirectories.append(path)
+        reconcileFilteredLibraries()
+        saveRecents()
+    }
+
+    func resumeDirectory(_ path: String) {
+        ignoredLibraryDirectories.removeAll { $0 == path }
+        reconcileFilteredLibraries()
+        saveRecents()
+    }
+
     /// 扫描健康度：让"自动扫描是否真正完成"不依赖日志即可判断。
     var scanHealthSummary: ScanHealthSummary {
         let failed = libraries.filter { $0.scanError != nil }.map(\.displayName)
@@ -1276,6 +1358,7 @@ final class LibraryStore: NSObject {
 
     private func filter(for record: LibraryRecord) -> LibraryFilter {
         if record.isScanning || record.isQueued { return .scanning }
+        if isLibraryIgnored(record) { return .ignored }
         return knownCleanableSize(for: record) >= Self.minimumCleanableSize ? .waiting : .skipped
     }
 
@@ -1416,7 +1499,8 @@ final class LibraryStore: NSObject {
                 cleanableSize: $0.lastKnownCleanableSize,
                 lastActivity: $0.lastActivity,
                 discoverySourceRaw: $0.discoverySource?.rawValue,
-                volumeUUIDRaw: $0.volumeID
+                volumeUUIDRaw: $0.volumeID,
+                ignoredUntil: $0.ignoredUntil
             )
         }
     }

@@ -62,6 +62,30 @@ struct AppSettings: View {
                 }
             }
 
+            if !store.ignoredLibraryDirectories.isEmpty {
+                sectionHeader("已忽略目录（自动发现不再扫描）")
+                VStack(spacing: 8) {
+                    ForEach(store.ignoredLibraryDirectories, id: \.self) { path in
+                        HStack(spacing: 9) {
+                            Image(systemName: "bell.slash.fill")
+                                .foregroundStyle(AppColor.tertiaryText)
+                            Text(path)
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundStyle(AppColor.secondaryText)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer(minLength: 4)
+                            Button("恢复") { store.resumeDirectory(path) }
+                                .buttonStyle(.borderless)
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .padding(9)
+                        .background(AppColor.control)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                }
+            }
+
             if let library = store.selectedLibrary {
                 Divider()
                 sectionHeader("当前资源库")
@@ -227,6 +251,18 @@ struct LibrarySettings: View {
                 Text("已检查 \(report.entries.count.formatted()) 项")
                     .font(.caption)
                     .foregroundStyle(AppColor.secondaryText)
+            }
+            Divider()
+            if store.isLibraryIgnored(library) {
+                Button("取消忽略") { store.resumeLibrary(library) }
+                if let until = library.ignoredUntil, until > Date() {
+                    Text("已忽略至 \(until.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(AppColor.secondaryText)
+                }
+            } else {
+                Button("7 天内不再提醒") { store.snoozeLibrary(library) }
+                Button("忽略所在目录") { store.ignoreDirectory(library.url.deletingLastPathComponent()) }
             }
             Divider()
             VolumeAccessSection(library: library, store: store)

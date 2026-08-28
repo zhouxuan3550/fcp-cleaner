@@ -284,6 +284,18 @@ struct LibraryRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .onHover { isHovered = $0 }
         .animation(.easeOut(duration: 0.12), value: isHovered)
+        .contextMenu {
+            if store.isLibraryIgnored(library) {
+                Button("取消忽略") { store.resumeLibrary(library) }
+                if let until = library.ignoredUntil, until > Date() {
+                    Text("已忽略至 \(until.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                }
+            } else {
+                Button("7 天内不再提醒") { store.snoozeLibrary(library) }
+                Button("忽略所在目录的全部资源库") { store.ignoreDirectory(library.url.deletingLastPathComponent()) }
+            }
+        }
     }
 
     @ViewBuilder
@@ -300,7 +312,7 @@ struct LibraryRow: View {
             .disabled(library.scanResult == nil || library.isScanning || library.spaceToFree < LibraryStore.minimumCleanableSize)
             .help(isBatchSelected ? "取消勾选" : "加入批量清理")
         } else {
-            Image(systemName: store.libraryFilter == .scanning ? "hourglass" : "minus.circle")
+            Image(systemName: store.libraryFilter == .scanning ? "hourglass" : (store.libraryFilter == .ignored ? "bell.slash" : "minus.circle"))
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(AppColor.tertiaryText)
         }
@@ -326,6 +338,12 @@ struct LibraryRow: View {
             status = library.usedCachedScan ? "缓存" : "扫描中"
         } else if library.isQueued {
             status = "等待扫描"
+        } else if store.isLibraryIgnored(library) {
+            status = "已忽略"
+            if let until = library.ignoredUntil, until > Date() {
+                let days = max(1, Int(ceil(until.timeIntervalSinceNow / 86_400)))
+                status += " · \(days) 天后恢复"
+            }
         } else if library.accessReport?.mounted == false {
             status = "磁盘已断开"
         } else if library.scanError != nil {
@@ -424,6 +442,7 @@ struct NoCleanupView: View {
         case .waiting: "checkmark.circle.fill"
         case .scanning: "clock"
         case .skipped: "line.3.horizontal.decrease.circle"
+        case .ignored: "bell.slash"
         }
     }
 
@@ -432,6 +451,7 @@ struct NoCleanupView: View {
         case .waiting: "暂无需要清理的资源库"
         case .scanning: "没有扫描任务"
         case .skipped: "没有已跳过的资源库"
+        case .ignored: "没有已忽略的资源库"
         }
     }
 
@@ -440,6 +460,7 @@ struct NoCleanupView: View {
         case .waiting: "可清理空间低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)) 的项目会自动跳过"
         case .scanning: "扫描任务最多同时运行 3 个"
         case .skipped: "低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)) 的资源库会显示在这里"
+        case .ignored: "右键资源库可选择「7 天内不再提醒」"
         }
     }
 }
