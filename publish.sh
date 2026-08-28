@@ -44,7 +44,7 @@ if ! command -v gh &>/dev/null; then
     echo "  ✗ 需要安装 gh CLI: brew install gh"
     exit 1
 fi
-gh auth status --quiet || { echo "  ✗ gh 未登录"; exit 1; }
+gh auth status >/dev/null 2>&1 || { echo "  ✗ gh 未登录"; exit 1; }
 echo "  ✓ gh CLI 就绪"
 
 # ─── 2. 确保远程仓库存在 ───
