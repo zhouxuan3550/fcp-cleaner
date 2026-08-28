@@ -9,6 +9,7 @@ final class WorkDirectoryMonitor {
     private var watchedPaths: [String] = []
     private var debounceTask: Task<Void, Never>?
     private weak var store: LibraryStore?
+    private let eventQueue = DispatchQueue(label: "com.fcpc.cleaner.work-directory-events", qos: .utility)
 
     init(store: LibraryStore) {
         self.store = store
@@ -30,7 +31,9 @@ final class WorkDirectoryMonitor {
         let callback: FSEventStreamCallback = { _, info, _, _, _, _ in
             guard let info else { return }
             let monitor = Unmanaged<WorkDirectoryMonitor>.fromOpaque(info).takeUnretainedValue()
-            monitor.scheduleDiscovery()
+            Task { @MainActor in
+                monitor.scheduleDiscovery()
+            }
         }
         let pathsToWatch = watchedPaths as CFArray
         guard let stream = FSEventStreamCreate(
@@ -43,7 +46,7 @@ final class WorkDirectoryMonitor {
             FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer)
         ) else { return }
 
-        FSEventStreamScheduleWithRunLoop(stream, CFRunLoopGetMain(), CFRunLoopMode.commonModes.rawValue)
+        FSEventStreamSetDispatchQueue(stream, eventQueue)
         FSEventStreamStart(stream)
         self.stream = stream
     }

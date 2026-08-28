@@ -365,7 +365,7 @@ final class LibraryStore: NSObject {
 
     func toggleSelectAllCleanableLibraries() {
         let cleanableIDs = Set(batchCleanableLibraries.map(\.id))
-        if areAllCleanableLibrariesSelected {
+        if !cleanableIDs.isEmpty && cleanableIDs.isSubset(of: batchSelectedIDs) {
             batchSelectedIDs.subtract(cleanableIDs)
         } else {
             batchSelectedIDs.formUnion(cleanableIDs)
@@ -557,13 +557,19 @@ final class LibraryStore: NSObject {
     private func applyValidatedCandidates(_ candidates: [URL], selectNewest: Bool, source: DiscoverySource) {
         guard !candidates.isEmpty else { return }
         var newRecords: [LibraryRecord] = []
+        var recordsByURL = Dictionary(
+            libraries.map { ($0.url.standardizedFileURL, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
         for url in candidates {
-            if let existing = libraries.first(where: { $0.url == url }) {
+            let standardizedURL = url.standardizedFileURL
+            if let existing = recordsByURL[standardizedURL] {
                 if selectNewest { selectedID = existing.id }
                 continue
             }
-            let record = LibraryRecord(url: url, discoveredVia: source)
+            let record = LibraryRecord(url: standardizedURL, discoveredVia: source)
             libraries.append(record)
+            recordsByURL[standardizedURL] = record
             newRecords.append(record)
             if selectNewest { selectedID = record.id }
         }

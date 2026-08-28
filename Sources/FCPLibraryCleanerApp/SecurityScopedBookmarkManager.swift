@@ -20,6 +20,7 @@ final class SecurityScopedBookmarkManager {
     private static let storageKey = "recentLibraryBookmarks"
     private static let workDirectoryStorageKey = "workDirectoryBookmarks"
     private var activeURLs = Set<URL>()
+    private var libraryBookmarkData: [URL: Data] = [:]
 
     private struct StoredBookmark: Codable {
         let data: Data
@@ -43,29 +44,42 @@ final class SecurityScopedBookmarkManager {
                 relativeTo: nil,
                 bookmarkDataIsStale: &stale
             ), !stale else { return nil }
+            let standardizedURL = url.standardizedFileURL
             _ = url.startAccessingSecurityScopedResource()
-            activeURLs.insert(url.standardizedFileURL)
+            activeURLs.insert(standardizedURL)
+            libraryBookmarkData[standardizedURL] = bookmark.data
             return RestoredLibrary(metadata: RecentLibraryMetadata(
-                url: url.standardizedFileURL,
+                url: standardizedURL,
                 lastScanned: bookmark.metadata.lastScanned,
                 totalAllocatedSize: bookmark.metadata.totalAllocatedSize,
                 cleanableSize: bookmark.metadata.cleanableSize,
                 lastActivity: bookmark.metadata.lastActivity,
-                discoverySourceRaw: bookmark.metadata.discoverySourceRaw
+                discoverySourceRaw: bookmark.metadata.discoverySourceRaw,
+                volumeUUIDRaw: bookmark.metadata.volumeUUIDRaw
             ))
         }
     }
 
     func save(_ metadata: [RecentLibraryMetadata], replacementURLs: [URL: URL] = [:]) {
+        var retainedBookmarkData: [URL: Data] = [:]
         let bookmarks = metadata.compactMap { entry -> StoredBookmark? in
             let url = entry.url.standardizedFileURL
-            let accessURL = replacementURLs[url]?.standardizedFileURL ?? url
-            _ = accessURL.startAccessingSecurityScopedResource()
-            activeURLs.insert(url)
-            activeURLs.insert(accessURL)
-            guard let data = try? accessURL.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) else {
-                return nil
+            let data: Data
+            if replacementURLs[url] == nil, let cached = libraryBookmarkData[url] {
+                data = cached
+            } else {
+                let accessURL = replacementURLs[url]?.standardizedFileURL ?? url
+                _ = accessURL.startAccessingSecurityScopedResource()
+                activeURLs.insert(url)
+                activeURLs.insert(accessURL)
+                guard let created = try? accessURL.bookmarkData(
+                    options: [.withSecurityScope],
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                ) else { return nil }
+                data = created
             }
+            retainedBookmarkData[url] = data
             return StoredBookmark(data: data, metadata: RecentLibraryMetadata(
                 url: url,
                 lastScanned: entry.lastScanned,
@@ -76,6 +90,7 @@ final class SecurityScopedBookmarkManager {
                 volumeUUIDRaw: entry.volumeUUIDRaw
             ))
         }
+        libraryBookmarkData = retainedBookmarkData
         UserDefaults.standard.set(try? JSONEncoder().encode(bookmarks), forKey: Self.storageKey)
     }
 
