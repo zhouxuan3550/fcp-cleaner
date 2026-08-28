@@ -61,6 +61,9 @@ struct LibrarySidebar: View {
                 .padding(.vertical, 10)
             }
             .scrollIndicators(.hidden)
+
+            Divider().overlay(AppColor.border)
+            scanHealthFooter
         }
         .frame(maxHeight: .infinity)
         .background(AppColor.workspace)
@@ -69,6 +72,30 @@ struct LibrarySidebar: View {
                 .stroke(AppColor.border, lineWidth: 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private var scanHealthFooter: some View {
+        let health = store.scanHealthSummary
+        return HStack(spacing: 6) {
+            if health.failed.isEmpty && health.neverScanned == 0 {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(AppColor.success)
+                Text("全部扫描完成")
+                    .foregroundStyle(AppColor.secondaryText)
+            } else {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundStyle(AppColor.danger)
+                Text(health.failed.isEmpty ? "待扫描 \(health.neverScanned) 个" : "扫描失败 \(health.failed.count) 个")
+                    .foregroundStyle(AppColor.secondaryText)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            Text("资源库 \(health.total) 个")
+                .foregroundStyle(AppColor.tertiaryText)
+        }
+        .font(.system(size: 11, weight: .medium))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     private var controls: some View {

@@ -41,22 +41,29 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.fcpcleaner.app.workflow-extension
         PRODUCT_NAME: FCP-Cleaner-Workflow
         PRODUCT_MODULE_NAME: FCPCleanerWorkflow
-        MARKETING_VERSION: "3.9.2"
-        CURRENT_PROJECT_VERSION: "392"
+        MARKETING_VERSION: "4.0.0"
+        CURRENT_PROJECT_VERSION: "400"
         SKIP_INSTALL: YES
         APPLICATION_EXTENSION_API_ONLY: YES
-        FRAMEWORK_SEARCH_PATHS:
+        MACH_O_TYPE: mh_execute
+        LD_ENTRY_POINT: _ProExtensionMain
+        WORKFLOW_EXTENSION_SDK_PATH: /Library/Developer/SDKs/WorkflowExtensionSDK.sdk
+        ADDITIONAL_SDKS: $(WORKFLOW_EXTENSION_SDK_PATH)
+        SWIFT_OBJC_BRIDGING_HEADER: WorkflowExtension/WorkflowExtension-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
           - $(inherited)
-          - '/Applications/Final\ Cut\ Pro.app/Contents/Frameworks'
+          - $(WORKFLOW_EXTENSION_SDK_PATH)/usr/include
+        LIBRARY_SEARCH_PATHS:
+          - $(inherited)
+          - $(WORKFLOW_EXTENSION_SDK_PATH)/usr/lib
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
+          - '@executable_path/../Frameworks'
           - '@executable_path/../../../../Frameworks'
         OTHER_LDFLAGS:
           - $(inherited)
-          - -u
-          - _ProExtensionMain
-          - -weak_framework
-          - ProExtension
+          - -fapplication-extension
+          - -lProExtension
 
   FCP-Cleaner:
     type: application
@@ -79,8 +86,8 @@ targets:
         EXECUTABLE_NAME: FCP-Cleaner
         PRODUCT_MODULE_NAME: FCPLibraryCleanerApp
         ASSETCATALOG_COMPILER_APPICON_NAME: ''
-        MARKETING_VERSION: "3.9.2"
-        CURRENT_PROJECT_VERSION: "392"
+        MARKETING_VERSION: "4.0.0"
+        CURRENT_PROJECT_VERSION: "400"
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - '@executable_path/../Frameworks'

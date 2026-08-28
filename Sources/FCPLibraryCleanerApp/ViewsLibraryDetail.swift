@@ -50,6 +50,76 @@ struct LibraryPanel: View {
                         NSPasteboard.general.setString(library.url.path, forType: .string)
                     }
                 }
+
+                Menu {
+                    Button {
+                        store.inspect(library)
+                    } label: {
+                        Label("生成扫描目录树", systemImage: "list.bullet.indent")
+                    }
+                    .disabled(library.scanResult == nil || library.isInspecting)
+                    if let report = library.inspectorReport {
+                        Text("已检查 \(report.entries.count.formatted()) 项")
+                    }
+                    Button {
+                        store.scan(library, force: true)
+                    } label: {
+                        Label("完整重新扫描", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(library.isScanning || library.isQueued)
+
+                    Divider()
+
+                    if store.isLibraryIgnored(library) {
+                        Button("取消忽略") { store.resumeLibrary(library) }
+                    } else {
+                        Button("7 天内不再提醒") { store.snoozeLibrary(library) }
+                        Button("忽略所在目录的全部资源库") {
+                            store.ignoreDirectory(library.url.deletingLastPathComponent())
+                        }
+                    }
+
+                    Divider()
+
+                    Button {
+                        store.diagnoseVolumeAccess(library)
+                    } label: {
+                        Label(library.isDiagnosingVolume ? "外置盘诊断中…" : "外置盘诊断", systemImage: "stethoscope")
+                    }
+                    .disabled(library.isDiagnosingVolume)
+                    Button("重新授权访问") { store.reauthorizeLibraryAccess(library) }
+                    if let report = library.accessReport {
+                        Text(report.mounted ? (report.writable ? "磁盘在线 · 可写" : "磁盘在线 · 只读") : "磁盘已断开或未挂载")
+                    }
+                    if let at = library.lastAccessibleAt {
+                        Text("上次可访问 \(at.formatted(date: .abbreviated, time: .shortened))")
+                    }
+
+                    Divider()
+
+                    Button("在 Finder 中显示") {
+                        NSWorkspace.shared.activateFileViewerSelecting([library.url])
+                    }
+                    Button("拷贝资源库路径") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(library.url.path, forType: .string)
+                    }
+
+                    Divider()
+
+                    Button("从列表移除", role: .destructive) { store.remove([library]) }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppColor.secondaryText)
+                        .frame(width: 32, height: 32)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .background(AppColor.control)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .accessibilityLabel("资源库操作")
+                .help("更多操作")
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 19)
@@ -425,62 +495,6 @@ struct CleanupStatus: View {
                 .foregroundStyle(AppColor.accent)
             .disabled(store.isPreflighting || store.isCleaning)
             }
-        }
-    }
-}
-
-struct VolumeAccessSection: View {
-    let library: LibraryRecord
-    let store: LibraryStore
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text("外置盘诊断")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(AppColor.tertiaryText)
-                .textCase(.uppercase)
-            HStack(spacing: 8) {
-                statusLine
-                Spacer(minLength: 6)
-                if library.isDiagnosingVolume {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Button("诊断") { store.diagnoseVolumeAccess(library) }
-                        .buttonStyle(.borderless)
-                        .foregroundStyle(AppColor.secondaryText)
-                    Button("重新授权") { store.reauthorizeLibraryAccess(library) }
-                        .buttonStyle(.borderless)
-                        .foregroundStyle(AppColor.accent)
-                }
-            }
-            if let report = library.accessReport, report.mounted, !report.writable {
-                Label("卷处于只读状态，清理与废纸篓移动都会失败，请重新挂载外置盘", systemImage: "lock.fill")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(AppColor.danger)
-                    .lineLimit(2)
-            }
-            if let at = library.lastAccessibleAt {
-                Text("上次可访问 \(at.formatted(date: .abbreviated, time: .shortened))")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(AppColor.tertiaryText)
-            }
-        }
-    }
-
-    @ViewBuilder private var statusLine: some View {
-        if let report = library.accessReport {
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(report.mounted ? (report.writable ? AppColor.success : AppColor.danger) : AppColor.danger)
-                    .frame(width: 7, height: 7)
-                Text(report.mounted ? (report.writable ? "在线 · 可写" : "在线 · 只读") : "已断开或未挂载")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(report.mounted ? AppColor.primaryText : AppColor.danger)
-            }
-        } else {
-            Text("尚未检测")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(AppColor.secondaryText)
         }
     }
 }

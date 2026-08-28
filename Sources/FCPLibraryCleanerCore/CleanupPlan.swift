@@ -78,12 +78,21 @@ public struct CleanupPlan: Codable, Sendable {
         self.entries = entries
     }
 
+    private static let fingerprintKeys: Set<URLResourceKey> = [
+        .isDirectoryKey,
+        .isSymbolicLinkKey,
+        .fileSizeKey,
+        .fileAllocatedSizeKey,
+        .contentModificationDateKey,
+        .documentIdentifierKey,
+    ]
+
     public static func fingerprint(for url: URL) throws -> FileFingerprint {
         let fileManager = FileManager.default
         var enumerationError: Error?
         guard let enumerator = fileManager.enumerator(
             at: url,
-            includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey, .fileAllocatedSizeKey, .fileSizeKey, .contentModificationDateKey],
+            includingPropertiesForKeys: Array(fingerprintKeys),
             options: [],
             errorHandler: { _, error in
                 enumerationError = error
@@ -97,24 +106,22 @@ public struct CleanupPlan: Codable, Sendable {
         var logicalSize: Int64 = 0
         var entryCount = 0
         var contentsSignature: UInt64 = 0
-        let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey]
         for case let child as URL in enumerator {
-            let values = try child.resourceValues(forKeys: keys)
+            let values = try child.resourceValues(forKeys: fingerprintKeys)
             if values.isSymbolicLink == true {
                 if values.isDirectory == true { enumerator.skipDescendants() }
                 continue
             }
             guard values.isDirectory != true else { continue }
-            let attributes = try fileManager.attributesOfItem(atPath: child.path)
-            let logical = (attributes[.size] as? NSNumber)?.int64Value ?? 0
-            let allocated = Int64((try? child.resourceValues(forKeys: [.fileAllocatedSizeKey]).fileAllocatedSize) ?? Int(logical))
-            let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSinceReferenceDate ?? 0
-            let inode = (attributes[.systemFileNumber] as? NSNumber)?.int64Value ?? 0
+            let logical = Int64(values.fileSize ?? 0)
+            let allocated = Int64(values.fileAllocatedSize ?? values.fileSize ?? 0)
+            let modified = values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
+            let fileID = values.documentIdentifier ?? 0
             allocatedSize += allocated
             logicalSize += logical
             entryCount += 1
             contentsSignature &+= stableHash(
-                "\(child.path)|\(allocated)|\(logical)|\(modified)|\(inode)"
+                "\(child.path)|\(allocated)|\(logical)|\(modified)|\(fileID)"
             )
         }
         if enumerationError != nil {

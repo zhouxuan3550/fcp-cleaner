@@ -1,21 +1,66 @@
-MIT License
+FCP Cleaner Source Code License 1.0
 
-Copyright (c) 2026 Zhou Xuan
+Copyright (c) 2026 Zhou Xuan. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This license applies to FCP Cleaner version 4.0.0 and later, and to material
+first published under this license. Earlier releases remain governed by the
+license included with those releases; previously granted rights are not
+revoked by this document.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This repository is publicly accessible for source-code inspection. Public
+availability does not make this software open source and does not grant a
+license to use the software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. NO LICENSE GRANT
+
+Except for rights that cannot be excluded under applicable law and rights
+expressly provided by the GitHub Terms of Service for content in a public
+repository, no copyright, patent, trademark, or other license is granted.
+
+2. PRIOR WRITTEN PERMISSION REQUIRED
+
+You must obtain the copyright holder's prior express written permission before
+you, directly or indirectly, do any of the following with all or any part of
+the software, source code, binaries, documentation, or derivative works:
+
+- compile, execute, install, access, operate, or otherwise use it;
+- copy or reproduce it outside the limited technical copies necessarily made
+  by GitHub for viewing this public repository;
+- modify, adapt, translate, merge, or create derivative works from it;
+- publish, distribute, sublicense, sell, rent, lease, host, or provide it to
+  any third party;
+- use it for commercial, production, organizational, educational, research,
+  benchmarking, or machine-learning purposes; or
+- remove or alter copyright, license, attribution, or proprietary notices.
+
+Permission for one person, entity, version, purpose, or use does not grant
+permission for any other person, entity, version, purpose, or use. Permission
+must identify the authorized party and scope in writing.
+
+3. THIRD-PARTY COMPONENTS
+
+Third-party components retain their respective licenses. This license applies
+only to material for which Zhou Xuan owns the applicable rights and does not
+replace or restrict rights independently granted by third parties.
+
+4. OWNERSHIP
+
+The copyright holder retains all right, title, and interest in the software.
+The names, logos, and branding of FCP Cleaner may not be used without separate
+prior express written permission.
+
+5. TERMINATION
+
+Any authorization terminates automatically if its written conditions or this
+license are breached. On termination, all use must stop and all unauthorized
+copies and derivative works must be deleted, subject to applicable law.
+
+6. DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS" AND WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW,
+THE COPYRIGHT HOLDER IS NOT LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM THE SOFTWARE OR ITS AVAILABILITY.
+
+To request permission, contact the copyright holder through this repository.

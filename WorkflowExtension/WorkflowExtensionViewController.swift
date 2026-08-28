@@ -1,5 +1,4 @@
 import AppKit
-import Darwin
 import SwiftUI
 
 @MainActor
@@ -30,18 +29,10 @@ final class WorkflowExtensionModel: ObservableObject {
     }
 }
 
-/// 通过 Workflow Extension SDK 的 Objective-C 运行时接口读取当前资源库。
-/// 使用动态符号只为兼容未安装 SDK 的开源构建机；发布构建仍链接公开 ProExtension 运行时。
+/// 通过 Apple Workflow Extension SDK 的 Objective-C 接口读取当前资源库。
 enum WorkflowHostBridge {
-    private typealias HostSingleton = @convention(c) () -> UnsafeMutableRawPointer?
-
     static func hostObject() -> NSObject? {
-        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "ProExtensionHostSingleton") else {
-            return nil
-        }
-        let function = unsafeBitCast(symbol, to: HostSingleton.self)
-        guard let pointer = function() else { return nil }
-        return Unmanaged<AnyObject>.fromOpaque(pointer).takeUnretainedValue() as? NSObject
+        ProExtensionHostSingleton() as? NSObject
     }
 
     static func activeLibrary(from host: NSObject) -> NSObject? {

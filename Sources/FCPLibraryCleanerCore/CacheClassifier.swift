@@ -54,7 +54,6 @@ public struct CacheClassifier: Sendable {
     }
 
     private func isRealDirectory(_ url: URL, fileManager: FileManager) -> Bool {
-        guard fileManager.fileExists(atPath: url.path) else { return false }
         guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]) else { return false }
         return values.isDirectory == true && values.isSymbolicLink != true
     }

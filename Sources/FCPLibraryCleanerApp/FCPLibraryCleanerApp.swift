@@ -47,6 +47,12 @@ struct FCPLibraryCleanerApp: App {
                 .keyboardShortcut("r", modifiers: [.command])
                 .disabled(!LibraryStore.shared.canRescanSelectedLibrary)
             }
+            CommandGroup(replacing: .appSettings) {
+                Button("设置…") {
+                    LibraryStore.shared.showsSettings.toggle()
+                }
+                .keyboardShortcut(",", modifiers: [.command])
+            }
             CommandGroup(after: .appInfo) {
                 Button("检查更新…") {
                     UpdateController.shared.checkForUpdates()

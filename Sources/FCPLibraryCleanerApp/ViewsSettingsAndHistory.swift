@@ -10,7 +10,7 @@ struct AppSettings: View {
             Text("设置")
                 .font(.system(size: 17, weight: .semibold, design: .rounded))
 
-            sectionHeader("通用")
+            sectionHeader("扫描")
             HStack {
                 Text("工作目录")
                     .font(.system(size: 13, weight: .semibold))
@@ -86,46 +86,6 @@ struct AppSettings: View {
                 }
             }
 
-            if let library = store.selectedLibrary {
-                Divider()
-                sectionHeader("当前资源库")
-                Text(library.displayName)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(AppColor.primaryText)
-                    .lineLimit(1)
-                LibrarySettings(library: library, store: store)
-            }
-
-            Divider()
-            sectionHeader("扫描健康")
-            let health = store.scanHealthSummary
-            VStack(alignment: .leading, spacing: 4) {
-                Text("资源库 \(health.total) 个 · 已扫描 \(health.scanned) 个（缓存复用 \(health.cacheReused)）")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(AppColor.secondaryText)
-                if health.failed.isEmpty && health.neverScanned == 0 {
-                    Label("全部扫描完成", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(AppColor.success)
-                } else {
-                    if health.neverScanned > 0 {
-                        Text("待扫描 \(health.neverScanned) 个")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AppColor.tertiaryText)
-                    }
-                    if !health.failed.isEmpty {
-                        Text("扫描失败 \(health.failed.count) 个：\(health.failed.joined(separator: "、"))")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(AppColor.danger)
-                            .lineLimit(2)
-                    }
-                }
-            }
-
-            Divider()
-            sectionHeader("外观")
-            Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
-                .toggleStyle(.switch)
             Picker("定时检查", selection: $store.scheduledCheckFrequency) {
                 ForEach(ScheduledCheckFrequency.allCases) { frequency in
                     Text(frequency.title).tag(frequency)
@@ -135,14 +95,19 @@ struct AppSettings: View {
             Text("到点自动发现并增量扫描，完成后仅发送通知，绝不自动清理")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(AppColor.tertiaryText)
+            Stepper("磁盘预警：\(store.lowSpaceWarningGB) GB", value: $store.lowSpaceWarningGB, in: 10...500, step: 10)
+                .font(.system(size: 12, weight: .medium))
+
+            Divider()
+            sectionHeader("通知与外观")
+            Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
+                .toggleStyle(.switch)
             Picker("外观", selection: $store.appearanceMode) {
                 Text("跟随系统").tag(AppearanceMode.system)
                 Text("暗色").tag(AppearanceMode.dark)
                 Text("亮色").tag(AppearanceMode.light)
             }
             .pickerStyle(.segmented)
-            Stepper("磁盘预警：\(store.lowSpaceWarningGB) GB", value: $store.lowSpaceWarningGB, in: 10...500, step: 10)
-                .font(.system(size: 12, weight: .medium))
 
             Divider()
             sectionHeader("关于")
@@ -277,48 +242,6 @@ struct CleanupHistoryView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
             }
-        }
-    }
-}
-
-struct LibrarySettings: View {
-    let library: LibraryRecord
-    let store: LibraryStore
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Button("生成扫描目录树") { store.inspect(library) }
-                .disabled(library.scanResult == nil || library.isInspecting)
-            Button("完整重新扫描") { store.scan(library, force: true) }
-                .disabled(library.isScanning || library.isQueued)
-            if library.isInspecting {
-                ProgressView().controlSize(.small)
-            } else if let report = library.inspectorReport {
-                Text("已检查 \(report.entries.count.formatted()) 项")
-                    .font(.caption)
-                    .foregroundStyle(AppColor.secondaryText)
-            }
-            Divider()
-            if store.isLibraryIgnored(library) {
-                Button("取消忽略") { store.resumeLibrary(library) }
-                if let until = library.ignoredUntil, until > Date() {
-                    Text("已忽略至 \(until.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.caption)
-                        .foregroundStyle(AppColor.secondaryText)
-                }
-            } else {
-                Button("7 天内不再提醒") { store.snoozeLibrary(library) }
-                Button("忽略所在目录") { store.ignoreDirectory(library.url.deletingLastPathComponent()) }
-            }
-            Divider()
-            VolumeAccessSection(library: library, store: store)
-            Divider()
-            Button("拷贝资源库路径") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(library.url.path, forType: .string)
-            }
-            Divider()
-            Button("从列表移除", role: .destructive) { store.remove([library]) }
         }
     }
 }

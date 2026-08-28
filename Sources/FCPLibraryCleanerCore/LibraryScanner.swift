@@ -215,9 +215,11 @@ public struct LibraryScanner: Sendable {
         }
 
         let originalMedia = eventURL.appendingPathComponent(FCPStructureRules.originalMediaName, isDirectory: true)
+        var recordedOriginalMedia = false
         if fileManager.fileExists(atPath: originalMedia.path) ||
             (try? fileManager.destinationOfSymbolicLink(atPath: originalMedia.path)) != nil {
             protectedItems.append(ProtectedItem(url: originalMedia, reason: .originalMedia))
+            recordedOriginalMedia = true
         }
 
         // Show direct Event children that are not part of a confirmed rule, but never descend
@@ -227,8 +229,9 @@ public struct LibraryScanner: Sendable {
         let children = try directChildren(of: eventURL, fileManager: fileManager)
         for child in children where child.lastPathComponent != FCPStructureRules.eventDatabaseName {
             if child.lastPathComponent == FCPStructureRules.originalMediaName {
-                if !protectedItems.contains(where: { $0.url == child && $0.reason == .originalMedia }) {
+                if !recordedOriginalMedia {
                     protectedItems.append(ProtectedItem(url: child, reason: .originalMedia))
+                    recordedOriginalMedia = true
                 }
                 continue
             }
@@ -277,8 +280,7 @@ public struct LibraryScanner: Sendable {
     }
 
     private static func isRealDirectory(_ url: URL, fileManager: FileManager) -> Bool {
-        guard fileManager.fileExists(atPath: url.path),
-              let values = try? resourceValues(for: url) else { return false }
+        guard let values = try? resourceValues(for: url) else { return false }
         return values.isDirectory == true && values.isSymbolicLink != true
     }
 
@@ -318,6 +320,13 @@ public struct LibraryScanner: Sendable {
         }
     }
 
+    private static let traversalKeys: Set<URLResourceKey> = [
+        .isDirectoryKey,
+        .isSymbolicLinkKey,
+        .fileAllocatedSizeKey,
+        .fileSizeKey,
+    ]
+
     private static func directorySize(
         of rootURL: URL,
         fileManager: FileManager,
@@ -329,13 +338,9 @@ public struct LibraryScanner: Sendable {
         var logical: Int64 = 0
         var files = 0
         var directories = 0
+        var entriesSinceCancelCheck = 0
         var lastHeartbeat = ContinuousClock.now
-        let keys: Set<URLResourceKey> = [
-            .isDirectoryKey,
-            .isSymbolicLinkKey,
-            .fileAllocatedSizeKey,
-            .fileSizeKey,
-        ]
+        let keys = traversalKeys
         var enumerationFailure: Error?
         guard let enumerator = fileManager.enumerator(
             at: rootURL,
@@ -350,7 +355,13 @@ public struct LibraryScanner: Sendable {
         }
 
         for case let url as URL in enumerator {
-            try throwIfCancelled(control)
+            // Kept outside the do/catch below so a cancel never gets rewrapped as a read error.
+            // Sampling every 64 entries keeps the lock off the per-file hot path.
+            if entriesSinceCancelCheck >= 64 {
+                try throwIfCancelled(control)
+                entriesSinceCancelCheck = 0
+            }
+            entriesSinceCancelCheck += 1
             do {
                 let values = try url.resourceValues(forKeys: keys)
                 if values.isSymbolicLink == true {
@@ -377,6 +388,7 @@ public struct LibraryScanner: Sendable {
                 throw CleanupError.permissionDenied(url)
             }
         }
+        try throwIfCancelled(control)
         if enumerationFailure != nil {
             throw CleanupError.permissionDenied(rootURL)
         }

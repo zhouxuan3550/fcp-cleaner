@@ -16,6 +16,7 @@
 - macOS 15.0 或更高版本
 - Final Cut Pro 资源库，扩展名为 `.fcpbundle`
 - Final Cut Pro 12.3 或更高版本（使用 Workflow Extension 时）
+- [Apple Workflow Extension SDK](https://developer.apple.com/download/all/?q=WorkflowExtensions)（开发构建时需要）
 
 ## 本地开发
 
@@ -39,4 +40,12 @@ FCP Cleaner 不会永久删除文件。清理范围由 `FCPStructureRules` 的�
 
 ## 许可证
 
-[MIT](LICENSE)
+本项目为**源码可见（Source Available）**，不是 OSI 定义的开源软件。除 GitHub
+公开仓库服务条款及适用法律不可排除的权利外，未经版权所有者事先明确书面授权，
+不得编译、运行、使用、复制、修改、分发、商用或创建衍生作品。
+
+申请授权请通过本仓库联系版权所有者。完整条款见
+[FCP Cleaner Source Code License 1.0](LICENSE)。
+
+该协议自 `4.0.0` 起适用；此前已按 MIT 发布的版本仍遵循各自随附的原协议，
+已经授予的旧版本许可不会被本协议追溯撤销。

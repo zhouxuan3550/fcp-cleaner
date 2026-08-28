@@ -4,7 +4,7 @@ import FCPLibraryCleanerCore
 struct ScanResultCache: Sendable {
     /// 缓存条目格式版本。改动 Core 模型结构时 +1：旧缓存因缺少新键解码失败，
     /// 自动触发完整重扫——把"隐式解码崩溃"变成显式的版本门槛。
-    private static let schemaVersion = 2
+    private static let schemaVersion = 3
 
     private struct Entry: Codable, Sendable {
         let schemaVersion: Int

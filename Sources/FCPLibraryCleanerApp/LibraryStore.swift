@@ -27,7 +27,10 @@ final class LibraryRecord: Identifiable {
     let volumeURL: URL
     let volumeName: String
     let volumeID: String?
-    var scanResult: LibraryScanResult?
+    var scanResult: LibraryScanResult? {
+        didSet { cachedSpaceToFree = nil }
+    }
+    @ObservationIgnored private var cachedSpaceToFree: Int64?
     var isScanning = false
     var isQueued = false
     var usedCachedScan = false
@@ -73,9 +76,10 @@ final class LibraryRecord: Identifiable {
 
     var displayName: String { url.deletingPathExtension().lastPathComponent }
     var spaceToFree: Int64 {
-        guard let scanResult else { return 0 }
-        return scanResult.cacheItems
-            .reduce(0) { $0 + $1.allocatedSize }
+        if let cachedSpaceToFree { return cachedSpaceToFree }
+        let total = scanResult?.cacheItems.reduce(0) { $0 + $1.allocatedSize } ?? 0
+        cachedSpaceToFree = total
+        return total
     }
 }
 
@@ -181,6 +185,8 @@ final class LibraryStore: NSObject {
     var inactivityFilter: InactivityFilter = .all
     var librarySort: LibrarySort = .sizeDescending
     var searchText = ""
+    var showsSettings = false
+    var showsHistory = false
     var appearanceMode = AppearanceMode(rawValue: UserDefaults.standard.integer(forKey: "appearanceMode")) ?? .dark {
         didSet {
             UserDefaults.standard.set(appearanceMode.rawValue, forKey: "appearanceMode")
@@ -769,6 +775,7 @@ final class LibraryStore: NSObject {
             defer { ProcessInfo.processInfo.endActivity(scanActivity) }
             do {
                 let result: LibraryScanResult
+                var scannedFresh = false
                 if !request.force, let cached = await scanCache.loadIfCurrent(libraryURL: record.url) {
                     result = cached
                     record.usedCachedScan = true
@@ -785,7 +792,7 @@ final class LibraryStore: NSObject {
                             }
                         }
                     )
-                    await scanCache.save(result)
+                    scannedFresh = true
                 }
                 record.scanResult = result
                 record.lastScanned = Date()
@@ -793,6 +800,13 @@ final class LibraryStore: NSObject {
                 record.lastKnownCleanableSize = record.scanResult?.confirmedCleanableSize
                 record.lastActivity = LibraryRecord.activityDate(for: record.url)
                 record.lastAccessibleAt = Date()
+                // Persisting the cache costs a second traversal plus an atomic write, so it
+                // must never sit between a finished scan and the UI showing its result.
+                if scannedFresh {
+                    let scanCache = scanCache
+                    let freshResult = result
+                    Task { await scanCache.save(freshResult) }
+                }
                 LibrarySizeTrend.record(
                     libraryURL: record.url,
                     totalAllocatedSize: result.totalAllocatedSize,

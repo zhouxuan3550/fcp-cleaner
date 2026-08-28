@@ -3,9 +3,7 @@ import SwiftUI
 import FCPLibraryCleanerCore
 
 struct AppHeader: View {
-    let store: LibraryStore
-    @State private var showsSettings = false
-    @State private var showsHistory = false
+    @Bindable var store: LibraryStore
 
     var body: some View {
         HStack(spacing: 18) {
@@ -35,24 +33,24 @@ struct AppHeader: View {
             .help("在 Finder 中显示当前资源库")
 
             Button {
-                showsHistory.toggle()
+                store.showsHistory.toggle()
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
             }
             .buttonStyle(HeaderButtonStyle())
             .accessibilityLabel("记录")
-            .popover(isPresented: $showsHistory, arrowEdge: .bottom) {
+            .popover(isPresented: $store.showsHistory, arrowEdge: .bottom) {
                 CleanupHistoryView(store: store.cleanupHistory, libraryStore: store)
             }
 
             Button {
-                showsSettings.toggle()
+                store.showsSettings.toggle()
             } label: {
                 Image(systemName: "slider.horizontal.3")
             }
             .buttonStyle(HeaderButtonStyle())
             .accessibilityLabel("设置")
-            .popover(isPresented: $showsSettings, arrowEdge: .bottom) {
+            .popover(isPresented: $store.showsSettings, arrowEdge: .bottom) {
                 AppSettings(store: store)
             }
 

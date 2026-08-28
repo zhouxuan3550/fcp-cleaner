@@ -21,6 +21,16 @@ DERIVED_DATA="build/XcodeRelease"
 PRODUCT_APP="${DERIVED_DATA}/Build/Products/Release/${APP_NAME}.app"
 RELEASE_APP="build/release-product/${APP_NAME}.app"
 
+if [ -d "/Library/Developer/SDKs/WorkflowExtensionSDK.sdk" ]; then
+    WORKFLOW_EXTENSION_SDK_PATH="/Library/Developer/SDKs/WorkflowExtensionSDK.sdk"
+elif [ -d "${HOME}/Library/Developer/SDKs/WorkflowExtensionSDK.sdk" ]; then
+    WORKFLOW_EXTENSION_SDK_PATH="${HOME}/Library/Developer/SDKs/WorkflowExtensionSDK.sdk"
+else
+    echo "✗ 未安装 Apple Workflow Extension SDK"
+    echo "  下载地址: https://developer.apple.com/download/all/?q=WorkflowExtensions"
+    exit 1
+fi
+
 echo "═══════════════════════════════════════════════"
 echo "  FCP Cleaner Release Build"
 echo "  Version: ${VERSION}  Build: ${BUILD}"
@@ -56,6 +66,7 @@ xcodebuild \
     ONLY_ACTIVE_ARCH=NO \
     MARKETING_VERSION="${VERSION}" \
     CURRENT_PROJECT_VERSION="${BUILD}" \
+    WORKFLOW_EXTENSION_SDK_PATH="${WORKFLOW_EXTENSION_SDK_PATH}" \
     CODE_SIGNING_ALLOWED=NO \
     build
 
@@ -71,6 +82,10 @@ WORKFLOW_APPEX="${PRODUCT_APP}/Contents/PlugIns/FCP-Cleaner-Workflow.appex"
 WORKFLOW_EXECUTABLE="${WORKFLOW_APPEX}/Contents/MacOS/FCP-Cleaner-Workflow"
 if [ ! -x "${WORKFLOW_EXECUTABLE}" ]; then
     echo "  ✗ Workflow Extension 未嵌入"
+    exit 1
+fi
+if ! nm -gU "${WORKFLOW_EXECUTABLE}" | grep -q '_ProExtensionMain'; then
+    echo "  ✗ Workflow Extension 未链接 Apple ProExtension 启动代码"
     exit 1
 fi
 if [ ! -d "${PRODUCT_APP}/Contents/Resources/Metadata.appintents" ]; then

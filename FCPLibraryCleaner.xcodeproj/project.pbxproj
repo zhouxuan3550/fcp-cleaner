@@ -113,6 +113,7 @@
 		81EB5DC90E9B88546895664A /* ScanResultCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultCache.swift; sourceTree = "<group>"; };
 		934233315FECA82E62393048 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		947C6884FB3D862541C66D95 /* LibrarySizeTrend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySizeTrend.swift; sourceTree = "<group>"; };
+		9E43135B7D3A16AAB521C4AB /* WorkflowExtension-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "WorkflowExtension-Bridging-Header.h"; sourceTree = "<group>"; };
 		9FD4EAC01E2A08D2DE7620F3 /* ScanControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanControl.swift; sourceTree = "<group>"; };
 		A1E71608CA72D3447D623286 /* ViewsConfirmationSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsConfirmationSheets.swift; sourceTree = "<group>"; };
 		A2644C26BD439C850C55D802 /* FinderServiceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderServiceProvider.swift; sourceTree = "<group>"; };
@@ -182,6 +183,7 @@
 			isa = PBXGroup;
 			children = (
 				74CEDAF42E2A77D1E115DF2B /* Info.plist */,
+				9E43135B7D3A16AAB521C4AB /* WorkflowExtension-Bridging-Header.h */,
 				DC50F604F1FB8DDF2D27CB54 /* WorkflowExtension.entitlements */,
 				531F110D7A7F711444016C18 /* WorkflowExtensionViewController.swift */,
 			);
@@ -462,33 +464,41 @@
 		3B1672C9172C3A74C90C66BD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ADDITIONAL_SDKS = "$(WORKFLOW_EXTENSION_SDK_PATH)";
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 392;
-				FRAMEWORK_SEARCH_PATHS = (
+				CURRENT_PROJECT_VERSION = 400;
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/Applications/Final\\ Cut\\ Pro.app/Contents/Frameworks",
+					"$(WORKFLOW_EXTENSION_SDK_PATH)/usr/include",
 				);
 				INFOPLIST_FILE = WorkflowExtension/Info.plist;
+				LD_ENTRY_POINT = _ProExtensionMain;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
+					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(WORKFLOW_EXTENSION_SDK_PATH)/usr/lib",
+				);
+				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 3.9.2;
+				MARKETING_VERSION = 4.0.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-u",
-					_ProExtensionMain,
-					"-weak_framework",
-					ProExtension,
+					"-fapplication-extension",
+					"-lProExtension",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.fcpcleaner.app.workflow-extension";
 				PRODUCT_MODULE_NAME = FCPCleanerWorkflow;
 				PRODUCT_NAME = "FCP-Cleaner-Workflow";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "WorkflowExtension/WorkflowExtension-Bridging-Header.h";
+				WORKFLOW_EXTENSION_SDK_PATH = /Library/Developer/SDKs/WorkflowExtensionSDK.sdk;
 			};
 			name = Debug;
 		};
@@ -510,33 +520,41 @@
 		54BA65633BC42D9C1F11A645 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ADDITIONAL_SDKS = "$(WORKFLOW_EXTENSION_SDK_PATH)";
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 392;
-				FRAMEWORK_SEARCH_PATHS = (
+				CURRENT_PROJECT_VERSION = 400;
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
-					"/Applications/Final\\ Cut\\ Pro.app/Contents/Frameworks",
+					"$(WORKFLOW_EXTENSION_SDK_PATH)/usr/include",
 				);
 				INFOPLIST_FILE = WorkflowExtension/Info.plist;
+				LD_ENTRY_POINT = _ProExtensionMain;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
+					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(WORKFLOW_EXTENSION_SDK_PATH)/usr/lib",
+				);
+				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 3.9.2;
+				MARKETING_VERSION = 4.0.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-u",
-					_ProExtensionMain,
-					"-weak_framework",
-					ProExtension,
+					"-fapplication-extension",
+					"-lProExtension",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.fcpcleaner.app.workflow-extension";
 				PRODUCT_MODULE_NAME = FCPCleanerWorkflow;
 				PRODUCT_NAME = "FCP-Cleaner-Workflow";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "WorkflowExtension/WorkflowExtension-Bridging-Header.h";
+				WORKFLOW_EXTENSION_SDK_PATH = /Library/Developer/SDKs/WorkflowExtensionSDK.sdk;
 			};
 			name = Release;
 		};
@@ -546,14 +564,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 392;
+				CURRENT_PROJECT_VERSION = 400;
 				EXECUTABLE_NAME = "FCP-Cleaner";
 				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.9.2;
+				MARKETING_VERSION = 4.0.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -571,14 +589,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 392;
+				CURRENT_PROJECT_VERSION = 400;
 				EXECUTABLE_NAME = "FCP-Cleaner";
 				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.9.2;
+				MARKETING_VERSION = 4.0.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
