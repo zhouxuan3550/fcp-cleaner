@@ -3,12 +3,12 @@
     <channel>
         <title>FCP Cleaner</title>
         <item>
-            <title>3.7.0</title>
-            <pubDate>Fri, 28 Aug 2026 09:22:13 +0800</pubDate>
-            <sparkle:version>370</sparkle:version>
-            <sparkle:shortVersionString>3.7.0</sparkle:shortVersionString>
+            <title>3.8.0</title>
+            <pubDate>Fri, 28 Aug 2026 09:38:17 +0800</pubDate>
+            <sparkle:version>380</sparkle:version>
+            <sparkle:shortVersionString>3.8.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.7.0/FCP-Cleaner-3.7.0-universal.dmg" length="4239510" type="application/octet-stream" sparkle:edSignature="K8193G506jJU783K6/i8YJhAnOTElipR83nea5G+7vg3JRKBlKzSure9Y768gWHEJqLe8W1zw4aLG67idVqMBQ=="/>
+            <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.8.0/FCP-Cleaner-3.8.0-universal.dmg" length="4231862" type="application/octet-stream" sparkle:edSignature="4MGKihytJ5UwCVRon+uY7ZwuelGCRxurZzrfuH1GpJd1q+Qad7GEEjRsJyPUOT46suBNli+19ziO64WgxG3ICw=="/>
         </item>
 <item>
             <title>3.6.0</title>
@@ -25,6 +25,14 @@
             <sparkle:shortVersionString>3.5.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.5.0/FCP-Cleaner-3.5.0-universal.dmg" length="4066731" type="application/octet-stream" sparkle:edSignature="HSYFsD53U0UzIn+0BTZOhvxfxSfbbxbqM+mzZ0x9cjUL8UQx9D39J7fhQJ2fCfY2W/ZzFstWFNUE4LtYR+2iDg=="/>
+        </item>
+<item>
+            <title>3.7.0</title>
+            <pubDate>Fri, 28 Aug 2026 09:22:13 +0800</pubDate>
+            <sparkle:version>370</sparkle:version>
+            <sparkle:shortVersionString>3.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.7.0/FCP-Cleaner-3.7.0-universal.dmg" length="4239510" type="application/octet-stream" sparkle:edSignature="K8193G506jJU783K6/i8YJhAnOTElipR83nea5G+7vg3JRKBlKzSure9Y768gWHEJqLe8W1zw4aLG67idVqMBQ=="/>
         </item>
     </channel>
 </rss>
