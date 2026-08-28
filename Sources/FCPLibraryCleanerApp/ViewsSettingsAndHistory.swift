@@ -313,9 +313,6 @@ struct LibrarySettings: View {
             Divider()
             VolumeAccessSection(library: library, store: store)
             Divider()
-            Button("在 Finder 中显示") {
-                NSWorkspace.shared.activateFileViewerSelecting([library.url])
-            }
             Button("拷贝资源库路径") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(library.url.path, forType: .string)

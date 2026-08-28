@@ -23,6 +23,18 @@ struct AppHeader: View {
             Spacer(minLength: 18)
 
             Button {
+                if let library = store.selectedLibrary {
+                    NSWorkspace.shared.activateFileViewerSelecting([library.url])
+                }
+            } label: {
+                Image(systemName: "folder")
+            }
+            .buttonStyle(HeaderButtonStyle())
+            .disabled(store.selectedLibrary == nil)
+            .accessibilityLabel("在 Finder 中显示")
+            .help("在 Finder 中显示当前资源库")
+
+            Button {
                 showsHistory.toggle()
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
