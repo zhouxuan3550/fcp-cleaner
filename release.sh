@@ -76,6 +76,15 @@ if [ ! -d "${PRODUCT_APP}/Contents/Resources/Metadata.appintents" ]; then
     echo "  ✗ App Intents 元数据未生成"
     exit 1
 fi
+if [ ! -f "${PRODUCT_APP}/Contents/Resources/FCP-Cleaner.icns" ]; then
+    echo "  ✗ App 图标未嵌入"
+    exit 1
+fi
+ICON_NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "${PRODUCT_APP}/Contents/Info.plist")
+if [ "${ICON_NAME%.icns}" != "FCP-Cleaner" ]; then
+    echo "  ✗ CFBundleIconFile 与图标资源不一致: ${ICON_NAME}"
+    exit 1
+fi
 for BINARY in "${PRODUCT_APP}/Contents/MacOS/${EXECUTABLE}" "${WORKFLOW_EXECUTABLE}"; do
     ARCHS_FOUND=$(lipo -archs "${BINARY}")
     if [[ " ${ARCHS_FOUND} " != *" arm64 "* || " ${ARCHS_FOUND} " != *" x86_64 "* ]]; then
@@ -83,7 +92,7 @@ for BINARY in "${PRODUCT_APP}/Contents/MacOS/${EXECUTABLE}" "${WORKFLOW_EXECUTAB
         exit 1
     fi
 done
-echo "  ✓ 主程序、Workflow Extension、App Intents 完整"
+echo "  ✓ 主程序、App 图标、Workflow Extension、App Intents 完整"
 
 # ─── 5. 复制并签名完整 App ───
 echo ""

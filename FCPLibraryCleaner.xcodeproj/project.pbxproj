@@ -16,6 +16,7 @@
 		3CA7DC924D29FFD540D9C0F9 /* CleanupSummaryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CCF038B12C81C6A16E8CB8 /* CleanupSummaryModels.swift */; };
 		3D35DDCF8B522ED7584795F1 /* LibraryScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A81F92C1AE2CD7F46C5DD5 /* LibraryScanner.swift */; };
 		491FC2B28AEE0892BCE080C5 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551DC8F234B31D7D7EDDA135 /* AppIntents.swift */; };
+		49F445DFE65E28877929ED90 /* FCP-Cleaner.icns in Resources */ = {isa = PBXBuildFile; fileRef = 2B9BBC9B025F90C7DCD54D58 /* FCP-Cleaner.icns */; };
 		512F7E263D817A8471FDBA14 /* CleanupEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7063734E2929AA7B4312BF0F /* CleanupEngine.swift */; };
 		5431CA6F560233A994C810B0 /* SecurityScopedBookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C75F3FCB9B85C9B4E79DF50B /* SecurityScopedBookmarkManager.swift */; };
 		58E2CA3281472131F0B9ED09 /* FCP-Cleaner-Workflow.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E6BD3337D1822E9FFA007134 /* FCP-Cleaner-Workflow.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -42,6 +43,7 @@
 		D334EC8256858DAF5DB91083 /* CleanupThroughputIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 187A9BF53C11F26C3BD4DBB3 /* CleanupThroughputIndex.swift */; };
 		D35697E21F52EF473D1C1544 /* VolumeMountMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E4CC4306A2B40AE8CFA6C8C /* VolumeMountMonitor.swift */; };
 		D6C327677FE1DFC3D348397D /* ViewsLibraryDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D10701416C9D622A811DD3 /* ViewsLibraryDetail.swift */; };
+		DA46278B1BE331789D9EE258 /* FCP-Cleaner.icns in Resources */ = {isa = PBXBuildFile; fileRef = 2B9BBC9B025F90C7DCD54D58 /* FCP-Cleaner.icns */; };
 		DAE223BF79B70FA5DE1D6E87 /* WorkDirectoryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3189BC5DF66913D99AEB4260 /* WorkDirectoryMonitor.swift */; };
 		DD0DF789FD3A7498F3423D15 /* NotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AA5FD7044919316E9262A01 /* NotificationController.swift */; };
 		DD455D1BD50CC41B37178947 /* ScanControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD4EAC01E2A08D2DE7620F3 /* ScanControl.swift */; };
@@ -91,6 +93,7 @@
 		1E4CC4306A2B40AE8CFA6C8C /* VolumeMountMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeMountMonitor.swift; sourceTree = "<group>"; };
 		20E90935002C1734277CD748 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		25489A68BC788A62C28C0402 /* FCPLibraryCleanerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FCPLibraryCleanerApp.swift; sourceTree = "<group>"; };
+		2B9BBC9B025F90C7DCD54D58 /* FCP-Cleaner.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = "FCP-Cleaner.icns"; sourceTree = "<group>"; };
 		3189BC5DF66913D99AEB4260 /* WorkDirectoryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkDirectoryMonitor.swift; sourceTree = "<group>"; };
 		3EFF56D74707AFC00861081E /* DiagnosticsExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsExporter.swift; sourceTree = "<group>"; };
 		4A3486FC3B869DF3393C08CE /* ViewsHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsHeader.swift; sourceTree = "<group>"; };
@@ -197,6 +200,7 @@
 		7CF893E96DACCD443EE0C21C = {
 			isa = PBXGroup;
 			children = (
+				FEC2DBFFE4AC0767DC0AD85D /* Assets */,
 				7AD5B4B872878DB882720E71 /* Sources */,
 				4F00121C1FA84BBAFCB1E51B /* WorkflowExtension */,
 				AAEF49FE0F048F5A804AA6CD /* Products */,
@@ -232,6 +236,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		FEC2DBFFE4AC0767DC0AD85D /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				2B9BBC9B025F90C7DCD54D58 /* FCP-Cleaner.icns */,
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -240,6 +252,7 @@
 			buildConfigurationList = F434A78972E34FA0DD39803A /* Build configuration list for PBXNativeTarget "FCP-Cleaner-Workflow" */;
 			buildPhases = (
 				0A0CE607756C6D687BFF1242 /* Sources */,
+				B3F6DC2740FDB38931F718CA /* Resources */,
 			);
 			buildRules = (
 			);
@@ -275,6 +288,7 @@
 			buildConfigurationList = 498F67084D4D021843AC56AB /* Build configuration list for PBXNativeTarget "FCP-Cleaner" */;
 			buildPhases = (
 				1C6988067F380DA8181FDC7A /* Sources */,
+				A19FDCB105A6F9776E40EF29 /* Resources */,
 				FC9B2817D646E8D0522C854A /* Frameworks */,
 				B0919BEF092DB5EA0EB16257 /* Embed Foundation Extensions */,
 			);
@@ -329,6 +343,25 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A19FDCB105A6F9776E40EF29 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				49F445DFE65E28877929ED90 /* FCP-Cleaner.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3F6DC2740FDB38931F718CA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DA46278B1BE331789D9EE258 /* FCP-Cleaner.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		B12BEEE9DC998C4740CCE669 /* Copy Swift Objective-C Interface Header */ = {
@@ -432,7 +465,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 391;
+				CURRENT_PROJECT_VERSION = 392;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"/Applications/Final\\ Cut\\ Pro.app/Contents/Frameworks",
@@ -443,7 +476,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 3.9.1;
+				MARKETING_VERSION = 3.9.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-u",
@@ -480,7 +513,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 391;
+				CURRENT_PROJECT_VERSION = 392;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"/Applications/Final\\ Cut\\ Pro.app/Contents/Frameworks",
@@ -491,7 +524,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 3.9.1;
+				MARKETING_VERSION = 3.9.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-u",
@@ -510,17 +543,17 @@
 		66D935FF400B5A824D40CDD8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 391;
+				CURRENT_PROJECT_VERSION = 392;
 				EXECUTABLE_NAME = "FCP-Cleaner";
 				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.9.1;
+				MARKETING_VERSION = 3.9.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -535,17 +568,17 @@
 		90A05D65D6800CE8A6B875B0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 391;
+				CURRENT_PROJECT_VERSION = 392;
 				EXECUTABLE_NAME = "FCP-Cleaner";
 				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 3.9.1;
+				MARKETING_VERSION = 3.9.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
