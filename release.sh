@@ -12,6 +12,7 @@ APP_NAME="FCP Cleaner"
 BUNDLE_ID="com.fcpcleaner.app"
 EXECUTABLE="FCP-Cleaner"
 REPO_NAME="fcp-cleaner"
+FEED_URL="https://zhouxuan3550.github.io/${REPO_NAME}/appcast.xml"
 VERSION="${1:?用法: ./release.sh <版本号> <构建号>  例如 3.2.0 320}"
 BUILD="${2:?用法: ./release.sh <版本号> <构建号>  例如 3.2.0 320}"
 DMG_NAME="FCP-Cleaner-${VERSION}-universal.dmg"
@@ -148,8 +149,15 @@ if [ -x "${SPARKLE_TOOLS}/generate_appcast" ]; then
     mkdir -p "${UPDATES_DIR}"
     cp "Distribution/${DMG_NAME}" "${UPDATES_DIR}/"
 
+    # 复用线上 feed，确保生成器是在历史条目上追加，而不是重建成单版本。
+    curl --fail --silent --show-error --location \
+        "${FEED_URL}" -o "${UPDATES_DIR}/appcast.xml" || true
+
     DOWNLOAD_PREFIX="https://github.com/zhouxuan3550/${REPO_NAME:-fcp-cleaner}/releases/download/v${VERSION}/"
-    "${SPARKLE_TOOLS}/generate_appcast" --download-url-prefix "${DOWNLOAD_PREFIX}" "${UPDATES_DIR}/"
+    "${SPARKLE_TOOLS}/generate_appcast" \
+        --maximum-versions 0 \
+        --download-url-prefix "${DOWNLOAD_PREFIX}" \
+        "${UPDATES_DIR}/"
 
     if [ -f "${UPDATES_DIR}/appcast.xml" ]; then
         # 复制到 Distribution 根目录供 publish.sh 使用

@@ -118,6 +118,19 @@ if [ ! -f "$APPCAST_PATH" ]; then
     echo ""
     echo "  手动生成: .build/artifacts/sparkle/Sparkle/bin/generate_appcast Distribution/"
 else
+    # 防止构建机缺少旧 feed 时，用单版本 appcast 覆盖完整历史。
+    REMOTE_APPCAST=$(mktemp)
+    if curl --fail --silent --show-error --location "${FEED_URL}" -o "${REMOTE_APPCAST}"; then
+        LOCAL_ITEMS=$(grep -c '<item>' "${APPCAST_PATH}" || true)
+        REMOTE_ITEMS=$(grep -c '<item>' "${REMOTE_APPCAST}" || true)
+        if [ "${LOCAL_ITEMS}" -lt "${REMOTE_ITEMS}" ]; then
+            echo "  ✗ 本地 appcast 条目少于线上版本，拒绝覆盖 (${LOCAL_ITEMS} < ${REMOTE_ITEMS})"
+            rm -f "${REMOTE_APPCAST}"
+            exit 1
+        fi
+    fi
+    rm -f "${REMOTE_APPCAST}"
+
     # 创建临时目录用于 gh-pages 内容
     PAGES_DIR=$(mktemp -d)
     trap "rm -rf $PAGES_DIR" EXIT
