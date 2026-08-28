@@ -126,6 +126,15 @@ struct AppSettings: View {
             sectionHeader("外观")
             Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
                 .toggleStyle(.switch)
+            Picker("定时检查", selection: $store.scheduledCheckFrequency) {
+                ForEach(ScheduledCheckFrequency.allCases) { frequency in
+                    Text(frequency.title).tag(frequency)
+                }
+            }
+            .pickerStyle(.segmented)
+            Text("到点自动发现并增量扫描，完成后仅发送通知，绝不自动清理")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(AppColor.tertiaryText)
             Picker("外观", selection: $store.appearanceMode) {
                 Text("跟随系统").tag(AppearanceMode.system)
                 Text("暗色").tag(AppearanceMode.dark)

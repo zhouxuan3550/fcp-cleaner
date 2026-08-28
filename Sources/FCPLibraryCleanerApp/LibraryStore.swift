@@ -163,7 +163,7 @@ enum AppearanceMode: Int, CaseIterable, Identifiable {
 @Observable @MainActor
 final class LibraryStore: NSObject {
     static let shared = LibraryStore()
-    static let minimumCleanableSize: Int64 = 200 * 1_024 * 1_024
+    nonisolated static let minimumCleanableSize: Int64 = 200 * 1_024 * 1_024
 
     var libraries: [LibraryRecord] = []
     var workDirectories: [URL] = []
@@ -213,8 +213,17 @@ final class LibraryStore: NSObject {
             evaluateLowSpace()
         }
     }
+    var scheduledCheckFrequency = ScheduledCheckFrequency(
+        rawValue: UserDefaults.standard.string(forKey: ScheduledCheckController.frequencyStorageKey) ?? ""
+    ) ?? .off {
+        didSet {
+            UserDefaults.standard.set(scheduledCheckFrequency.rawValue, forKey: ScheduledCheckController.frequencyStorageKey)
+            scheduledCheckController.restart()
+        }
+    }
     let cleanupHistory = CleanupHistoryStore()
     @ObservationIgnored private let bookmarks = SecurityScopedBookmarkManager()
+    @ObservationIgnored private lazy var scheduledCheckController = ScheduledCheckController(store: self)
     @ObservationIgnored private let scanCache = ScanResultCache()
     @ObservationIgnored private var metadataQuery: NSMetadataQuery?
     @ObservationIgnored private var didBeginAutomaticDiscovery = false
@@ -406,6 +415,7 @@ final class LibraryStore: NSObject {
         workDirectoryMonitor?.updateWatched(paths: workDirectories.map(\.path))
         if volumeMountMonitor == nil { volumeMountMonitor = VolumeMountMonitor(store: self) }
         volumeMountMonitor?.start()
+        scheduledCheckController.restart()
 
         for library in libraries where library.scanResult == nil && !library.isScanning {
             scan(library, force: false)
@@ -1354,6 +1364,28 @@ final class LibraryStore: NSObject {
                 }
             }
         }
+    }
+
+    /// 定时检查：自动发现 + 全库增量扫描 + 完成通知。
+    /// 产品红线：本路径绝不创建清理计划、绝不调用 CleanupEngine。
+    func runScheduledCheck() async {
+        discoverLibraries()
+        for record in libraries {
+            scan(record, force: false)
+        }
+        // 等待扫描队列静默（上限 15 分钟），扫描本身已在后台并发执行
+        let deadline = Date().addingTimeInterval(900)
+        while (!scanQueue.isEmpty || !activeScanIDs.isEmpty), Date() < deadline {
+            try? await Task.sleep(for: .seconds(1))
+        }
+        evaluateLowSpace()
+        let cleanableRecords = libraries.filter { effectiveCleanableSize(for: $0) >= Self.minimumCleanableSize }
+        let total = cleanableRecords.reduce(Int64(0)) { $0 + effectiveCleanableSize(for: $1) }
+        NotificationController.shared.scheduledCheckFinished(
+            cleanableSize: total,
+            libraryCount: cleanableRecords.count,
+            enabled: notificationsEnabled
+        )
     }
 
     private func filter(for record: LibraryRecord) -> LibraryFilter {

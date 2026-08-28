@@ -33,4 +33,20 @@ final class NotificationController {
             trigger: nil
         ))
     }
+
+    /// 定时检查完成通知。只报告结果并请用户自行确认，绝不代为清理。
+    func scheduledCheckFinished(cleanableSize: Int64, libraryCount: Int, enabled: Bool) {
+        guard enabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "FCP Cleaner 定时检查完成"
+        content.body = cleanableSize >= LibraryStore.minimumCleanableSize
+            ? "当前可释放 \(FormatHelpers.bytes(cleanableSize))（\(libraryCount) 个资源库），请打开应用确认后清理"
+            : "未发现足够可清理的空间"
+        content.sound = .default
+        UNUserNotificationCenter.current().add(UNNotificationRequest(
+            identifier: "scheduled-check-finished",
+            content: content,
+            trigger: nil
+        ))
+    }
 }
