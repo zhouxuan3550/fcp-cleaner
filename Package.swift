@@ -29,5 +29,9 @@ let package = Package(
             name: "FCPLibraryCleanerCoreTests",
             dependencies: ["FCPLibraryCleanerCore"]
         ),
+        .testTarget(
+            name: "FCPLibraryCleanerAppTests",
+            dependencies: ["FCPLibraryCleanerApp"]
+        ),
     ]
 )
