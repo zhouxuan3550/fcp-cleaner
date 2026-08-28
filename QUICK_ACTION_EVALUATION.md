@@ -39,7 +39,15 @@ macOS 的 Quick Action 本质是 **Action Extension（.appex）**，扩展点 `N
 5. `release.sh`：装配 `Contents/PlugIns/`、调整 codesign 顺序、`codesign --verify --deep --strict`、公证后重新验证 Quick Action 注册。
 6. 首次启用引导：README/更新说明中写明"系统设置 → Finder 扩展中启用"。
 
-## 5. 决策记录
+## 5. 关联限制：Shortcuts App Intents 的元数据提取（P4-6 实测）
+
+P4-6 已交付三个只读 AppIntent（`ScannedWorkDirs`/`ScanLibrary`/`ShowCleanableSpace`，含 `AppShortcutsProvider`）。但 Shortcuts 能否"看到"这些意图取决于构建期的 App Intents 元数据提取：
+
+- `appintentsmetadataprocessor`（本机 Xcode 26.3 已确认存在）需要 Swift 编译器产出的 stringsdata **和** const values；实测本仓库 `swift build --arch arm64 --arch x86_64`（xcbuild 路径）会产出 stringsdata，但**不产出 const values**（Xcode 由 `ENABLE_APP_INTENTS_METADATA_EXTRACTION` 等构建设置控制）。
+- 尝试经 `-Xswiftc -Xfrontend -emit-const-value-patterns` 补齐时，SwiftPM 参数传递存在缺陷（复数参数组合直接解析失败/崩溃）。社区结论一致：SPM 直接构建的 App，Shortcuts 无法自动发现其意图（参考 Apple Developer Forums "AppIntents don't show up in Shortcuts app when in SPM package"）。
+- 因此：意图代码已就位并可被程序化调用（`perform()` 有测试覆盖），但在迁移到 Xcode 工程并开启元数据提取构建阶段之前，Shortcuts App 内不会列出它们。该项与 Quick Action 共享同一触发条件，已列入 §4 前置清单的第 1、3 步。
+
+## 6. 决策记录
 
 - 2026-08-28：评估结论为**暂不实现**。触发重估条件：完成 Xcode 工程迁移且具备公证能力后，或出现明确用户反馈"服务二级菜单找不到"时再立项。
 - 过渡期自动化需求由 App Intents / Shortcuts（P4-6）与现有 Services 项覆盖。

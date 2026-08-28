@@ -278,6 +278,11 @@ final class LibraryStore: NSObject {
         libraries.filter { $0.isScanning || $0.isQueued }
     }
 
+    /// 还有排队或运行中的扫描（定时检查与 Shortcuts 意图据此等待静默）。
+    var isScanPending: Bool {
+        !scanQueue.isEmpty || !activeScanIDs.isEmpty
+    }
+
     var skippedLibraries: [LibraryRecord] {
         libraries.filter { record in
             !record.isScanning && !record.isQueued
