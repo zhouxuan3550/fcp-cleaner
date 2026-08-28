@@ -74,13 +74,13 @@ enum DiagnosticsWriter {
                 .data(using: .utf8)
                 .map { try $0.write(to: staging.appendingPathComponent("os-log.txt"), options: .atomic) }
 
-            try encode(volumeReports).map {
+            try encodeRedacted(volumeReports, homeDirectory: homeDirectory).map {
                 try $0.write(to: staging.appendingPathComponent("volume-access.json"), options: .atomic)
             }
             try encode(bookmarkStatus).map {
                 try $0.write(to: staging.appendingPathComponent("bookmarks.json"), options: .atomic)
             }
-            try encode(failures).map {
+            try encodeRedacted(failures, homeDirectory: homeDirectory).map {
                 try $0.write(to: staging.appendingPathComponent("recent-failures.json"), options: .atomic)
             }
             try redact(systemInfo, homeDirectory: homeDirectory)
@@ -146,9 +146,16 @@ enum DiagnosticsWriter {
 
     private static func encode<T: Encodable>(_ value: T) throws -> Data? {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         encoder.dateEncodingStrategy = .iso8601
         return try encoder.encode(value)
+    }
+
+    /// JSON 字符串字段同样执行主目录脱敏，避免资源库路径和错误信息泄露用户名。
+    static func encodeRedacted<T: Encodable>(_ value: T, homeDirectory: String) throws -> Data? {
+        guard let data = try encode(value),
+              let json = String(data: data, encoding: .utf8) else { return nil }
+        return redact(json, homeDirectory: homeDirectory).data(using: .utf8)
     }
 
     private static func runZip(sourceDirectory: URL, outputURL: URL) throws {

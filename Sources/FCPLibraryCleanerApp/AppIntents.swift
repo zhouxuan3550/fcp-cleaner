@@ -50,7 +50,7 @@ struct ScanLibrary: AppIntent {
         // 等待扫描静默（上限 15 分钟）；扫描本身在后台并发执行
         let deadline = Date().addingTimeInterval(900)
         while store.isScanPending, Date() < deadline {
-            try? await Task.sleep(for: .seconds(1))
+            try await Task.sleep(for: .seconds(1))
         }
         let scanned = targets.count(where: { $0.scanResult != nil })
         let total = targets.reduce(Int64(0)) { $0 + store.effectiveCleanableSize(for: $1) }

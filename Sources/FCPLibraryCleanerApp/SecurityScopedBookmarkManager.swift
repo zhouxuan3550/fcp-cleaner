@@ -115,6 +115,7 @@ final class SecurityScopedBookmarkManager {
             _ = url.startAccessingSecurityScopedResource()
             let standardizedURL = url.standardizedFileURL
             activeURLs.insert(standardizedURL)
+            workDirectoryBookmarkData[standardizedURL] = bookmark.data
             return standardizedURL
         }
     }
@@ -123,13 +124,19 @@ final class SecurityScopedBookmarkManager {
         var retained: [URL: Data] = [:]
         let stored = urls.compactMap { url -> StoredURLBookmark? in
             let standardizedURL = url.standardizedFileURL
-            _ = standardizedURL.startAccessingSecurityScopedResource()
-            activeURLs.insert(standardizedURL)
-            guard let data = try? standardizedURL.bookmarkData(
-                options: [.withSecurityScope],
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            ) else { return nil }
+            let data: Data
+            if let cached = workDirectoryBookmarkData[standardizedURL] {
+                data = cached
+            } else {
+                _ = standardizedURL.startAccessingSecurityScopedResource()
+                activeURLs.insert(standardizedURL)
+                guard let created = try? standardizedURL.bookmarkData(
+                    options: [.withSecurityScope],
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                ) else { return nil }
+                data = created
+            }
             retained[standardizedURL] = data
             return StoredURLBookmark(data: data)
         }

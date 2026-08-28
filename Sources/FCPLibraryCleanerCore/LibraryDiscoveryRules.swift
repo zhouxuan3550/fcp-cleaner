@@ -27,7 +27,8 @@ public enum LibraryDiscoveryRules {
 /// 纯谓词：资源库级"稍后提醒"与目录级忽略集（仅作用于自动发现与列表分层）。
 /// 忽略绝不进入清理链路：CleanupPlan/CleanupEngine 不读取任何忽略状态，
 /// 白名单与 trashItem 行为不受影响。
-public enum LibraryIgnoreRules {    public static let defaultSnoozeDays = 7
+public enum LibraryIgnoreRules {
+    public static let defaultSnoozeDays = 7
 
     /// `until` 在当前时刻之后视为忽略中；过期后自动回到正常分层。
     public static func isSnoozed(until: Date?, now: Date = Date()) -> Bool {

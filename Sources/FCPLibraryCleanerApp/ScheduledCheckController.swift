@@ -96,6 +96,7 @@ final class ScheduledCheckController {
         guard let store else { return false }
         guard !store.isPreflighting, !store.isCleaning, !store.isBatchCleaning else { return false }
         await store.runScheduledCheck()
+        guard !Task.isCancelled else { return false }
         defaults.set(Date(), forKey: Self.lastRunStorageKey)
         return true
     }

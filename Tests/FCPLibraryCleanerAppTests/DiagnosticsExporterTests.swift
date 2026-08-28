@@ -22,6 +22,20 @@ struct DiagnosticsExporterTests {
         #expect(DiagnosticsWriter.redact("abc", homeDirectory: "/") == "abc")
     }
 
+    @Test("JSON diagnostics redact paths and error messages")
+    func jsonRedaction() throws {
+        let failures = [DiagnosticsFailure(
+            date: Date(timeIntervalSinceReferenceDate: 800_000_000),
+            libraryName: "采访",
+            errorMessages: ["无法访问 \(home)/Movies/采访.fcpbundle"]
+        )]
+        let encoded = try DiagnosticsWriter.encodeRedacted(failures, homeDirectory: home)
+        let data = try #require(encoded)
+        let json = try #require(String(data: data, encoding: .utf8))
+        #expect(!json.contains(home))
+        #expect(json.contains("~/Movies/采访.fcpbundle"))
+    }
+
     @Test("suggested file name carries a sortable timestamp")
     func fileName() {
         let name = DiagnosticsWriter.suggestedFileName(now: Date(timeIntervalSinceReferenceDate: 800_000_000))

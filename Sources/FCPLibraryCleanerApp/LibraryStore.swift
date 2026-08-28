@@ -227,10 +227,12 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private let bookmarks = SecurityScopedBookmarkManager()
     @ObservationIgnored private lazy var scheduledCheckController = ScheduledCheckController(store: self)
     @ObservationIgnored private let cleanupJournal = CleanupTransactionJournal()
+    @ObservationIgnored private var interruptedReconciliationID = UUID()
     @ObservationIgnored private let scanCache = ScanResultCache()
     @ObservationIgnored private var metadataQuery: NSMetadataQuery?
     @ObservationIgnored private var didBeginAutomaticDiscovery = false
     @ObservationIgnored private var discoveryRunID = UUID()
+    @ObservationIgnored private var pendingMergeCount = 0
     @ObservationIgnored private var scanQueue: [ScanRequest] = []
     @ObservationIgnored private var activeScanIDs = Set<LibraryRecord.ID>()
     @ObservationIgnored private var noticeDismissalTask: Task<Void, Never>?
@@ -240,6 +242,7 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var isEvaluatingLowSpace = false
     @ObservationIgnored private var workDirectoryMonitor: WorkDirectoryMonitor?
     @ObservationIgnored private var volumeMountMonitor: VolumeMountMonitor?
+    @ObservationIgnored private var snoozeExpiryTask: Task<Void, Never>?
     @ObservationIgnored private var isExportingDiagnosticsInternal = false
     /// 菜单项禁用态（诊断导出进行中）。
     var isExportingDiagnostics: Bool { isExportingDiagnosticsInternal }
@@ -428,8 +431,9 @@ final class LibraryStore: NSObject {
         volumeMountMonitor?.start()
         scheduledCheckController.restart()
         reconcileInterruptedCleanup()
+        scheduleSnoozeExpiryRefresh()
 
-        for library in libraries where library.scanResult == nil && !library.isScanning {
+        for library in libraries where library.scanResult == nil && !library.isScanning && !isLibraryIgnored(library) {
             scan(library, force: false)
         }
         discoverLibraries()
@@ -577,6 +581,7 @@ final class LibraryStore: NSObject {
         // 对几十上百个已知库反复做三次文件系统调用纯属浪费。
         let knownURLs = Set(libraries.map(\.url.standardizedFileURL))
         let ignoredDirectories = ignoredLibraryDirectories
+        pendingMergeCount += 1
         Task { [weak self] in
             let candidates = await Task.detached(priority: .utility) {
                 Self.validateCandidates(
@@ -586,7 +591,9 @@ final class LibraryStore: NSObject {
                     ignoredDirectoryPaths: ignoredDirectories
                 )
             }.value
-            self?.applyValidatedCandidates(candidates, selectNewest: selectNewest, source: source)
+            guard let self else { return }
+            applyValidatedCandidates(candidates, selectNewest: selectNewest, source: source)
+            pendingMergeCount -= 1
         }
     }
 
@@ -880,6 +887,8 @@ final class LibraryStore: NSObject {
     /// 启动及每次清理收尾时对账：依据事务日志与清理历史的差集重建待清计划。
     /// 磁盘存在性检查在后台执行（外置盘可能离线），绝不上主线程。
     func reconcileInterruptedCleanup() {
+        interruptedReconciliationID = UUID()
+        let reconciliationID = interruptedReconciliationID
         guard let transaction = cleanupJournal.load() else {
             if !interruptedCleanups.isEmpty { interruptedCleanups = [] }
             return
@@ -892,7 +901,7 @@ final class LibraryStore: NSObject {
             let summaries = await Task.detached(priority: .utility) {
                 Self.resolvePending(from: plans, startedAt: startedAt, completedURLs: completedURLs)
             }.value
-            guard let self else { return }
+            guard let self, reconciliationID == interruptedReconciliationID else { return }
             interruptedCleanups = summaries
             if summaries.isEmpty { cleanupJournal.clear() }
         }
@@ -942,9 +951,8 @@ final class LibraryStore: NSObject {
 
     func discardInterruptedCleanup(_ summary: InterruptedCleanupSummary) {
         interruptedCleanups.removeAll { $0.id == summary.id }
-        if interruptedCleanups.isEmpty {
-            cleanupJournal.clear()
-        }
+        cleanupJournal.finish(libraryURLs: [summary.libraryURL])
+        reconcileInterruptedCleanup()
     }
 
     func requestBatchClean() {
@@ -1039,10 +1047,7 @@ final class LibraryStore: NSObject {
         batchCleanupCompleted = 0
         batchCleanupTotal = confirmation.entries.count
         // 批量事务一并落盘，中断后按库分组重建
-        cleanupJournal.save(CleanupTransaction(
-            startedAt: Date(),
-            plans: confirmation.entries.map(\.plan)
-        ))
+        cleanupJournal.begin(plans: confirmation.entries.map(\.plan))
         Task {
             let batchStart = ContinuousClock.now
             var freedSize: Int64 = 0
@@ -1139,7 +1144,7 @@ final class LibraryStore: NSObject {
                 errorCount: errorCount,
                 enabled: notificationsEnabled
             )
-            cleanupJournal.clear()
+            cleanupJournal.finish(libraryURLs: Set(confirmation.entries.map { $0.plan.libraryURL }))
             reconcileInterruptedCleanup()
         }
     }
@@ -1152,7 +1157,7 @@ final class LibraryStore: NSObject {
         record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
         record.cleanupAfterSize = nil
         // 事务日志先于执行落盘：崩溃/断电后可依据它与重扫差集重建待清计划
-        cleanupJournal.save(CleanupTransaction(startedAt: Date(), plans: [confirmation.plan]))
+        cleanupJournal.begin(plans: [confirmation.plan])
         Task {
             // 单库清理同样不可被节流打断
             let cleanActivity = ProcessInfo.processInfo.beginActivity(
@@ -1211,7 +1216,7 @@ final class LibraryStore: NSObject {
                 )
             }
             // 事务已有结局（成功或已记录的失败），日志使命完成
-            cleanupJournal.clear()
+            cleanupJournal.finish(libraryURLs: [confirmation.plan.libraryURL])
             reconcileInterruptedCleanup()
             isCleaning = false
         }
@@ -1253,10 +1258,12 @@ final class LibraryStore: NSObject {
 
     /// 待清理列表中周增长最大者（须为正增长），供列表突出显示。
     var fastestGrowingLibraryID: LibraryRecord.ID? {
+        let records = waitingLibraries
+        let growthByURL = LibrarySizeTrend.weeklyGrowthByLibrary(records.map(\.url))
         var bestID: LibraryRecord.ID?
         var bestGrowth: Int64 = 0
-        for record in waitingLibraries {
-            guard let growth = weeklyGrowth(for: record), growth > bestGrowth else { continue }
+        for record in records {
+            guard let growth = growthByURL[record.url.standardizedFileURL], growth > bestGrowth else { continue }
             bestGrowth = growth
             bestID = record.id
         }
@@ -1323,6 +1330,7 @@ final class LibraryStore: NSObject {
         record.ignoredUntil = Calendar.current.date(byAdding: .day, value: days, to: Date())
         reconcileFilteredLibraries()
         saveRecents()
+        scheduleSnoozeExpiryRefresh()
     }
 
     func resumeLibrary(_ record: LibraryRecord) {
@@ -1336,6 +1344,7 @@ final class LibraryStore: NSObject {
         }
         reconcileFilteredLibraries()
         saveRecents()
+        scheduleSnoozeExpiryRefresh()
     }
 
     func ignoreDirectory(_ url: URL) {
@@ -1350,6 +1359,26 @@ final class LibraryStore: NSObject {
         ignoredLibraryDirectories.removeAll { $0 == path }
         reconcileFilteredLibraries()
         saveRecents()
+    }
+
+    private func scheduleSnoozeExpiryRefresh() {
+        snoozeExpiryTask?.cancel()
+        let now = Date()
+        for record in libraries where record.ignoredUntil.map({ $0 <= now }) == true {
+            record.ignoredUntil = nil
+        }
+        guard let nextExpiry = libraries.compactMap(\.ignoredUntil).filter({ $0 > now }).min() else {
+            snoozeExpiryTask = nil
+            return
+        }
+        snoozeExpiryTask = Task { [weak self] in
+            let delay = max(0, nextExpiry.timeIntervalSinceNow)
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled, let self else { return }
+            scheduleSnoozeExpiryRefresh()
+            reconcileFilteredLibraries()
+            saveRecents()
+        }
     }
 
     /// 扫描健康度：让"自动扫描是否真正完成"不依赖日志即可判断。
@@ -1559,16 +1588,24 @@ final class LibraryStore: NSObject {
     /// 产品红线：本路径绝不创建清理计划、绝不调用 CleanupEngine。
     func runScheduledCheck() async {
         discoverLibraries()
-        for record in libraries {
+        let deadline = Date().addingTimeInterval(900)
+        while (isDiscovering || pendingMergeCount > 0), Date() < deadline {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+        }
+        for record in libraries where !isLibraryIgnored(record) {
             scan(record, force: false)
         }
         // 等待扫描队列静默（上限 15 分钟），扫描本身已在后台并发执行
-        let deadline = Date().addingTimeInterval(900)
         while (!scanQueue.isEmpty || !activeScanIDs.isEmpty), Date() < deadline {
             try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
         }
+        guard !Task.isCancelled else { return }
         evaluateLowSpace()
-        let cleanableRecords = libraries.filter { effectiveCleanableSize(for: $0) >= Self.minimumCleanableSize }
+        let cleanableRecords = libraries.filter {
+            !isLibraryIgnored($0) && effectiveCleanableSize(for: $0) >= Self.minimumCleanableSize
+        }
         let total = cleanableRecords.reduce(Int64(0)) { $0 + effectiveCleanableSize(for: $1) }
         NotificationController.shared.scheduledCheckFinished(
             cleanableSize: total,
@@ -1638,7 +1675,7 @@ final class LibraryStore: NSObject {
             VolumeMountRules.residesOnVolume(recordPath: $0.path, volumePath: volumePath)
         }
         guard !affected.isEmpty || workDirsOnVolume else { return }
-        for record in affected {
+        for record in affected where !isLibraryIgnored(record) {
             record.lastAccessibleAt = Date()
             record.accessReport = nil
             scan(record, force: false)

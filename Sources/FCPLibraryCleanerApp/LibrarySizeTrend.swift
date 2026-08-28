@@ -29,6 +29,19 @@ enum LibrarySizeTrend {
         index(defaults)[key(for: libraryURL)] ?? []
     }
 
+    /// 一次解码全部样本后计算多个资源库，避免侧栏刷新时为每一行重复解析整份 JSON。
+    static func weeklyGrowthByLibrary(
+        _ libraryURLs: [URL],
+        now: Date = Date(),
+        defaults: UserDefaults = .standard
+    ) -> [URL: Int64] {
+        let all = index(defaults)
+        return libraryURLs.reduce(into: [:]) { result, url in
+            guard let growth = weeklyGrowth(samples: all[key(for: url)] ?? [], now: now) else { return }
+            result[url.standardizedFileURL] = growth
+        }
+    }
+
     static func record(
         libraryURL: URL,
         totalAllocatedSize: Int64,

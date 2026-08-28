@@ -92,6 +92,21 @@ struct LibrarySizeTrendTests {
         #expect(LibrarySizeTrend.samples(for: b, defaults: defaults).first?.totalAllocatedSize == 999)
     }
 
+    @Test("batch growth calculation returns independent URL-keyed results")
+    func batchGrowth() {
+        defer { cleanUp() }
+        let now = date(2026, 8, 28, 12)
+        let a = URL(fileURLWithPath: "/tmp/fcpc-trend/A.fcpbundle")
+        let b = URL(fileURLWithPath: "/tmp/fcpc-trend/B.fcpbundle")
+        for (url, oldSize, newSize) in [(a, 100, 180), (b, 500, 450)] {
+            LibrarySizeTrend.record(libraryURL: url, totalAllocatedSize: Int64(oldSize), cleanableSize: 0, now: date(2026, 8, 20), defaults: defaults)
+            LibrarySizeTrend.record(libraryURL: url, totalAllocatedSize: Int64(newSize), cleanableSize: 0, now: date(2026, 8, 28), defaults: defaults)
+        }
+        let result = LibrarySizeTrend.weeklyGrowthByLibrary([a, b], now: now, defaults: defaults)
+        #expect(result[a.standardizedFileURL] == 80)
+        #expect(result[b.standardizedFileURL] == -50)
+    }
+
     private func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int = 0) -> Date {
         Calendar.current.date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
     }

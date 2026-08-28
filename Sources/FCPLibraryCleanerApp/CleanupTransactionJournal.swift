@@ -41,6 +41,35 @@ final class CleanupTransactionJournal {
         }
     }
 
+    /// 将新执行计划并入现有中断事务；同一资源库的新计划替换旧计划。
+    /// 这样逐库恢复时不会覆盖其它资源库尚未处理的事务。
+    func begin(plans: [CleanupPlan], startedAt: Date = Date()) {
+        guard !plans.isEmpty else { return }
+        let replacingURLs = Set(plans.map { $0.libraryURL.standardizedFileURL })
+        let existing = load()
+        let retained = existing?.plans.filter {
+            !replacingURLs.contains($0.libraryURL.standardizedFileURL)
+        } ?? []
+        save(CleanupTransaction(
+            startedAt: existing?.startedAt ?? startedAt,
+            plans: retained + plans
+        ))
+    }
+
+    /// 只移除已经有明确结局的资源库，保留同一批中其它中断计划。
+    func finish(libraryURLs: Set<URL>) {
+        guard let transaction = load() else { return }
+        let standardizedURLs = Set(libraryURLs.map(\.standardizedFileURL))
+        let remaining = transaction.plans.filter {
+            !standardizedURLs.contains($0.libraryURL.standardizedFileURL)
+        }
+        if remaining.isEmpty {
+            clear()
+        } else {
+            save(CleanupTransaction(startedAt: transaction.startedAt, plans: remaining))
+        }
+    }
+
     func clear() {
         try? FileManager.default.removeItem(at: storageURL)
     }
