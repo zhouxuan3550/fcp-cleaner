@@ -216,6 +216,7 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var spaceMonitorTask: Task<Void, Never>?
     @ObservationIgnored private var isEvaluatingLowSpace = false
     @ObservationIgnored private var workDirectoryMonitor: WorkDirectoryMonitor?
+    @ObservationIgnored private var volumeMountMonitor: VolumeMountMonitor?
     private let maximumConcurrentScans = 3
 
     private override init() {
@@ -379,6 +380,8 @@ final class LibraryStore: NSObject {
         startSpaceMonitoring()
         if workDirectoryMonitor == nil { workDirectoryMonitor = WorkDirectoryMonitor(store: self) }
         workDirectoryMonitor?.updateWatched(paths: workDirectories.map(\.path))
+        if volumeMountMonitor == nil { volumeMountMonitor = VolumeMountMonitor(store: self) }
+        volumeMountMonitor?.start()
 
         for library in libraries where library.scanResult == nil && !library.isScanning {
             scan(library, force: false)
@@ -1318,6 +1321,53 @@ final class LibraryStore: NSObject {
             writable: writable,
             checkedAt: Date()
         )
+    }
+
+    /// 外置卷重新挂载：库内该卷资源库入队增量扫描（有效缓存直接复用），
+    /// 工作目录所在卷重连后重新发现一次。判断本身是纯路径匹配，无主线程 I/O。
+    func handleVolumeMount(volumeURL: URL) {
+        let volumePath = volumeURL.standardizedFileURL.path
+        let affected = libraries.filter {
+            VolumeMountRules.residesOnVolume(recordPath: $0.url.path, volumePath: volumePath)
+        }
+        let workDirsOnVolume = workDirectories.contains {
+            VolumeMountRules.residesOnVolume(recordPath: $0.path, volumePath: volumePath)
+        }
+        guard !affected.isEmpty || workDirsOnVolume else { return }
+        for record in affected {
+            record.lastAccessibleAt = Date()
+            record.accessReport = nil
+            scan(record, force: false)
+        }
+        if workDirsOnVolume {
+            discoverLibraries()
+        }
+    }
+
+    /// 外置卷卸载：保留记录与 lastKnownCleanableSize 兜底显示；取消排队/运行中的扫描，
+    /// 避免离线扫描产生"卷已离线"噪声错误；诊断状态联动标为已断开。
+    func handleVolumeUnmount(volumeURL: URL) {
+        let volumePath = volumeURL.standardizedFileURL.path
+        let affected = libraries.filter {
+            VolumeMountRules.residesOnVolume(recordPath: $0.url.path, volumePath: volumePath)
+        }
+        guard !affected.isEmpty else { return }
+        for record in affected {
+            if let index = scanQueue.firstIndex(where: { $0.record.id == record.id }) {
+                scanQueue.remove(at: index)
+                record.isQueued = false
+            }
+            record.scanControl?.cancel()
+            record.accessReport = VolumeAccessReport(
+                libraryURL: record.url,
+                volumeName: record.volumeName,
+                mounted: false,
+                writable: false,
+                checkedAt: Date()
+            )
+        }
+        reconcileFilteredLibraries()
+        saveRecents()
     }
 
     /// Re-mints the security-scoped bookmark by having the user pick the same

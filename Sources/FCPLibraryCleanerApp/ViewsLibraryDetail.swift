@@ -84,11 +84,12 @@ struct LibraryStatusBadge: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(library.scanError == nil ? AppColor.success : AppColor.danger)
+                .fill(library.accessReport?.mounted == false || library.scanError != nil ? AppColor.danger : AppColor.success)
                 .frame(width: 7, height: 7)
             Text(
                 library.isQueued ? "等待扫描" :
                 library.isScanning ? "扫描中" :
+                library.accessReport?.mounted == false ? "磁盘已断开" :
                 library.scanError != nil ? "扫描失败" :
                 library.cleanupError != nil ? "预检未通过" :
                 library.usedCachedScan ? "增量复用" :

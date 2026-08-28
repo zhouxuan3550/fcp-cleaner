@@ -326,6 +326,8 @@ struct LibraryRow: View {
             status = library.usedCachedScan ? "缓存" : "扫描中"
         } else if library.isQueued {
             status = "等待扫描"
+        } else if library.accessReport?.mounted == false {
+            status = "磁盘已断开"
         } else if library.scanError != nil {
             status = "扫描失败"
         } else if library.cleanupError != nil {
