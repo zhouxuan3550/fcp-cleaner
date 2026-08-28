@@ -175,6 +175,7 @@ struct AppSettings: View {
 
 struct CleanupHistoryView: View {
     let store: CleanupHistoryStore
+    var libraryStore: LibraryStore?
     @State private var restoreMessage: String?
 
     var body: some View {
@@ -196,6 +197,9 @@ struct CleanupHistoryView: View {
                     Button("清空") { store.clear() }
                         .buttonStyle(.borderless)
                 }
+            }
+            if let libraryStore {
+                interruptedCleanupBanners(libraryStore)
             }
             if store.entries.isEmpty {
                 Text("暂无记录")
@@ -241,6 +245,39 @@ struct CleanupHistoryView: View {
         }
         .padding(18)
         .frame(width: LayoutMetrics.historyPopoverWidth)
+    }
+
+    /// 上次清理中断的待清计划入口：重建走普通确认流程，绝不自动清理。
+    @ViewBuilder
+    private func interruptedCleanupBanners(_ libraryStore: LibraryStore) -> some View {
+        if !libraryStore.interruptedCleanups.isEmpty {
+            VStack(spacing: 8) {
+                ForEach(libraryStore.interruptedCleanups) { item in
+                    HStack(spacing: 9) {
+                        Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("上次清理中断：\(item.libraryName)")
+                                .font(.system(size: 12, weight: .semibold))
+                                .lineLimit(1)
+                            Text("\(item.pendingCount) 项未完成 · \(FormatHelpers.bytes(item.pendingSize))")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(AppColor.secondaryText)
+                        }
+                        Spacer(minLength: 6)
+                        Button("重建待清计划") { libraryStore.rebuildInterruptedCleanup(item) }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(AppColor.accent)
+                        Button("忽略") { libraryStore.discardInterruptedCleanup(item) }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(AppColor.secondaryText)
+                    }
+                    .padding(10)
+                    .background(AppColor.control)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
+        }
     }
 }
 

@@ -52,6 +52,22 @@ public struct CleanupPlan: Codable, Sendable {
         )
     }
 
+    /// 中断恢复（P4-7）：从事务日志重建"待清计划"。
+    /// 仅保留仍未移入废纸篓（`isCompleted` 依据清理历史判定）且仍存在于原路径（`exists`）的条目；
+    /// 全部无需重做时返回 nil。重建出的计划仍要走完整预检与指纹复核，绝不跳过任何安全验证。
+    public func planForPendingEntries(
+        exists: @Sendable (URL) -> Bool,
+        isCompleted: @Sendable (URL) -> Bool
+    ) -> CleanupPlan? {
+        let pending = entries.filter { !isCompleted($0.item.url) && exists($0.item.url) }
+        guard !pending.isEmpty else { return nil }
+        return CleanupPlan(
+            libraryURL: libraryURL,
+            coreDataSnapshots: coreDataSnapshots,
+            entries: pending
+        )
+    }
+
     private init(
         libraryURL: URL,
         coreDataSnapshots: [CoreDataSnapshot],

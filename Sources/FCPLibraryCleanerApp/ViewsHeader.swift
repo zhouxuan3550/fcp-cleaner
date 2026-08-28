@@ -30,7 +30,7 @@ struct AppHeader: View {
             .buttonStyle(HeaderButtonStyle())
             .accessibilityLabel("记录")
             .popover(isPresented: $showsHistory, arrowEdge: .bottom) {
-                CleanupHistoryView(store: store.cleanupHistory)
+                CleanupHistoryView(store: store.cleanupHistory, libraryStore: store)
             }
 
             Button {

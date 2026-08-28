@@ -200,6 +200,8 @@ final class LibraryStore: NSObject {
     var discoveryError: String?
     var cleanupNotice: CleanupNotice?
     var cleanupSummary: CleanupSummary?
+    /// 上次清理中断后重建的待清计划摘要（历史页入口），处置完毕自动清空。
+    var interruptedCleanups: [InterruptedCleanupSummary] = []
     var lowSpaceWarnings: [DiskSpaceWarning] = []
     var notificationsEnabled = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true {
         didSet {
@@ -224,6 +226,7 @@ final class LibraryStore: NSObject {
     let cleanupHistory = CleanupHistoryStore()
     @ObservationIgnored private let bookmarks = SecurityScopedBookmarkManager()
     @ObservationIgnored private lazy var scheduledCheckController = ScheduledCheckController(store: self)
+    @ObservationIgnored private let cleanupJournal = CleanupTransactionJournal()
     @ObservationIgnored private let scanCache = ScanResultCache()
     @ObservationIgnored private var metadataQuery: NSMetadataQuery?
     @ObservationIgnored private var didBeginAutomaticDiscovery = false
@@ -421,6 +424,7 @@ final class LibraryStore: NSObject {
         if volumeMountMonitor == nil { volumeMountMonitor = VolumeMountMonitor(store: self) }
         volumeMountMonitor?.start()
         scheduledCheckController.restart()
+        reconcileInterruptedCleanup()
 
         for library in libraries where library.scanResult == nil && !library.isScanning {
             scan(library, force: false)
@@ -868,6 +872,78 @@ final class LibraryStore: NSObject {
         preflight(record: record, plan: plan, isRetry: true)
     }
 
+    // MARK: 中断事务恢复（P4-7）
+
+    /// 启动及每次清理收尾时对账：依据事务日志与清理历史的差集重建待清计划。
+    /// 磁盘存在性检查在后台执行（外置盘可能离线），绝不上主线程。
+    func reconcileInterruptedCleanup() {
+        guard let transaction = cleanupJournal.load() else {
+            if !interruptedCleanups.isEmpty { interruptedCleanups = [] }
+            return
+        }
+        // 历史里已记录移入废纸篓的原始路径视为"已完成"
+        let completedURLs = Set(cleanupHistory.entries.flatMap { $0.trashedItems.map(\.originalURL) })
+        let plans = transaction.plans
+        let startedAt = transaction.startedAt
+        Task { [weak self] in
+            let summaries = await Task.detached(priority: .utility) {
+                Self.resolvePending(from: plans, startedAt: startedAt, completedURLs: completedURLs)
+            }.value
+            guard let self else { return }
+            interruptedCleanups = summaries
+            if summaries.isEmpty { cleanupJournal.clear() }
+        }
+    }
+
+    nonisolated private static func resolvePending(
+        from plans: [CleanupPlan],
+        startedAt: Date,
+        completedURLs: Set<URL>
+    ) -> [InterruptedCleanupSummary] {
+        var summaries: [InterruptedCleanupSummary] = []
+        for plan in plans {
+            guard let pendingPlan = plan.planForPendingEntries(
+                exists: { FileManager.default.fileExists(atPath: $0.path) },
+                isCompleted: { completedURLs.contains($0) }
+            ) else { continue }
+            summaries.append(InterruptedCleanupSummary(
+                startedAt: startedAt,
+                libraryName: plan.libraryURL.deletingPathExtension().lastPathComponent,
+                libraryURL: plan.libraryURL,
+                plan: pendingPlan
+            ))
+        }
+        return summaries
+    }
+
+    /// 历史页入口：重建的待清计划走与普通清理完全相同的预检 + 用户确认流程，
+    /// 绝不自动清理（产品红线）。
+    func rebuildInterruptedCleanup(_ summary: InterruptedCleanupSummary) {
+        guard !isPreflighting, !isCleaning, !isBatchCleaning else { return }
+        guard let record = libraries.first(where: {
+            $0.url.standardizedFileURL == summary.libraryURL.standardizedFileURL
+        }) else {
+            showCleanupNotice(CleanupNotice(
+                title: "无法重建待清计划",
+                libraryCount: 1,
+                freedSize: 0,
+                cleanedItemCount: 0,
+                categories: [],
+                errorCount: 1,
+                errorMessage: "资源库「\(summary.libraryName)」当前不在线或已从列表移除，请先连接磁盘"
+            ))
+            return
+        }
+        preflight(record: record, plan: summary.plan, isRetry: false)
+    }
+
+    func discardInterruptedCleanup(_ summary: InterruptedCleanupSummary) {
+        interruptedCleanups.removeAll { $0.id == summary.id }
+        if interruptedCleanups.isEmpty {
+            cleanupJournal.clear()
+        }
+    }
+
     func requestBatchClean() {
         guard !isPreflighting, !isCleaning else { return }
         isPreflighting = true
@@ -959,6 +1035,11 @@ final class LibraryStore: NSObject {
         isCleaning = true
         batchCleanupCompleted = 0
         batchCleanupTotal = confirmation.entries.count
+        // 批量事务一并落盘，中断后按库分组重建
+        cleanupJournal.save(CleanupTransaction(
+            startedAt: Date(),
+            plans: confirmation.entries.map(\.plan)
+        ))
         Task {
             let batchStart = ContinuousClock.now
             var freedSize: Int64 = 0
@@ -1055,6 +1136,8 @@ final class LibraryStore: NSObject {
                 errorCount: errorCount,
                 enabled: notificationsEnabled
             )
+            cleanupJournal.clear()
+            reconcileInterruptedCleanup()
         }
     }
 
@@ -1065,6 +1148,8 @@ final class LibraryStore: NSObject {
         let record = confirmation.record
         record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
         record.cleanupAfterSize = nil
+        // 事务日志先于执行落盘：崩溃/断电后可依据它与重扫差集重建待清计划
+        cleanupJournal.save(CleanupTransaction(startedAt: Date(), plans: [confirmation.plan]))
         Task {
             // 单库清理同样不可被节流打断
             let cleanActivity = ProcessInfo.processInfo.beginActivity(
@@ -1122,6 +1207,9 @@ final class LibraryStore: NSObject {
                     enabled: notificationsEnabled
                 )
             }
+            // 事务已有结局（成功或已记录的失败），日志使命完成
+            cleanupJournal.clear()
+            reconcileInterruptedCleanup()
             isCleaning = false
         }
     }
