@@ -16,7 +16,7 @@
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
 | 最新安装包 | `Distribution/FCP-Cleaner-3.6.0-universal.dmg` |
-| 自动测试 | 34 项 Core 测试 |
+| 自动测试 | 75 项测试（Core 44 + App 31，swift-testing） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
 
@@ -147,6 +147,13 @@ FCP 占用检测使用 `NSRunningApplication` 和 `/usr/sbin/lsof`，只阻止 F
 - 清理历史最多保留 200 条。
 - 历史记录支持在废纸篓中显示和恢复。
 - 恢复前检测 FCP 占用、目标路径冲突和写入权限。
+- 外置盘热插拔：挂载自动入队该卷资源库的增量扫描并重新发现工作目录；卸载保留记录与 lastKnownCleanableSize 兜底，卷诊断联动显示"磁盘已断开"。
+- 忽略与稍后：单库"7 天内不再提醒"（ignoredUntil 随书签持久化）与目录级忽略集（UserDefaults `ignoredLibraryDirectories`，仅拦自动发现，手动添加不受限）；「已忽略」筛选与恢复入口；忽略状态绝不进入清理链路。
+- 定时检查：关闭/每天/每周（`scheduledCheckFrequency`），到点自动发现 + 全库增量扫描，完成后仅发通知，绝不自动清理；错过后下次启动补跑，清理进行中退避 5 分钟重试。
+- 空间趋势：每库每日一个体积采样（`librarySizeSamplesV1`，上限 90 点），详情页"周增长"徽标（基线窗口 6–14 天），列表突出周增长最快者。
+- Shortcuts：三个只读 AppIntent（扫描工作目录 / 扫描资源库 / 查看可清理空间），无清理类意图；Shortcuts 发现依赖构建期元数据提取，见 QUICK_ACTION_EVALUATION.md §5。
+- 清理事务中断恢复：确认的计划先落盘 `CleanupTransaction.json`，崩溃/断电后重启依据日志与清理历史差集重建待清计划，历史页提供"重建待清计划"入口，重建仍走完整预检 + 用户确认。
+- 诊断包：菜单「导出诊断信息…」输出 zip（近 1h 应用日志 / 卷诊断全量 / 书签状态 / 最近失败原因 / 系统信息），主目录前缀统一脱敏。
 - 中文深色紧凑界面。
 - 应用图标使用用户提供的紫色三星扫帚图，页眉使用独立矢量清理标记。
 
@@ -211,9 +218,15 @@ FCPLibraryCleaner/
 | `ScanResultCache.swift` | 增量扫描结果缓存 |
 | `SecurityScopedBookmarkManager.swift` | 权限书签和最近资源库 |
 | `CleanupHistoryStore.swift` | 清理历史、废纸篓定位和恢复 |
-| `NotificationController.swift` | 系统通知 |
+| `NotificationController.swift` | 系统通知（含定时检查完成通知） |
 | `FinderServiceProvider.swift` | Finder 服务和系统打开文件处理 |
 | `UpdateController.swift` | Sparkle 更新入口 |
+| `VolumeMountMonitor.swift` | 外置卷挂载/卸载监听（P4-1） |
+| `ScheduledCheckController.swift` | 日/周定时检查循环（P4-3） |
+| `LibrarySizeTrend.swift` | 每日体积采样与周增长计算（P4-4） |
+| `CleanupTransactionJournal.swift` | 清理事务日志与中断恢复摘要（P4-7） |
+| `DiagnosticsExporter.swift` | 诊断包收集、脱敏与打包（P4-8） |
+| `AppIntents.swift` | Shortcuts 三个只读意图（P4-6） |
 
 ## 6. 核心数据流
 
@@ -286,6 +299,11 @@ FileManager.trashItem()
 | 磁盘预警阈值 | `UserDefaults`：`lowSpaceWarningGB` |
 | 扫描缓存 | `~/Library/Caches/com.fcpcleaner.app/ScanResults/` |
 | 清理历史 | `~/Library/Application Support/com.fcpcleaner.app/CleanupHistory.json` |
+| 清理事务日志 | `~/Library/Application Support/com.fcpcleaner.app/CleanupTransaction.json`（清理结束后即清除） |
+| 目录级忽略集 | UserDefaults：`ignoredLibraryDirectories` |
+| 定时检查 | UserDefaults：`scheduledCheckFrequency` / `scheduledCheckLastRun` |
+| 体积采样 | UserDefaults：`librarySizeSamplesV1`（每库每日一点，路径哈希作键） |
+| 定时吞吐预估 | UserDefaults：`cleanupThroughputIndexV2` |
 
 修改 `CacheItem`、`LibraryScanResult` 或指纹结构后，旧扫描缓存可能无法解码。当前策略是缓存失效后自动完整重扫，不迁移危险的旧结构。
 
@@ -387,6 +405,7 @@ codesign --verify --deep --strict --verbose=1 'Distribution/FCP Cleaner.app'
 7. Library 总大小只表示资源库包自身大小，外置缓存会单独计入可清理空间。
 8. 大型资源库完整扫描和最终指纹复核仍然需要遍历文件元数据，这是安全要求，不能简单移除。
 9. 项目已是独立 Git 仓库，远程为 `github.com/zhouxuan3550/fcp-cleaner`；历史构建产物仅本地保留于 `Distribution/archive/`。
+10. App Intents 已实现但 Shortcuts 无法发现：SPM/xcbuild 构建不产出 Swift const values，`appintentsmetadataprocessor` 无法提取元数据；Quick Action 扩展同理依赖 Xcode 工程迁移（见 QUICK_ACTION_EVALUATION.md）。
 
 ## 13. 发布验收清单
 
