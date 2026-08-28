@@ -3,12 +3,28 @@
     <channel>
         <title>FCP Cleaner</title>
         <item>
+            <title>3.7.0</title>
+            <pubDate>Fri, 28 Aug 2026 09:22:13 +0800</pubDate>
+            <sparkle:version>370</sparkle:version>
+            <sparkle:shortVersionString>3.7.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.7.0/FCP-Cleaner-3.7.0-universal.dmg" length="4239510" type="application/octet-stream" sparkle:edSignature="K8193G506jJU783K6/i8YJhAnOTElipR83nea5G+7vg3JRKBlKzSure9Y768gWHEJqLe8W1zw4aLG67idVqMBQ=="/>
+        </item>
+<item>
             <title>3.6.0</title>
             <pubDate>Thu, 27 Aug 2026 17:54:35 +0800</pubDate>
             <sparkle:version>360</sparkle:version>
             <sparkle:shortVersionString>3.6.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.6.0/FCP-Cleaner-3.6.0-universal.dmg" length="4173691" type="application/octet-stream" sparkle:edSignature="wWlyphQKDGMqlf5Vk46EsoalfID3fpszaAlFMaBiRSd+t+KUyOK5I8nq8CibxqIMqoEOQ7oGHzwrPiJCApZdDQ=="/>
+        </item>
+<item>
+            <title>3.5.0</title>
+            <pubDate>Thu, 27 Aug 2026 17:32:00 +0800</pubDate>
+            <sparkle:version>350</sparkle:version>
+            <sparkle:shortVersionString>3.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v3.5.0/FCP-Cleaner-3.5.0-universal.dmg" length="4066731" type="application/octet-stream" sparkle:edSignature="HSYFsD53U0UzIn+0BTZOhvxfxSfbbxbqM+mzZ0x9cjUL8UQx9D39J7fhQJ2fCfY2W/ZzFstWFNUE4LtYR+2iDg=="/>
         </item>
 <item>
             <title>3.5.0</title>
