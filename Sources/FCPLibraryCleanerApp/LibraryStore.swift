@@ -163,6 +163,7 @@ final class LibraryStore: NSObject {
 
     var libraries: [LibraryRecord] = []
     var workDirectories: [URL] = []
+    var workDirectoryStatuses: [URL: WorkDirectoryStatus] = [:]
     var selectedID: LibraryRecord.ID?
     var selectedVolumeURL: URL?
     var libraryFilter: LibraryFilter = .waiting
@@ -396,11 +397,25 @@ final class LibraryStore: NSObject {
             let runID = discoveryRunID
             let roots = workDirectories
             Task {
-                let urls = await Task.detached(priority: .userInitiated) {
+                let outcome = await Task.detached(priority: .userInitiated) {
                     Self.findLibraries(in: roots)
                 }.value
                 guard runID == discoveryRunID else { return }
-                merge(libraryURLs: urls, selectNewest: selectedID == nil, source: .workDirectory)
+                merge(
+                    libraryURLs: outcome.byRoot.values.flatMap { $0 },
+                    selectNewest: selectedID == nil,
+                    source: .workDirectory
+                )
+                let now = Date()
+                workDirectoryStatuses = Dictionary(
+                    uniqueKeysWithValues: outcome.byRoot.map { rootURL, libs in
+                        (rootURL, WorkDirectoryStatus(
+                            discoveredCount: libs.count,
+                            failed: outcome.failedRoots.contains(rootURL),
+                            updatedAt: now
+                        ))
+                    }
+                )
                 isDiscovering = false
             }
             return
@@ -492,6 +507,8 @@ final class LibraryStore: NSObject {
 
     func removeWorkDirectory(_ url: URL) {
         workDirectories.removeAll { $0 == url.standardizedFileURL }
+        workDirectoryStatuses.removeValue(forKey: url.standardizedFileURL)
+        workDirectoryStatuses.removeValue(forKey: url)
         bookmarks.saveWorkDirectories(workDirectories)
         discoverLibraries()
     }
@@ -546,32 +563,51 @@ final class LibraryStore: NSObject {
         if !newRecords.isEmpty { saveRecents() }
     }
 
-    nonisolated private static func findLibraries(in roots: [URL]) -> [URL] {
+    nonisolated private static func findLibraries(
+        in roots: [URL]
+    ) -> (byRoot: [URL: [URL]], failedRoots: Set<URL>) {
         let fileManager = FileManager.default
-        var found = Set<URL>()
+        var byRoot: [URL: [URL]] = [:]
+        var failedRoots = Set<URL>()
         let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey]
 
         for root in roots {
             let standardizedRoot = root.standardizedFileURL
             if isLibraryDirectory(standardizedRoot, fileManager: fileManager) {
-                found.insert(standardizedRoot)
+                byRoot[standardizedRoot] = [standardizedRoot]
                 continue
             }
+            final class LockedFlag: @unchecked Sendable {
+                private let lock = NSLock()
+                private var value = false
+                var isSet: Bool { lock.lock(); defer { lock.unlock() }; return value }
+                func set() { lock.lock(); value = true; lock.unlock() }
+            }
+            let hadError = LockedFlag()
             guard let enumerator = fileManager.enumerator(
                 at: standardizedRoot,
                 includingPropertiesForKeys: keys,
                 options: [.skipsHiddenFiles, .skipsPackageDescendants],
-                errorHandler: { _, _ in true }
-            ) else { continue }
+                errorHandler: { _, _ in
+                    hadError.set()
+                    return true
+                }
+            ) else {
+                failedRoots.insert(standardizedRoot)
+                continue
+            }
 
+            var found: [URL] = []
             for case let url as URL in enumerator where url.pathExtension.lowercased() == "fcpbundle" {
                 if isLibraryDirectory(url, fileManager: fileManager) {
-                    found.insert(url.standardizedFileURL)
+                    found.append(url.standardizedFileURL)
                 }
                 enumerator.skipDescendants()
             }
+            if hadError.isSet { failedRoots.insert(standardizedRoot) }
+            byRoot[standardizedRoot] = found.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
         }
-        return found.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        return (byRoot, failedRoots)
     }
 
     nonisolated private static func isLibraryDirectory(_ url: URL, fileManager: FileManager) -> Bool {
@@ -1331,6 +1367,12 @@ struct DiskCleanupSummary: Identifiable {
     let name: String
     let cleanableSize: Int64
     let libraryCount: Int
+}
+
+struct WorkDirectoryStatus: Sendable {
+    let discoveredCount: Int
+    let failed: Bool
+    let updatedAt: Date
 }
 
 struct DiskSpaceWarning: Identifiable {

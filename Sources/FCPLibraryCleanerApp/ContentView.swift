@@ -1447,6 +1447,12 @@ private struct AppSettings: View {
                                     .foregroundStyle(AppColor.secondaryText)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
+                                if let status = store.workDirectoryStatuses[url] {
+                                    Text(workDirectoryStatusText(status))
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(status.failed ? AppColor.danger : AppColor.tertiaryText)
+                                        .lineLimit(1)
+                                }
                             }
                             Spacer(minLength: 4)
                             Button {
@@ -1467,6 +1473,11 @@ private struct AppSettings: View {
 
             if let library = store.selectedLibrary {
                 Divider()
+                sectionHeader("当前资源库")
+                Text(library.displayName)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AppColor.primaryText)
+                    .lineLimit(1)
                 LibrarySettings(library: library, store: store)
             }
 
@@ -1489,9 +1500,19 @@ private struct AppSettings: View {
                 UpdateController.shared.checkForUpdates()
             }
             .disabled(!UpdateController.shared.isConfigured)
+            Label("B 站：调色师手册", systemImage: "play.tv.fill")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AppColor.secondaryText)
         }
         .padding(20)
         .frame(width: LayoutMetrics.settingsPopoverWidth)
+    }
+
+    private func workDirectoryStatusText(_ status: WorkDirectoryStatus) -> String {
+        if status.failed { return "无法访问（检查磁盘连接与权限）" }
+        if status.discoveredCount == 0 { return "此目录内未发现 .fcpbundle" }
+        let time = status.updatedAt.formatted(date: .omitted, time: .shortened)
+        return "发现 \(status.discoveredCount) 个资源库 · \(time)"
     }
 
     private func sectionHeader(_ title: String) -> some View {
