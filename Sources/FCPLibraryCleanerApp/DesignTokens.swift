@@ -43,7 +43,9 @@ extension Color {
 }
 
 enum LayoutMetrics {
-    static let sidebarWidth: CGFloat = 300
+    /// 340 = 四个筛选 chip（紧凑样式、三位数计数）的最小宽 + 余量。
+    /// 侧栏内容最小宽一旦超过此值，整列会溢出框架压到详情面板上（P4-2 教训）。
+    static let sidebarWidth: CGFloat = 340
     static let cleanupActionCardWidth: CGFloat = 270
     static let settingsPopoverWidth: CGFloat = 340
     static let historyPopoverWidth: CGFloat = 370

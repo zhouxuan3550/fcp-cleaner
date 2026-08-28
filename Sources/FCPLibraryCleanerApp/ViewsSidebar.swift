@@ -73,45 +73,24 @@ struct LibrarySidebar: View {
 
     private var controls: some View {
         VStack(spacing: 8) {
-            HStack(spacing: 6) {
+            // 筛选 chips 独占一行：四个固定文案 chip + 计数的最小宽约 310pt，
+            // 若再与其他控件同行会超出侧栏框架，把整列撑宽压到详情面板下面。
+            HStack(spacing: 5) {
                 ForEach(LibraryFilter.allCases) { filter in
                     Button {
                         store.setFilter(filter)
                     } label: {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 5) {
                             Text(filter.title)
                             Text(store.count(for: filter).formatted())
                                 .monospacedDigit()
-                                .foregroundStyle(filter == store.libraryFilter ? Color.white : AppColor.secondaryText)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(filter == store.libraryFilter ? Color.white.opacity(0.85) : AppColor.secondaryText)
                         }
                     }
                     .buttonStyle(FilterButtonStyle(isSelected: filter == store.libraryFilter, isDefault: filter == .waiting))
                 }
-                Spacer(minLength: 4)
-                Menu {
-                    ForEach(InactivityFilter.allCases) { filter in
-                        Button {
-                            store.setInactivityFilter(filter)
-                        } label: {
-                            if filter == store.inactivityFilter {
-                                Label(filter.title, systemImage: "checkmark")
-                            } else {
-                                Text(filter.title)
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "clock")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppColor.secondaryText)
-                        .frame(width: 28, height: 30)
-                        .background(AppColor.control)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
-                .accessibilityLabel("筛选：\(store.inactivityFilter.title)")
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .help(store.inactivityFilter.title)
+                Spacer(minLength: 0)
             }
 
             HStack(spacing: 6) {
@@ -164,6 +143,31 @@ struct LibrarySidebar: View {
                 .menuStyle(.borderlessButton)
                 .fixedSize()
                 .help("排序：\(store.librarySort.title)")
+
+                Menu {
+                    ForEach(InactivityFilter.allCases) { filter in
+                        Button {
+                            store.setInactivityFilter(filter)
+                        } label: {
+                            if filter == store.inactivityFilter {
+                                Label(filter.title, systemImage: "checkmark")
+                            } else {
+                                Text(filter.title)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "clock")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AppColor.secondaryText)
+                        .frame(width: 28, height: 28)
+                        .background(AppColor.control)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+                .accessibilityLabel("筛选：\(store.inactivityFilter.title)")
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help(store.inactivityFilter.title)
 
                 if store.libraryFilter == .waiting {
                     Button {

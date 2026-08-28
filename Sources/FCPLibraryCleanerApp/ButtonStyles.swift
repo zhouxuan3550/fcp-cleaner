@@ -8,9 +8,11 @@ struct FilterButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(size: 12, weight: .semibold))
             .lineLimit(1)
-            .fixedSize()
+            // 不再 fixedSize：空间不足时缩字而不是撑爆侧栏（P4-2 第四个筛选曾把
+            // chips 行最小宽顶到 300pt 框架之外，导致侧栏溢出与详情面板重叠）。
+            .minimumScaleFactor(0.75)
             .foregroundStyle(isSelected ? Color.white : AppColor.secondaryText)
-            .padding(.horizontal, 9)
+            .padding(.horizontal, 7)
             .frame(height: LayoutMetrics.controlHeight)
             .background(isSelected ? AppColor.accent : AppColor.control)
             .overlay {
