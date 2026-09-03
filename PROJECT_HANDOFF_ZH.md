@@ -8,14 +8,14 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 产品名称 | FCP Cleaner |
-| 当前版本 | 4.0.0（Build 400） |
+| 当前版本 | 4.0.1（Build 401） |
 | 项目路径 | `/Users/macstudio/Documents/VoxCPM2/FCPLibraryCleaner` |
 | 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager、XcodeGen |
 | 最低系统 | 主程序 macOS 15.0；Workflow Extension macOS 15.6 |
 | 当前架构 | universal2（arm64 + x86_64） |
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
-| 最新安装包 | `Distribution/FCP-Cleaner-4.0.0-universal.dmg` |
+| 最新安装包 | `Distribution/FCP-Cleaner-4.0.1-universal.dmg` |
 | 自动测试 | 83 项测试（swift-testing） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
