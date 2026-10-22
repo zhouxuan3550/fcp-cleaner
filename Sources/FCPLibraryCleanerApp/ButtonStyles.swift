@@ -40,11 +40,11 @@ struct QueueActionButtonStyle: ButtonStyle {
             .foregroundStyle(emphasized ? Color.white : AppColor.primaryText)
             .padding(.horizontal, 11)
             .frame(height: LayoutMetrics.controlHeight)
-            .glassEffect(
-                emphasized
-                    ? .regular.interactive().tint(AppColor.accent)
-                    : .regular.interactive(),
-                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .compatibleGlassEffect(
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous),
+                interactive: true,
+                tint: emphasized ? AppColor.accent : nil,
+                fallbackColor: emphasized ? AppColor.accent : AppColor.control
             )
             .scaleEffect(configuration.isPressed && enabled && !reduceMotion ? 0.96 : 1.0)
             .opacity(enabled ? 1 : 0.45)
@@ -62,11 +62,11 @@ struct HeaderButtonStyle: ButtonStyle {
             .foregroundStyle(emphasized ? Color.white : AppColor.primaryText)
             .padding(.horizontal, 17)
             .frame(height: LayoutMetrics.headerHeight)
-            .glassEffect(
-                emphasized
-                    ? .regular.interactive().tint(AppColor.accent)
-                    : .regular.interactive(),
-                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .compatibleGlassEffect(
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous),
+                interactive: true,
+                tint: emphasized ? AppColor.accent : nil,
+                fallbackColor: emphasized ? AppColor.accent : AppColor.control
             )
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1.0)
             .animation(.snappy(duration: 0.16), value: configuration.isPressed)

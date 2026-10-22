@@ -351,7 +351,10 @@ struct CleanupNoticeView: View {
         }
         .padding(14)
         .frame(width: LayoutMetrics.noticeWidth, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .compatibleGlassEffect(
+            in: RoundedRectangle(cornerRadius: 14, style: .continuous),
+            fallbackColor: AppColor.panel
+        )
         .shadow(color: .black.opacity(0.28), radius: 18, y: 8)
     }
 

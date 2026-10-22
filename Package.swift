@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "FCPLibraryCleaner",
-    platforms: [.macOS(.v26)],
+    platforms: [.macOS(.v15)],
     products: [
         .library(name: "FCPLibraryCleanerCore", targets: ["FCPLibraryCleanerCore"]),
         .executable(name: "fcp-library-scanner", targets: ["fcp-library-scanner"]),

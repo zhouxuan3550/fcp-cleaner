@@ -139,7 +139,10 @@ struct LibraryPanel: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .compatibleGlassEffect(
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous),
+            fallbackColor: AppColor.workspace
+        )
     }
 }
 

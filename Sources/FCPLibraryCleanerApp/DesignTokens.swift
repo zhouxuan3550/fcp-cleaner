@@ -29,6 +29,50 @@ enum AppColor {
     static let danger = dynamicColor(light: "D70015", dark: "D45C57")
 }
 
+struct CompatibleGlassEffect<S: Shape>: ViewModifier {
+    let shape: S
+    let interactive: Bool
+    let tint: Color?
+    let fallbackColor: Color
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            if interactive {
+                if let tint {
+                    content.glassEffect(.regular.interactive().tint(tint), in: shape)
+                } else {
+                    content.glassEffect(.regular.interactive(), in: shape)
+                }
+            } else if let tint {
+                content.glassEffect(.regular.tint(tint), in: shape)
+            } else {
+                content.glassEffect(.regular, in: shape)
+            }
+        } else {
+            content
+                .background(fallbackColor, in: shape)
+                .overlay(shape.stroke(AppColor.border.opacity(0.55), lineWidth: 1))
+        }
+    }
+}
+
+extension View {
+    func compatibleGlassEffect<S: Shape>(
+        in shape: S,
+        interactive: Bool = false,
+        tint: Color? = nil,
+        fallbackColor: Color = AppColor.workspace
+    ) -> some View {
+        modifier(CompatibleGlassEffect(
+            shape: shape,
+            interactive: interactive,
+            tint: tint,
+            fallbackColor: fallbackColor
+        ))
+    }
+}
+
 extension Color {
     init(hex: String) {
         let value = UInt64(hex, radix: 16) ?? 0

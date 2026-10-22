@@ -75,7 +75,10 @@ struct LibrarySidebar: View {
             scanHealthFooter
         }
         .frame(maxHeight: .infinity)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .compatibleGlassEffect(
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous),
+            fallbackColor: AppColor.workspace
+        )
     }
 
     private var scanHealthFooter: some View {
@@ -483,7 +486,7 @@ struct BatchActionBar: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .fixedSize()
-        .glassEffect(.regular.interactive(), in: Capsule())
+        .compatibleGlassEffect(in: Capsule(), interactive: true, fallbackColor: AppColor.panel)
         .shadow(color: Color.black.opacity(0.28), radius: 16, y: 6)
     }
 
@@ -515,7 +518,10 @@ struct NoCleanupView: View {
                 .buttonStyle(HeaderButtonStyle())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .compatibleGlassEffect(
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous),
+            fallbackColor: AppColor.workspace
+        )
     }
 
     private var emptyIcon: String {
@@ -573,9 +579,10 @@ struct EmptyDropZone: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .glassEffect(
-            isDropTargeted ? .regular.tint(AppColor.accent) : .regular,
-            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        .compatibleGlassEffect(
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous),
+            tint: isDropTargeted ? AppColor.accent : nil,
+            fallbackColor: isDropTargeted ? AppColor.accent.opacity(0.12) : AppColor.workspace
         )
         .overlay {
             // 保留虚线拖放落点指示
