@@ -14,9 +14,7 @@ FCP Cleaner 是一款原生 macOS 应用，用于扫描 Final Cut Pro 的 `.fcpb
 
 ## 界面
 
-<p align="center">
-  <img src="./Assets/readme/fcp-cleaner-settings.png" width="100%" alt="FCP Cleaner 深色界面，展示工作目录、定时扫描、磁盘预警与外观设置">
-</p>
+<img width="1252" height="757" alt="image" src="https://github.com/user-attachments/assets/4cb8f675-b469-4cf4-84a1-2934b8dd7dd3" />
 
 设置工作目录后，FCP Cleaner 会发现其中的资源库；也可手动添加资源库或通过 Final Cut Pro Workflow Extension 打开当前资源库。自动扫描只负责发现与分析，绝不会自动清理。
 
