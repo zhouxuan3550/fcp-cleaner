@@ -139,12 +139,7 @@ struct LibraryPanel: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(AppColor.workspace)
-        .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
@@ -268,6 +263,8 @@ struct ScanResultsView: View {
                     MetricCard(label: "清理项目", value: result.cacheItems.count.formatted(), icon: "folder.badge.minus")
                 }
 
+                StorageBreakdownBar(result: result)
+
                 if result.externalCleanableSize > 0 {
                     Label("包含外置缓存 \(FormatHelpers.bytes(result.externalCleanableSize))", systemImage: "externaldrive.fill")
                         .font(.system(size: 11, weight: .medium))
@@ -294,6 +291,113 @@ struct ScanResultsView: View {
             .padding(22)
         }
         .scrollIndicators(.hidden)
+    }
+}
+
+struct StorageBreakdownBar: View {
+    let result: LibraryScanResult
+    let renderSize: Int64
+    let proxySize: Int64
+    let optimizedSize: Int64
+    let protectedAnalysisSize: Int64
+    let otherOrMediaSize: Int64
+
+    init(result: LibraryScanResult) {
+        self.result = result
+        var render: Int64 = 0
+        var proxy: Int64 = 0
+        var opt: Int64 = 0
+        for item in result.cacheItems {
+            switch item.category {
+            case .renderFiles: render += item.allocatedSize
+            case .proxyMedia: proxy += item.allocatedSize
+            case .optimizedMedia: opt += item.allocatedSize
+            default: break
+            }
+        }
+        self.renderSize = render
+        self.proxySize = proxy
+        self.optimizedSize = opt
+        let protected = result.observedCacheItems.reduce(0) { $0 + $1.allocatedSize }
+        self.protectedAnalysisSize = protected
+        let cleanable = result.confirmedCleanableSize
+        self.otherOrMediaSize = max(0, result.totalAllocatedSize - cleanable - protected)
+    }
+
+    var body: some View {
+        let total = max(1, result.totalAllocatedSize)
+        VStack(alignment: .leading, spacing: 10) {
+            GeometryReader { proxy in
+                let w = proxy.size.width
+                HStack(spacing: 2) {
+                    if renderSize > 0 {
+                        segment(color: AppColor.accent, width: max(4, w * CGFloat(renderSize) / CGFloat(total)))
+                            .help("渲染文件: \(FormatHelpers.bytes(renderSize))")
+                    }
+                    if proxySize > 0 {
+                        segment(color: Color.teal, width: max(4, w * CGFloat(proxySize) / CGFloat(total)))
+                            .help("代理媒体: \(FormatHelpers.bytes(proxySize))")
+                    }
+                    if optimizedSize > 0 {
+                        segment(color: Color.orange, width: max(4, w * CGFloat(optimizedSize) / CGFloat(total)))
+                            .help("优化媒体: \(FormatHelpers.bytes(optimizedSize))")
+                    }
+                    if protectedAnalysisSize > 0 {
+                        segment(color: AppColor.tertiaryText.opacity(0.8), width: max(4, w * CGFloat(protectedAnalysisSize) / CGFloat(total)))
+                            .help("分析文件(受保护): \(FormatHelpers.bytes(protectedAnalysisSize))")
+                    }
+                    if otherOrMediaSize > 0 {
+                        segment(color: AppColor.control, width: max(4, w * CGFloat(otherOrMediaSize) / CGFloat(total)))
+                            .help("原始媒体与工程数据: \(FormatHelpers.bytes(otherOrMediaSize))")
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+            }
+            .frame(height: 7)
+
+            HStack(spacing: 16) {
+                if renderSize > 0 {
+                    legendItem(color: AppColor.accent, label: "渲染", bytes: renderSize)
+                }
+                if proxySize > 0 {
+                    legendItem(color: Color.teal, label: "代理", bytes: proxySize)
+                }
+                if optimizedSize > 0 {
+                    legendItem(color: Color.orange, label: "优化", bytes: optimizedSize)
+                }
+                if protectedAnalysisSize > 0 {
+                    legendItem(color: AppColor.tertiaryText.opacity(0.8), label: "分析(受保护)", bytes: protectedAnalysisSize)
+                }
+                legendItem(color: AppColor.tertiaryText, label: "原始媒体/工程", bytes: otherOrMediaSize)
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 11, weight: .medium))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(AppColor.panel)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("资源库占用细分：总计 \(FormatHelpers.bytes(result.totalAllocatedSize))。其中渲染文件 \(FormatHelpers.bytes(renderSize))，代理媒体 \(FormatHelpers.bytes(proxySize))，优化媒体 \(FormatHelpers.bytes(optimizedSize))，受保护分析文件 \(FormatHelpers.bytes(protectedAnalysisSize))，原始工程素材 \(FormatHelpers.bytes(otherOrMediaSize))")
+    }
+
+    private func segment(color: Color, width: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 2, style: .continuous)
+            .fill(color)
+            .frame(width: width, height: 7)
+    }
+
+    private func legendItem(color: Color, label: String, bytes: Int64) -> some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+            Text(label)
+                .foregroundStyle(AppColor.secondaryText)
+            Text(FormatHelpers.bytes(bytes))
+                .monospacedDigit()
+                .foregroundStyle(AppColor.primaryText)
+        }
     }
 }
 
@@ -338,6 +442,17 @@ struct MetricCard: View {
 
 struct CleanupList: View {
     let result: LibraryScanResult
+    let categorySummary: [CacheCategory: (count: Int, size: Int64)]
+
+    init(result: LibraryScanResult) {
+        self.result = result
+        var summary: [CacheCategory: (count: Int, size: Int64)] = [:]
+        for item in result.cacheItems {
+            let current = summary[item.category] ?? (0, 0)
+            summary[item.category] = (current.count + 1, current.size + item.allocatedSize)
+        }
+        self.categorySummary = summary
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -346,29 +461,29 @@ struct CleanupList: View {
                 .padding(.bottom, 10)
 
             ForEach(CacheCategory.cleanableCases, id: \.self) { category in
-                let items = result.cacheItems.filter { $0.category == category }
-                let size = items.reduce(Int64(0)) { $0 + $1.allocatedSize }
+                let info = categorySummary[category] ?? (0, 0)
+                let isEmpty = info.count == 0
                 HStack(spacing: 12) {
                     Image(systemName: category.iconName)
-                        .foregroundStyle(items.isEmpty ? AppColor.tertiaryText : AppColor.accent)
+                        .foregroundStyle(isEmpty ? AppColor.tertiaryText : AppColor.accent)
                         .frame(width: 30, height: 30)
                         .background(AppColor.control)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     Text(category.chineseName)
                         .font(.system(size: 13, weight: .medium))
                     Spacer()
-                    if items.isEmpty {
+                    if isEmpty {
                         Text("—")
                             .font(.system(size: 12, design: .monospaced))
                             .foregroundStyle(AppColor.tertiaryText)
                     } else {
-                        Text(FormatHelpers.bytes(size))
+                        Text(FormatHelpers.bytes(info.size))
                             .font(.system(size: 12, design: .monospaced))
                             .foregroundStyle(AppColor.secondaryText)
                     }
                 }
                 .padding(.vertical, 10)
-                .opacity(items.isEmpty ? 0.45 : 1)
+                .opacity(isEmpty ? 0.45 : 1)
                 if category != CacheCategory.cleanableCases.last {
                     Divider().overlay(AppColor.border)
                 }

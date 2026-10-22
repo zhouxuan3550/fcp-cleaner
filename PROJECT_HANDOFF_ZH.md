@@ -8,14 +8,14 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 产品名称 | FCP Cleaner |
-| 当前版本 | 4.0.1（Build 401） |
+| 当前版本 | 4.0.11（Build 411） |
 | 项目路径 | `/Users/macstudio/Documents/VoxCPM2/FCPLibraryCleaner` |
 | 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager、XcodeGen |
-| 最低系统 | 主程序 macOS 15.0；Workflow Extension macOS 15.6 |
+| 最低系统 | macOS 26.0 |
 | 当前架构 | universal2（arm64 + x86_64） |
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
-| 最新安装包 | `Distribution/FCP-Cleaner-4.0.1-universal.dmg` |
+| 最新安装包 | `Distribution/FCP-Cleaner-4.0.11-universal.dmg` |
 | 自动测试 | 83 项测试（swift-testing） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
@@ -358,7 +358,7 @@ swift test
 
 发布脚本通过 XcodeGen 生成 `FCPLibraryCleaner.xcodeproj`，再用 Xcode 构建完整 universal2 App：
 
-1. 运行 79 项 Swift 测试。
+1. 运行 83 项 Swift 测试。
 2. 构建 arm64 + x86_64 主程序和 Workflow Extension。
 3. 验证 `.appex` 与 `Metadata.appintents` 已嵌入。
 4. 按嵌套组件、扩展、主 App 的顺序签名并保留扩展 entitlements。
@@ -440,4 +440,4 @@ xcodebuild -project FCPLibraryCleaner.xcodeproj -scheme FCP-Cleaner build
 1. 配置 Developer ID、Hardened Runtime 和 Apple Notarization。
 2. 增加 LibraryStore 和 SwiftUI 批量清理 UI 自动化测试。
 3. 增加真实外置 APFS、HFS+、ExFAT 卷的集成测试矩阵。
-4. 在 Intel macOS 15 真机验证 universal2 安装包。
+4. 在 Intel macOS 26 真机验证 universal2 安装包。

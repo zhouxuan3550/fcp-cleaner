@@ -15,6 +15,8 @@ struct FCPLibraryCleanerApp: App {
             ContentView()
         }
         .defaultSize(width: LayoutMetrics.windowDefaultWidth, height: LayoutMetrics.windowDefaultHeight)
+        .windowStyle(.hiddenTitleBar)
+        .windowBackgroundDragBehavior(.enabled)
         .commands {
             CommandGroup(after: .newItem) {
                 Button("选择资源库…") {

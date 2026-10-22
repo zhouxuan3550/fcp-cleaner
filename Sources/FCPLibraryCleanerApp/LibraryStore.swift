@@ -343,13 +343,30 @@ final class LibraryStore: NSObject {
         }
     }
 
-    func count(for filter: LibraryFilter) -> Int {
-        switch filter {
-        case .waiting: waitingLibraries.filter(matchesInactivity).count
-        case .scanning: scanningLibraries.filter(matchesInactivity).count
-        case .skipped: skippedLibraries.filter(matchesInactivity).count
-        case .ignored: ignoredLibraries.filter(matchesInactivity).count
+    var countsByFilter: [LibraryFilter: Int] {
+        var counts: [LibraryFilter: Int] = [
+            .waiting: 0,
+            .scanning: 0,
+            .skipped: 0,
+            .ignored: 0
+        ]
+        for record in libraries {
+            guard matchesInactivity(record) else { continue }
+            if record.isScanning || record.isQueued {
+                counts[.scanning, default: 0] += 1
+            } else if isLibraryIgnored(record) {
+                counts[.ignored, default: 0] += 1
+            } else if knownCleanableSize(for: record) >= Self.minimumCleanableSize {
+                counts[.waiting, default: 0] += 1
+            } else {
+                counts[.skipped, default: 0] += 1
+            }
         }
+        return counts
+    }
+
+    func count(for filter: LibraryFilter) -> Int {
+        countsByFilter[filter] ?? 0
     }
 
     func setInactivityFilter(_ filter: InactivityFilter) {

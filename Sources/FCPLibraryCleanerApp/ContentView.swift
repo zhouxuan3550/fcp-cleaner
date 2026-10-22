@@ -9,52 +9,58 @@ struct ContentView: View {
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            AppHeader(store: store)
-            MainWorkspace(store: store, isDropTargeted: isDropTargeted, searchFocused: $isSearchFocused)
-                .padding(.horizontal, LayoutMetrics.contentHorizontalPadding)
-                .padding(.bottom, LayoutMetrics.contentBottomPadding)
-        }
-        .frame(minWidth: LayoutMetrics.windowMinWidth, minHeight: LayoutMetrics.windowMinHeight)
-        .background(AppColor.canvas.ignoresSafeArea())
-        .preferredColorScheme(store.appearanceMode.colorScheme)
-        .onKeyPress(.space) {
-            guard !isSearchFocused, !store.isDiscovering else { return .ignored }
-            store.discoverLibraries()
-            return .handled
-        }
-        .overlay(alignment: .bottomTrailing) {
-            if let notice = store.cleanupNotice {
-                CleanupNoticeView(notice: notice) {
-                    store.dismissCleanupNotice()
+        GlassEffectContainer {
+            ZStack {
+                VStack(spacing: 0) {
+                    AppHeader(store: store)
+                    MainWorkspace(store: store, isDropTargeted: isDropTargeted, searchFocused: $isSearchFocused)
+                        .padding(.horizontal, LayoutMetrics.contentHorizontalPadding)
+                        .padding(.bottom, LayoutMetrics.contentBottomPadding)
                 }
-                .padding(24)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.snappy(duration: 0.28), value: store.cleanupNotice?.id)
-        .task { store.beginAutomaticDiscovery() }
-        .onChange(of: store.appearanceMode) { _, mode in
-            mode.applyToApplication()
-        }
-        .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
-            for provider in providers {
-                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-                    guard let data = item as? Data,
-                          let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
-                    Task { @MainActor in store.add(libraryURLs: [url]) }
+                .frame(minWidth: LayoutMetrics.windowMinWidth, minHeight: LayoutMetrics.windowMinHeight)
+
+                if let notice = store.cleanupNotice {
+                    CleanupNoticeView(notice: notice) {
+                        store.dismissCleanupNotice()
+                    }
+                    .padding(24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(999)
                 }
             }
-            return !providers.isEmpty
-        }
-        .sheet(item: $store.cleanConfirmation) { confirmation in
-            SingleCleanConfirmationSheet(confirmation: confirmation, store: store)
-        }
-        .sheet(item: $store.batchCleanConfirmation) { confirmation in
-            BatchCleanConfirmationSheet(confirmation: confirmation, store: store)
-        }
-        .sheet(item: $store.cleanupSummary) { summary in
-            CleanupSummarySheet(summary: summary)
+            .frame(minWidth: LayoutMetrics.windowMinWidth, minHeight: LayoutMetrics.windowMinHeight)
+            .background(Color.clear.ignoresSafeArea())
+            .preferredColorScheme(store.appearanceMode.colorScheme)
+            .animation(.snappy(duration: 0.28), value: store.cleanupNotice?.id)
+            .onKeyPress(.space) {
+                guard !isSearchFocused, !store.isDiscovering else { return .ignored }
+                store.discoverLibraries()
+                return .handled
+            }
+            .task { store.beginAutomaticDiscovery() }
+            .onChange(of: store.appearanceMode) { _, mode in
+                mode.applyToApplication()
+            }
+            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
+                for provider in providers {
+                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                        guard let data = item as? Data,
+                              let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                        Task { @MainActor in store.add(libraryURLs: [url]) }
+                    }
+                }
+                return !providers.isEmpty
+            }
+            .sheet(item: $store.cleanConfirmation) { confirmation in
+                SingleCleanConfirmationSheet(confirmation: confirmation, store: store)
+            }
+            .sheet(item: $store.batchCleanConfirmation) { confirmation in
+                BatchCleanConfirmationSheet(confirmation: confirmation, store: store)
+            }
+            .sheet(item: $store.cleanupSummary) { summary in
+                CleanupSummarySheet(summary: summary)
+            }
         }
     }
 }

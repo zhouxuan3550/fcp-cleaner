@@ -20,11 +20,11 @@ enum AppColor {
     static let panel = dynamicColor(light: "F0F0F2", dark: "2A2A2A")
     static let control = dynamicColor(light: "E8E8EA", dark: "303030")
     static let primaryText = dynamicColor(light: "1C1C1E", dark: "E7E7E7")
-    static let secondaryText = dynamicColor(light: "636366", dark: "A0A0A0")
-    static let tertiaryText = dynamicColor(light: "8E8E93", dark: "747474")
+    static let secondaryText = dynamicColor(light: "555558", dark: "A8A8AC")
+    static let tertiaryText = dynamicColor(light: "6E6E73", dark: "929296")
     static let border = dynamicColor(light: "D1D1D6", dark: "3C3C3C")
     static let dashedBorder = dynamicColor(light: "8E8E93", dark: "747474")
-    static let accent = dynamicColor(light: "5D72D8", dark: "5D72D8")
+    static let accent = dynamicColor(light: "634CD9", dark: "634CD9")
     static let success = dynamicColor(light: "248A3D", dark: "35B85A")
     static let danger = dynamicColor(light: "D70015", dark: "D45C57")
 }
@@ -61,11 +61,11 @@ enum LayoutMetrics {
     static let windowMinHeight: CGFloat = 660
     static let windowDefaultWidth: CGFloat = 1_080
     static let windowDefaultHeight: CGFloat = 760
-    static let contentHorizontalPadding: CGFloat = 38
-    static let contentBottomPadding: CGFloat = 34
-    static let headerHorizontalPadding: CGFloat = 38
-    static let headerTopPadding: CGFloat = 28
-    static let headerBottomPadding: CGFloat = 26
+    static let contentHorizontalPadding: CGFloat = 18
+    static let contentBottomPadding: CGFloat = 16
+    static let headerHorizontalPadding: CGFloat = 18
+    static let headerTopPadding: CGFloat = 16
+    static let headerBottomPadding: CGFloat = 14
 }
 
 enum FormatHelpers {

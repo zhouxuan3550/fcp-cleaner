@@ -46,7 +46,7 @@ FCP Cleaner 是一款原生 macOS 应用，用于扫描 Final Cut Pro 的 `.fcpb
 2. 打开 DMG，将 `FCP Cleaner.app` 拖到 `Applications`。
 3. 首次使用时添加一个资源库，或在设置中添加工作目录后开始扫描。
 
-要求：macOS 15.0 或更高版本。使用 Workflow Extension 还需要 Final Cut Pro 12.3 或更高版本。
+要求：macOS 26.0 或更高版本。使用 Workflow Extension 还需要 Final Cut Pro 12.3 或更高版本。
 
 > 当前发布包使用 ad-hoc 签名，尚未进行 Apple Developer ID 签名或公证。macOS 如阻止首次打开，请在“系统设置 → 隐私与安全性”中确认打开。
 

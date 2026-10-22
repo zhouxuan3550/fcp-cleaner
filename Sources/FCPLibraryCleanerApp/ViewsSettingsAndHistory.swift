@@ -157,6 +157,7 @@ struct CleanupHistoryView: View {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 12, weight: .medium))
                     }
+                    .accessibilityLabel("导出清理记录")
                     .menuStyle(.borderlessButton)
                     .fixedSize()
                     Button("清空") { store.clear() }

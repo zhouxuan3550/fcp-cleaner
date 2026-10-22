@@ -104,12 +104,10 @@ struct AdversarialLibraryTests {
         try write("nested", to: nestedDecoy.appendingPathComponent("keep.mov"))
 
         let result = try await LibraryScanner().scan(libraryURL: root)
-
-        // Only the canonical whitelisted candidates are confirmed cleanable.
         #expect(result.cacheItems.count == 3)
         for decoy in protectedDecoys {
             #expect(
-                result.protectedItems.contains { $0.url.standardizedFileURL == decoy.standardizedFileURL },
+                result.protectedItems.contains { $0.url.standardizedFileURL.path == decoy.standardizedFileURL.path },
                 "Decoy must be reported as protected: \(decoy.lastPathComponent)"
             )
         }

@@ -20,7 +20,13 @@ struct ScanResultCache: Sendable {
     }
 
     func save(_ result: LibraryScanResult) async {
-        guard let token = try? await LibraryScanner().changeToken(libraryURL: result.libraryURL) else { return }
+        let token: LibraryChangeToken?
+        if let precomputed = result.changeToken {
+            token = precomputed
+        } else {
+            token = try? await LibraryScanner().changeToken(libraryURL: result.libraryURL)
+        }
+        guard let token else { return }
         let entry = Entry(
             schemaVersion: Self.schemaVersion,
             token: token,

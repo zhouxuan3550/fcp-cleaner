@@ -2,7 +2,7 @@ name: FCPLibraryCleaner
 options:
   bundleIdPrefix: com.fcpcleaner
   deploymentTarget:
-    macOS: "15.0"
+    macOS: "26.0"
   xcodeVersion: "26.0"
   createIntermediateGroups: true
 
@@ -14,7 +14,7 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
 
 targets:
   FCPLibraryCleanerCore:
@@ -37,12 +37,12 @@ targets:
       base:
         INFOPLIST_FILE: WorkflowExtension/Info.plist
         CODE_SIGN_ENTITLEMENTS: WorkflowExtension/WorkflowExtension.entitlements
-        MACOSX_DEPLOYMENT_TARGET: "15.6"
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
         PRODUCT_BUNDLE_IDENTIFIER: com.fcpcleaner.app.workflow-extension
         PRODUCT_NAME: FCP-Cleaner-Workflow
         PRODUCT_MODULE_NAME: FCPCleanerWorkflow
-        MARKETING_VERSION: "4.0.1"
-        CURRENT_PROJECT_VERSION: "401"
+        MARKETING_VERSION: "4.0.11"
+        CURRENT_PROJECT_VERSION: "411"
         SKIP_INSTALL: YES
         APPLICATION_EXTENSION_API_ONLY: YES
         MACH_O_TYPE: mh_execute
@@ -86,8 +86,8 @@ targets:
         EXECUTABLE_NAME: FCP-Cleaner
         PRODUCT_MODULE_NAME: FCPLibraryCleanerApp
         ASSETCATALOG_COMPILER_APPICON_NAME: ''
-        MARKETING_VERSION: "4.0.1"
-        CURRENT_PROJECT_VERSION: "401"
+        MARKETING_VERSION: "4.0.11"
+        CURRENT_PROJECT_VERSION: "411"
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - '@executable_path/../Frameworks'

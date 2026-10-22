@@ -200,6 +200,29 @@ public struct LibraryScanResult: Codable, Sendable {
     public let observedCacheItems: [ObservedCacheItem]
     public let protectedItems: [ProtectedItem]
     public let issues: [ScanIssue]
+    public let changeToken: LibraryChangeToken?
+
+    public init(
+        libraryURL: URL,
+        totalAllocatedSize: Int64,
+        totalLogicalSize: Int64,
+        coreDataSnapshots: [CoreDataSnapshot],
+        cacheItems: [CacheItem],
+        observedCacheItems: [ObservedCacheItem],
+        protectedItems: [ProtectedItem],
+        issues: [ScanIssue],
+        changeToken: LibraryChangeToken? = nil
+    ) {
+        self.libraryURL = libraryURL
+        self.totalAllocatedSize = totalAllocatedSize
+        self.totalLogicalSize = totalLogicalSize
+        self.coreDataSnapshots = coreDataSnapshots
+        self.cacheItems = cacheItems
+        self.observedCacheItems = observedCacheItems
+        self.protectedItems = protectedItems
+        self.issues = issues
+        self.changeToken = changeToken
+    }
 
     public var confirmedCleanableSize: Int64 {
         cacheItems

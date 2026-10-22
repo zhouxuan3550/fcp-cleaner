@@ -1,9 +1,9 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
     name: "FCPLibraryCleaner",
-    platforms: [.macOS(.v15)],
+    platforms: [.macOS(.v26)],
     products: [
         .library(name: "FCPLibraryCleanerCore", targets: ["FCPLibraryCleanerCore"]),
         .executable(name: "fcp-library-scanner", targets: ["fcp-library-scanner"]),

@@ -120,9 +120,17 @@ public struct CleanupPlan: Codable, Sendable {
             allocatedSize += allocated
             logicalSize += logical
             entryCount += 1
-            contentsSignature &+= stableHash(
-                "\(child.path)|\(allocated)|\(logical)|\(modified)|\(fileID)"
-            )
+            var hasher = FNVHasher()
+            hasher.combine(child.path.utf8)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(allocated)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(logical)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(modified)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(UInt64(fileID))
+            contentsSignature &+= hasher.hash
         }
         if enumerationError != nil {
             throw CleanupError.permissionDenied(url)
@@ -136,11 +144,39 @@ public struct CleanupPlan: Codable, Sendable {
         )
     }
 
-    private static func stableHash(_ string: String) -> UInt64 {
-        // FNV-1a is sufficient here: this compares one plan within one cleanup session,
-        // not an adversarial integrity proof.
-        string.utf8.reduce(1_469_598_103_934_665_603) { hash, byte in
-            (hash ^ UInt64(byte)) &* 1_099_511_628_211
+    private struct FNVHasher {
+        private(set) var hash: UInt64 = 1_469_598_103_934_665_603
+
+        @inline(__always)
+        mutating func combine(_ byte: UInt8) {
+            hash = (hash ^ UInt64(byte)) &* 1_099_511_628_211
+        }
+
+        @inline(__always)
+        mutating func combine<S: Sequence>(_ bytes: S) where S.Element == UInt8 {
+            for byte in bytes {
+                combine(byte)
+            }
+        }
+
+        @inline(__always)
+        mutating func combine(_ value: Int64) {
+            combine(UInt64(bitPattern: value))
+        }
+
+        @inline(__always)
+        mutating func combine(_ value: UInt64) {
+            var v = value.littleEndian
+            withUnsafeBytes(of: &v) { bytes in
+                for byte in bytes {
+                    combine(byte)
+                }
+            }
+        }
+
+        @inline(__always)
+        mutating func combine(_ value: Double) {
+            combine(value.bitPattern)
         }
     }
 }

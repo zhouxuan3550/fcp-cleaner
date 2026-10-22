@@ -46,6 +46,7 @@ public struct LibraryScanner: Sendable {
         var protectedItems = [ProtectedItem(url: libraryDatabaseURL, reason: .libraryDatabase)]
         var cacheItems: [CacheItem] = []
         var observedCacheItems: [ObservedCacheItem] = []
+        var observedFingerprints: [(URL, FileFingerprint)] = []
         let classifier = CacheClassifier()
 
         for (rule, candidateURL) in classifier.confirmedSharedCandidates(inLibrary: libraryURL, fileManager: fileManager) {
@@ -85,6 +86,7 @@ public struct LibraryScanner: Sendable {
                     control: control,
                     cacheItems: &cacheItems,
                     observedCacheItems: &observedCacheItems,
+                    observedFingerprints: &observedFingerprints,
                     protectedItems: &protectedItems,
                     issues: &issues
                 )
@@ -123,6 +125,21 @@ public struct LibraryScanner: Sendable {
                 throw CleanupError.fileChanged(snapshot.url)
             }
         }
+        var generatedSnapshots: [DirectoryChangeSnapshot] = []
+        for item in cacheItems {
+            generatedSnapshots.append(DirectoryChangeSnapshot(url: item.url.standardizedFileURL, fingerprint: item.fingerprint))
+        }
+        for (url, fp) in observedFingerprints {
+            generatedSnapshots.append(DirectoryChangeSnapshot(url: url.standardizedFileURL, fingerprint: fp))
+        }
+        var uniqueByPath: [String: DirectoryChangeSnapshot] = [:]
+        for snap in generatedSnapshots {
+            uniqueByPath[snap.url.path] = snap
+        }
+        let precomputedToken = LibraryChangeToken(
+            coreDataSnapshots: coreDataSnapshots.sorted { $0.url.path < $1.url.path },
+            generatedDirectories: uniqueByPath.values.sorted { $0.url.path < $1.url.path }
+        )
         logger.info("Scanned \(libraryURL.path, privacy: .private(mask: .hash))")
         return LibraryScanResult(
             libraryURL: libraryURL,
@@ -132,7 +149,8 @@ public struct LibraryScanner: Sendable {
             cacheItems: cacheItems.sorted { $0.url.path < $1.url.path },
             observedCacheItems: observedCacheItems.sorted { $0.url.path < $1.url.path },
             protectedItems: protectedItems.sorted { $0.url.path < $1.url.path },
-            issues: issues
+            issues: issues,
+            changeToken: precomputedToken
         )
     }
 
@@ -193,6 +211,7 @@ public struct LibraryScanner: Sendable {
         control: ScanControl,
         cacheItems: inout [CacheItem],
         observedCacheItems: inout [ObservedCacheItem],
+        observedFingerprints: inout [(URL, FileFingerprint)],
         protectedItems: inout [ProtectedItem],
         issues: inout [ScanIssue]
     ) throws {
@@ -203,15 +222,16 @@ public struct LibraryScanner: Sendable {
 
         for (rule, observedURL) in classifier.observedProtectedDirectories(inEvent: eventURL, fileManager: fileManager) {
             try throwIfCancelled(control)
-            let size = try directorySize(of: observedURL, fileManager: fileManager, control: control, onProgress: { _ in }, issues: &issues)
+            let fp = try CleanupPlan.fingerprint(for: observedURL)
             observedCacheItems.append(ObservedCacheItem(
                 url: observedURL,
                 category: rule.category,
-                allocatedSize: size.allocated,
-                logicalSize: size.logical,
+                allocatedSize: fp.allocatedSize,
+                logicalSize: fp.logicalSize,
                 confidence: .likely,
                 ruleID: rule.id
             ))
+            observedFingerprints.append((observedURL, fp))
         }
 
         let originalMedia = eventURL.appendingPathComponent(FCPStructureRules.originalMediaName, isDirectory: true)

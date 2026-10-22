@@ -72,6 +72,7 @@ struct AppHeader: View {
         .padding(.horizontal, LayoutMetrics.headerHorizontalPadding)
         .padding(.top, LayoutMetrics.headerTopPadding)
         .padding(.bottom, LayoutMetrics.headerBottomPadding)
+        .background(Color.clear)
     }
 }
 

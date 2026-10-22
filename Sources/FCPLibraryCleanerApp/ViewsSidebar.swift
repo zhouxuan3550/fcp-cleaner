@@ -8,14 +8,15 @@ struct MainWorkspace: View {
     var searchFocused: FocusState<Bool>.Binding
 
     var body: some View {
-        VStack(spacing: 12) {
-            if store.libraries.isEmpty {
-                EmptyDropZone(store: store, isDropTargeted: isDropTargeted)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                HStack(alignment: .top, spacing: 12) {
-                    LibrarySidebar(store: store, searchFocused: searchFocused)
-                        .frame(width: LayoutMetrics.sidebarWidth)
+        if store.libraries.isEmpty {
+            EmptyDropZone(store: store, isDropTargeted: isDropTargeted)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            HStack(alignment: .top, spacing: 12) {
+                LibrarySidebar(store: store, searchFocused: searchFocused)
+                    .frame(width: LayoutMetrics.sidebarWidth)
+
+                ZStack(alignment: .bottomTrailing) {
                     Group {
                         if let library = store.selectedLibrary {
                             LibraryPanel(library: library, store: store)
@@ -24,15 +25,23 @@ struct MainWorkspace: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    if !store.batchSelectedIDs.isEmpty {
+                        BatchActionBar(store: store)
+                            .padding(.trailing, 22)
+                            .padding(.bottom, 20)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(y: 16)),
+                                removal: .opacity.combined(with: .offset(y: 8))
+                            ))
+                            .zIndex(10)
+                    }
                 }
+                .animation(.snappy(duration: 0.22), value: store.batchSelectedIDs.isEmpty)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-
-            if !store.batchSelectedIDs.isEmpty {
-                BatchActionBar(store: store)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -66,12 +75,7 @@ struct LibrarySidebar: View {
             scanHealthFooter
         }
         .frame(maxHeight: .infinity)
-        .background(AppColor.workspace)
-        .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var scanHealthFooter: some View {
@@ -99,26 +103,47 @@ struct LibrarySidebar: View {
     }
 
     private var controls: some View {
-        VStack(spacing: 8) {
-            // 筛选 chips 独占一行：四个固定文案 chip + 计数的最小宽约 310pt，
-            // 若再与其他控件同行会超出侧栏框架，把整列撑宽压到详情面板下面。
-            HStack(spacing: 5) {
+        let counts = store.countsByFilter
+        return VStack(spacing: 8) {
+            // 原生胶囊分段条：整体底槽 + 均分自适应，保证紧凑与原生整洁感
+            HStack(spacing: 0) {
                 ForEach(LibraryFilter.allCases) { filter in
+                    let count = counts[filter] ?? 0
                     Button {
-                        store.setFilter(filter)
-                    } label: {
-                        HStack(spacing: 5) {
-                            Text(filter.title)
-                            Text(store.count(for: filter).formatted())
-                                .monospacedDigit()
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(filter == store.libraryFilter ? Color.white.opacity(0.85) : AppColor.secondaryText)
+                        withAnimation(.snappy(duration: 0.2)) {
+                            store.setFilter(filter)
                         }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Text(filter.title)
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            Text(count.formatted())
+                                .monospacedDigit()
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(filter == store.libraryFilter ? Color.white.opacity(0.9) : AppColor.tertiaryText)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 24)
+                        .background {
+                            if filter == store.libraryFilter {
+                                Capsule()
+                                    .fill(AppColor.accent)
+                                    .shadow(color: AppColor.accent.opacity(0.25), radius: 3, y: 1)
+                            }
+                        }
+                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(FilterButtonStyle(isSelected: filter == store.libraryFilter, isDefault: filter == .waiting))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(filter == store.libraryFilter ? Color.white : AppColor.secondaryText)
+                    .accessibilityLabel("\(filter.title)，\(count) 个资源库")
+                    .accessibilityAddTraits(filter == store.libraryFilter ? [.isButton, .isSelected] : .isButton)
                 }
-                Spacer(minLength: 0)
             }
+            .padding(3)
+            .background(AppColor.control)
+            .clipShape(Capsule())
 
             HStack(spacing: 6) {
                 HStack(spacing: 6) {
@@ -134,8 +159,10 @@ struct LibrarySidebar: View {
                             store.searchText = ""
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 11))
+                                .font(.system(size: 12))
                                 .foregroundStyle(AppColor.tertiaryText)
+                                .frame(width: 20, height: 20)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("清除搜索")
@@ -198,7 +225,9 @@ struct LibrarySidebar: View {
 
                 if store.libraryFilter == .waiting {
                     Button {
-                        store.toggleSelectAllCleanableLibraries()
+                        withAnimation(.snappy(duration: 0.22)) {
+                            store.toggleSelectAllCleanableLibraries()
+                        }
                     } label: {
                         Image(systemName: store.areAllCleanableLibrariesSelected ? "checkmark.circle.fill" : "checkmark.circle")
                             .font(.system(size: 11, weight: .semibold))
@@ -268,7 +297,7 @@ struct SidebarDiskHeader: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(AppColor.workspace)
+        .background(Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
             guard store.libraryFilter == .waiting else { return }
@@ -347,7 +376,9 @@ struct LibraryRow: View {
     private var leadingMark: some View {
         if store.libraryFilter == .waiting {
             Button {
-                store.toggleBatchSelection(library)
+                withAnimation(.snappy(duration: 0.22)) {
+                    store.toggleBatchSelection(library)
+                }
             } label: {
                 Image(systemName: isBatchSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 15, weight: .medium))
@@ -412,18 +443,31 @@ struct BatchActionBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(AppColor.accent)
-            Text("已选 \(store.batchSelectedIDs.count) 个资源库")
-                .font(.system(size: 12, weight: .semibold))
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppColor.accent)
+                Text("已选 \(store.batchSelectedIDs.count) 个资源库")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+
             Text(FormatHelpers.bytes(store.selectedBatchSpace))
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(AppColor.accent)
                 .monospacedDigit()
-            Spacer()
-            Button("取消全选") {
-                store.batchSelectedIDs.removeAll()
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(AppColor.accent.opacity(0.12))
+                .clipShape(Capsule())
+
+            Divider()
+                .frame(height: 14)
+                .overlay(AppColor.border)
+
+            Button("取消") {
+                withAnimation(.snappy(duration: 0.2)) {
+                    store.batchSelectedIDs.removeAll()
+                }
             }
             .buttonStyle(QueueActionButtonStyle(enabled: !store.isBatchCleaning && !store.isPreflighting))
             .disabled(store.isBatchCleaning || store.isPreflighting)
@@ -437,13 +481,10 @@ struct BatchActionBar: View {
             .disabled(store.isBatchCleaning || store.isPreflighting)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-        .background(AppColor.panel)
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.vertical, 8)
+        .fixedSize()
+        .glassEffect(.regular.interactive(), in: Capsule())
+        .shadow(color: Color.black.opacity(0.28), radius: 16, y: 6)
     }
 
     private var batchActionTitle: String {
@@ -474,12 +515,7 @@ struct NoCleanupView: View {
                 .buttonStyle(HeaderButtonStyle())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(AppColor.workspace)
-        .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColor.border, lineWidth: 1)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private var emptyIcon: String {
@@ -537,15 +573,18 @@ struct EmptyDropZone: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(isDropTargeted ? AppColor.accent.opacity(0.08) : AppColor.workspace)
+        .glassEffect(
+            isDropTargeted ? .regular.tint(AppColor.accent) : .regular,
+            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+        )
         .overlay {
+            // 保留虚线拖放落点指示
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(
                     isDropTargeted ? AppColor.accent : AppColor.dashedBorder,
                     style: StrokeStyle(lineWidth: 2, dash: [11, 9])
                 )
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture(count: 2, perform: store.openLibraryPanel)
     }

@@ -66,6 +66,11 @@ enum LibrarySizeTrend {
         if let data = try? JSONEncoder().encode(all) {
             defaults.set(data, forKey: storageKey)
         }
+        lock.lock()
+        if defaults == UserDefaults.standard {
+            inMemoryCache = all
+        }
+        lock.unlock()
     }
 
     /// 周增长：最新样本 − 基线样本（总分配体积）。样本不足或基线过期返回 nil。
@@ -78,10 +83,22 @@ enum LibrarySizeTrend {
         return current.totalAllocatedSize - baseline.totalAllocatedSize
     }
 
+    private static let lock = NSLock()
+    private nonisolated(unsafe) static var inMemoryCache: [String: [Sample]]?
+
     private static func index(_ defaults: UserDefaults) -> [String: [Sample]] {
+        lock.lock()
+        defer { lock.unlock() }
+        if defaults == UserDefaults.standard, let cached = inMemoryCache {
+            return cached
+        }
         guard let data = defaults.data(forKey: storageKey),
               let decoded = try? JSONDecoder().decode([String: [Sample]].self, from: data) else {
+            if defaults == UserDefaults.standard { inMemoryCache = [:] }
             return [:]
+        }
+        if defaults == UserDefaults.standard {
+            inMemoryCache = decoded
         }
         return decoded
     }
