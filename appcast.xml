@@ -3,6 +3,14 @@
     <channel>
         <title>FCP Cleaner</title>
         <item>
+            <title>4.0.11</title>
+            <pubDate>Thu, 22 Oct 2026 15:22:54 +0800</pubDate>
+            <sparkle:version>411</sparkle:version>
+            <sparkle:shortVersionString>4.0.11</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/zhouxuan3550/fcp-cleaner/releases/download/v4.0.11/FCP-Cleaner-4.0.11-universal.dmg" length="7361458" type="application/octet-stream" sparkle:edSignature="6gS8g06rP1fNK3zR8rt4G7IJH60HT9IDBiOOvLDB337uV7WMlIEwCt9mP2IByiksWfMVYSOLz34e44rCJgmJCw=="/>
+        </item>
+        <item>
             <title>4.0.1</title>
             <pubDate>Thu, 03 Sep 2026 17:16:02 +0800</pubDate>
             <sparkle:version>401</sparkle:version>
