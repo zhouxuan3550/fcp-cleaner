@@ -115,9 +115,13 @@ struct AppSettings: View {
                 UpdateController.shared.checkForUpdates()
             }
             .disabled(!UpdateController.shared.isConfigured)
-            Label("B 站：调色师手册", systemImage: "play.tv.fill")
+            Link(destination: URL(string: "https://space.bilibili.com/14118553")!) {
+                Label("B 站：调色师手册", systemImage: "play.tv.fill")
+            }
+                .buttonStyle(.plain)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AppColor.secondaryText)
+                .help("打开 B 站主页")
         }
         .padding(20)
         .frame(width: LayoutMetrics.settingsPopoverWidth)
