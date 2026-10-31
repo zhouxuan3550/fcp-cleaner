@@ -222,6 +222,9 @@ struct ScanCounter: View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .monospacedDigit()
+                .contentTransition(.numericText())
+                .animation(.snappy(duration: 0.25), value: value)
             Text(label)
                 .font(.caption)
                 .foregroundStyle(AppColor.secondaryText)

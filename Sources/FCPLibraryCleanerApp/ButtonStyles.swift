@@ -1,34 +1,5 @@
 import SwiftUI
 
-struct FilterButtonStyle: ButtonStyle {
-    let isSelected: Bool
-    var isDefault: Bool = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, weight: .semibold))
-            .lineLimit(1)
-            // 不再 fixedSize：空间不足时缩字而不是撑爆侧栏（P4-2 第四个筛选曾把
-            // chips 行最小宽顶到 300pt 框架之外，导致侧栏溢出与详情面板重叠）。
-            .minimumScaleFactor(0.75)
-            .foregroundStyle(isSelected ? Color.white : AppColor.secondaryText)
-            .padding(.horizontal, 7)
-            .frame(height: LayoutMetrics.controlHeight)
-            .background(isSelected ? AppColor.accent : AppColor.control)
-            .overlay {
-                if !isSelected && isDefault {
-                    Capsule()
-                        .stroke(AppColor.accent.opacity(0.35), lineWidth: 1)
-                }
-            }
-            .clipShape(Capsule())
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1.0)
-            .opacity(configuration.isPressed ? 0.74 : 1)
-            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
-    }
-}
-
 struct QueueActionButtonStyle: ButtonStyle {
     var emphasized = false
     var enabled = true

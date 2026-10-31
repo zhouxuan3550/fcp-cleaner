@@ -55,21 +55,29 @@ final class LibraryRecord: Identifiable {
     let discoverySource: DiscoverySource?
     @ObservationIgnored var scanControl: ScanControl?
 
-    init(url: URL, restored: RestoredLibrary? = nil, discoveredVia source: DiscoverySource? = nil) {
+    init(url: URL, restored: RestoredLibrary? = nil, discoveredVia source: DiscoverySource? = nil, prefetched: ValidatedLibraryCandidate? = nil) {
         self.url = url
-        let values = try? url.resourceValues(forKeys: [.volumeURLKey, .volumeNameKey, .volumeUUIDStringKey])
-        volumeURL = values?.allValues[.volumeURLKey] as? URL ?? URL(fileURLWithPath: "/")
-        volumeName = values?.volumeName ?? volumeURL.lastPathComponent
-        volumeID = values?.volumeUUIDString
+        if let prefetched, let volumeURL = prefetched.volumeURL {
+            // 发现流程已在后台取齐卷信息，主线程建档零文件系统调用。
+            self.volumeURL = volumeURL
+            volumeName = prefetched.volumeName ?? volumeURL.lastPathComponent
+            volumeID = prefetched.volumeID
+        } else {
+            let values = try? url.resourceValues(forKeys: [.volumeURLKey, .volumeNameKey, .volumeUUIDStringKey])
+            self.volumeURL = values?.allValues[.volumeURLKey] as? URL ?? URL(fileURLWithPath: "/")
+            volumeName = values?.volumeName ?? self.volumeURL.lastPathComponent
+            volumeID = values?.volumeUUIDString
+        }
         lastScanned = restored?.metadata.lastScanned
         lastKnownTotalSize = restored?.metadata.totalAllocatedSize
         lastKnownCleanableSize = restored?.metadata.cleanableSize
-        lastActivity = restored?.metadata.lastActivity ?? Self.activityDate(for: url)
+        lastActivity = restored?.metadata.lastActivity ?? prefetched?.lastActivity ?? Self.activityDate(for: url)
         ignoredUntil = restored?.metadata.ignoredUntil
         discoverySource = restored?.metadata.discoverySourceRaw.flatMap(DiscoverySource.init(rawValue:)) ?? source
     }
 
-    fileprivate static func activityDate(for libraryURL: URL) -> Date? {
+    /// 纯 stat 调用，无隔离状态；扫描收尾路径会从后台线程调用。
+    nonisolated fileprivate static func activityDate(for libraryURL: URL) -> Date? {
         let database = libraryURL.appendingPathComponent(FCPStructureRules.libraryDatabaseName)
         return (try? FileManager.default.attributesOfItem(atPath: database.path)[.modificationDate]) as? Date
     }
@@ -246,9 +254,13 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var lastAutomaticLowSpaceScan: [URL: Date] = [:]
     @ObservationIgnored private var spaceMonitorTask: Task<Void, Never>?
     @ObservationIgnored private var isEvaluatingLowSpace = false
+    /// 评估在途期间又有新请求（快速拖动预警阈值、扫描风暴）时置位；
+    /// 本轮结束后按最新状态重跑一次，保证最后一次变更不被吞掉。
+    @ObservationIgnored private var needsLowSpaceReevaluation = false
     @ObservationIgnored private var workDirectoryMonitor: WorkDirectoryMonitor?
     @ObservationIgnored private var volumeMountMonitor: VolumeMountMonitor?
     @ObservationIgnored private var snoozeExpiryTask: Task<Void, Never>?
+    @ObservationIgnored private var saveRecentsTask: Task<Void, Never>?
     @ObservationIgnored private var isExportingDiagnosticsInternal = false
     /// 菜单项禁用态（诊断导出进行中）。
     var isExportingDiagnostics: Bool { isExportingDiagnosticsInternal }
@@ -407,22 +419,6 @@ final class LibraryStore: NSObject {
             .reduce(0) { $0 + $1.spaceToFree }
     }
 
-    var diskCleanupSummaries: [DiskCleanupSummary] {
-        let allCleanable = waitingLibraries.filter(matchesInactivity).filter {
-            $0.scanResult != nil && $0.spaceToFree >= Self.minimumCleanableSize && !$0.isScanning
-        }
-        let grouped = Dictionary(grouping: allCleanable, by: \.volumeURL)
-        return grouped.map { volumeURL, records in
-            DiskCleanupSummary(
-                volumeURL: volumeURL,
-                name: records.first?.volumeName ?? volumeURL.lastPathComponent,
-                cleanableSize: records.reduce(0) { $0 + $1.spaceToFree },
-                libraryCount: records.count
-            )
-        }
-        .sorted { $0.cleanableSize > $1.cleanableSize }
-    }
-
     func toggleBatchSelection(_ record: LibraryRecord) {
         guard record.scanResult != nil,
               record.spaceToFree >= Self.minimumCleanableSize,
@@ -452,6 +448,7 @@ final class LibraryStore: NSObject {
         workDirectoryMonitor?.updateWatched(paths: workDirectories.map(\.path))
         if volumeMountMonitor == nil { volumeMountMonitor = VolumeMountMonitor(store: self) }
         volumeMountMonitor?.start()
+        flushRecentsOnTermination()
         scheduledCheckController.restart()
         reconcileInterruptedCleanup()
         scheduleSnoozeExpiryRefresh()
@@ -607,7 +604,7 @@ final class LibraryStore: NSObject {
         pendingMergeCount += 1
         Task { [weak self] in
             let candidates = await Task.detached(priority: .utility) {
-                Self.validateCandidates(
+                Self.validateCandidatesWithMetadata(
                     libraryURLs,
                     source: source,
                     knownURLs: knownURLs,
@@ -627,6 +624,22 @@ final class LibraryStore: NSObject {
         knownURLs: Set<URL> = [],
         ignoredDirectoryPaths: [String] = []
     ) -> [URL] {
+        validateCandidatesWithMetadata(
+            libraryURLs,
+            source: source,
+            knownURLs: knownURLs,
+            ignoredDirectoryPaths: ignoredDirectoryPaths
+        ).map(\.url)
+    }
+
+    /// 校验 + 建档元数据一次取齐。卷信息查询与数据库 stat 都是文件系统调用，
+    /// 必须留在后台发现流程里完成，主线程只做纯内存建档。
+    nonisolated static func validateCandidatesWithMetadata(
+        _ libraryURLs: [URL],
+        source: DiscoverySource,
+        knownURLs: Set<URL> = [],
+        ignoredDirectoryPaths: [String] = []
+    ) -> [ValidatedLibraryCandidate] {
         Set(libraryURLs.map(\.standardizedFileURL))
             .filter { url in
                 if knownURLs.contains(url) { return true } // 已验证过，直接放行
@@ -643,6 +656,58 @@ final class LibraryStore: NSObject {
                 return libraryDatabaseExists(at: url)
             }
             .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+            .map { url in
+                // 已入库的 URL 会命中现有记录，无需为它探测元数据。
+                guard !knownURLs.contains(url) else {
+                    return ValidatedLibraryCandidate(url: url)
+                }
+                let metadata = prefetchRecordMetadata(for: url)
+                return ValidatedLibraryCandidate(
+                    url: url,
+                    volumeURL: metadata.volumeURL,
+                    volumeName: metadata.volumeName,
+                    volumeID: metadata.volumeID,
+                    lastActivity: metadata.lastActivity
+                )
+            }
+    }
+
+    nonisolated private static func prefetchRecordMetadata(
+        for url: URL
+    ) -> (volumeURL: URL, volumeName: String, volumeID: String?, lastActivity: Date?) {
+        let values = try? url.resourceValues(forKeys: [.volumeURLKey, .volumeNameKey, .volumeUUIDStringKey])
+        let volumeURL = values?.allValues[.volumeURLKey] as? URL ?? URL(fileURLWithPath: "/")
+        let lastActivity = (try? FileManager.default.attributesOfItem(
+            atPath: url.appendingPathComponent(FCPStructureRules.libraryDatabaseName).path
+        )[.modificationDate]) as? Date
+        return (volumeURL, values?.volumeName ?? volumeURL.lastPathComponent, values?.volumeUUIDString, lastActivity)
+    }
+
+    @MainActor
+    private func applyValidatedCandidates(_ candidates: [ValidatedLibraryCandidate], selectNewest: Bool, source: DiscoverySource) {
+        guard !candidates.isEmpty else { return }
+        var newRecords: [LibraryRecord] = []
+        var recordsByURL = Dictionary(
+            libraries.map { ($0.url.standardizedFileURL, $0) },
+            uniquingKeysWith: { existing, _ in existing }
+        )
+        for candidate in candidates {
+            let standardizedURL = candidate.url
+            if let existing = recordsByURL[standardizedURL] {
+                if selectNewest { selectedID = existing.id }
+                continue
+            }
+            let record = LibraryRecord(url: standardizedURL, discoveredVia: source, prefetched: candidate)
+            libraries.append(record)
+            recordsByURL[standardizedURL] = record
+            newRecords.append(record)
+            if selectNewest { selectedID = record.id }
+        }
+
+        libraries.sort { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
+        if selectedID == nil { selectedID = libraries.first?.id }
+        for record in newRecords { scan(record, force: false) }
+        if !newRecords.isEmpty { saveRecents() }
     }
 
     @MainActor
@@ -815,7 +880,11 @@ final class LibraryStore: NSObject {
                 record.lastScanned = Date()
                 record.lastKnownTotalSize = record.scanResult?.totalAllocatedSize
                 record.lastKnownCleanableSize = record.scanResult?.confirmedCleanableSize
-                record.lastActivity = LibraryRecord.activityDate(for: record.url)
+                // stat 可能落在网络卷上，绝不放主线程；结果只在下一帧呈现，无一致性风险。
+                let activityURL = record.url
+                record.lastActivity = await Task.detached(priority: .utility) {
+                    LibraryRecord.activityDate(for: activityURL)
+                }.value
                 record.lastAccessibleAt = Date()
                 // Persisting the cache costs a second traversal plus an atomic write, so it
                 // must never sit between a finished scan and the UI showing its result.
@@ -1338,22 +1407,54 @@ final class LibraryStore: NSObject {
         saveRecents()
     }
 
+    /// 按筛选档缓存的截止时刻：Calendar.date(byAdding:) 单次微秒级，但
+    /// filteredLibraries/countsByFilter 每次渲染都会对全部记录各调一次，
+    /// 截止值在渲染帧内不变，缓存后整轮只剩一次日历运算。
+    @ObservationIgnored private var inactivityCutoffCache: (filter: InactivityFilter, cutoff: Date)?
+
+    private func inactivityCutoff() -> Date? {
+        guard inactivityFilter != .all else { return nil }
+        let now = Date()
+        if let inactivityCutoffCache,
+           inactivityCutoffCache.filter == inactivityFilter,
+           now.timeIntervalSince(inactivityCutoffCache.cutoff) < 60 {
+            return inactivityCutoffCache.cutoff
+        }
+        let cutoff = Calendar.current.date(byAdding: .day, value: -inactivityFilter.rawValue, to: now) ?? now
+        inactivityCutoffCache = (inactivityFilter, cutoff)
+        return cutoff
+    }
+
     private func matchesInactivity(_ record: LibraryRecord) -> Bool {
-        guard inactivityFilter != .all else { return true }
+        guard let cutoff = inactivityCutoff() else { return true }
         guard let lastActivity = record.lastActivity else { return true }
-        let cutoff = Calendar.current.date(byAdding: .day, value: -inactivityFilter.rawValue, to: Date()) ?? Date()
         return lastActivity <= cutoff
     }
 
     // MARK: 忽略与稍后（仅作用于发现/列表分层，绝不进入清理链路）
 
-    func isLibraryIgnored(_ record: LibraryRecord) -> Bool {
-        LibraryIgnoreRules.isSnoozed(until: record.ignoredUntil)
-            || LibraryIgnoreRules.isInsideIgnoredDirectory(recordPath: record.url.path, directoryPaths: ignoredLibraryDirectories)
+    /// 忽略目录的标准前缀缓存：isLibraryIgnored 在每轮渲染对每条记录各调一次，
+    /// 规则函数内的 expandingTildeInPath 与前缀拼接按次分配 NSString；
+    /// 前缀只随忽略集变化，按集合内容做键缓存后整轮渲染零分配。
+    @ObservationIgnored private var ignoredPrefixCache: (source: [String], prefixes: [String])?
+
+    private func ignoredDirectoryPrefixes() -> [String] {
+        if let ignoredPrefixCache, ignoredPrefixCache.source == ignoredLibraryDirectories {
+            return ignoredPrefixCache.prefixes
+        }
+        let prefixes = ignoredLibraryDirectories.map { path -> String in
+            let standardized = path.standardizedFilePath
+            return standardized.hasSuffix("/") ? standardized : standardized + "/"
+        }
+        ignoredPrefixCache = (ignoredLibraryDirectories, prefixes)
+        return prefixes
     }
 
-    func isDirectoryIgnored(_ url: URL) -> Bool {
-        ignoredLibraryDirectories.contains(url.standardizedFileURL.path)
+    func isLibraryIgnored(_ record: LibraryRecord) -> Bool {
+        if LibraryIgnoreRules.isSnoozed(until: record.ignoredUntil) { return true }
+        // record.url 建档时已标准化，绝对路径的波浪号展开是恒等操作，直接前缀比较。
+        let path = record.url.path
+        return ignoredDirectoryPrefixes().contains { path.hasPrefix($0) }
     }
 
     /// 行操作「7 天内不再提醒」：到期后自动回到原分层。
@@ -1529,7 +1630,10 @@ final class LibraryStore: NSObject {
 
     /// 卷容量探测全部在后台执行——网络卷上这类调用可能阻塞数秒，绝不能上主线程。
     func evaluateLowSpace() {
-        guard !isEvaluatingLowSpace else { return }
+        if isEvaluatingLowSpace {
+            needsLowSpaceReevaluation = true
+            return
+        }
         isEvaluatingLowSpace = true
         let threshold = Int64(lowSpaceWarningGB) * 1_024 * 1_024 * 1_024
         let volumeURLs = Array(Set(libraries.map(\.volumeURL)))
@@ -1547,6 +1651,10 @@ final class LibraryStore: NSObject {
                 nameByVolume: nameByVolume,
                 cleanableByVolume: cleanableByVolume
             )
+            if needsLowSpaceReevaluation {
+                needsLowSpaceReevaluation = false
+                evaluateLowSpace()
+            }
         }
     }
 
@@ -1775,8 +1883,35 @@ final class LibraryStore: NSObject {
         scan(record, force: false)
     }
 
+    /// 扫描完成、清理落账、忽略切换都会触发存档，突发时可达每秒十余次；
+    /// 防抖合并后每次状态风暴只做一次书签编码与 UserDefaults 写入，
+    /// 退出前（willTerminate）强制落盘，崩溃最多丢最后一次元数据快照。
     private func saveRecents() {
+        saveRecentsTask?.cancel()
+        saveRecentsTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let self else { return }
+            self.saveRecentsNow()
+        }
+    }
+
+    private func saveRecentsNow() {
+        saveRecentsTask?.cancel()
+        saveRecentsTask = nil
         bookmarks.save(currentRecentsMetadata())
+    }
+
+    /// 应用退出时把尚未落盘的元数据立即写入，避免防抖窗口内的变更丢失。
+    private func flushRecentsOnTermination() {
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.saveRecentsNow()
+            }
+        }
     }
 
     private func currentRecentsMetadata() -> [RecentLibraryMetadata] {
@@ -1802,6 +1937,15 @@ private struct ScanRequest {
     var force: Bool
 }
 
+/// 后台发现流程取齐的建档元数据；已入库 URL 的字段为 nil（复用现有记录，不再探测）。
+struct ValidatedLibraryCandidate: Sendable {
+    let url: URL
+    var volumeURL: URL? = nil
+    var volumeName: String? = nil
+    var volumeID: String? = nil
+    var lastActivity: Date? = nil
+}
+
 struct CleanupNotice: Identifiable {
     let id = UUID()
     let title: String
@@ -1811,14 +1955,6 @@ struct CleanupNotice: Identifiable {
     let categories: Set<CacheCategory>
     let errorCount: Int
     let errorMessage: String?
-}
-
-struct DiskCleanupSummary: Identifiable {
-    var id: URL { volumeURL }
-    let volumeURL: URL
-    let name: String
-    let cleanableSize: Int64
-    let libraryCount: Int
 }
 
 struct ScanHealthSummary: Sendable {

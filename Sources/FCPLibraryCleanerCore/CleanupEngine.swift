@@ -3,6 +3,8 @@ import OSLog
 
 public struct CleanupEngine: Sendable {
     private static let logger = Logger(subsystem: "com.fcplibrarycleaner", category: "CleanupEngine")
+    /// Instruments 与诊断包里的 os-log.txt 都能看到每次清理的区间与耗时。
+    private static let signposter = OSSignposter(subsystem: "com.fcplibrarycleaner", category: "cleanup")
     private let isLibraryInUse: @Sendable (URL) -> Bool
 
     public init() {
@@ -38,6 +40,9 @@ public struct CleanupEngine: Sendable {
         plan: CleanupPlan,
         isLibraryInUse: @escaping @Sendable (URL) -> Bool
     ) throws -> CleanupResult {
+        let startedAt = ContinuousClock.now
+        let signpostState = signposter.beginInterval("CleanupLibrary")
+        defer { signposter.endInterval("CleanupLibrary", signpostState) }
         let libraryVolume = try validatePreflight(
             plan: plan,
             isLibraryInUse: isLibraryInUse,
@@ -74,7 +79,10 @@ public struct CleanupEngine: Sendable {
             }
         }
 
-        logger.info("Cleanup attempted for \(plan.entries.count) confirmed entries")
+        let elapsed = ContinuousClock.now - startedAt
+        let elapsedMs = Int(elapsed.components.seconds) * 1000
+            + Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
+        logger.info("Cleanup finished: \(movedToTrash.count)/\(plan.entries.count) entries moved / \(freedAllocatedSize) bytes freed / \(errors.count) errors in \(elapsedMs)ms")
         return CleanupResult(
             movedToTrash: movedToTrash,
             trashedItems: trashedItems,

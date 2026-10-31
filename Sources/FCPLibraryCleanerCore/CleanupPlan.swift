@@ -84,7 +84,9 @@ public struct CleanupPlan: Codable, Sendable {
         .fileSizeKey,
         .fileAllocatedSizeKey,
         .contentModificationDateKey,
-        .documentIdentifierKey,
+        // 持久文件身份。documentIdentifier 在 macOS 26+ 已全上下文返回 nil（实测），
+        // fileIdentifier（即 st_ino）在直取与枚举器预取两种上下文都真实可用。
+        .fileIdentifierKey,
     ]
 
     public static func fingerprint(for url: URL) throws -> FileFingerprint {
@@ -116,7 +118,7 @@ public struct CleanupPlan: Codable, Sendable {
             let logical = Int64(values.fileSize ?? 0)
             let allocated = Int64(values.fileAllocatedSize ?? values.fileSize ?? 0)
             let modified = values.contentModificationDate?.timeIntervalSinceReferenceDate ?? 0
-            let fileID = values.documentIdentifier ?? 0
+            let fileID = values.fileIdentifier ?? 0
             allocatedSize += allocated
             logicalSize += logical
             entryCount += 1
@@ -129,7 +131,7 @@ public struct CleanupPlan: Codable, Sendable {
             hasher.combine(UInt8(ascii: "|"))
             hasher.combine(modified)
             hasher.combine(UInt8(ascii: "|"))
-            hasher.combine(UInt64(fileID))
+            hasher.combine(UInt64(bitPattern: Int64(fileID)))
             contentsSignature &+= hasher.hash
         }
         if enumerationError != nil {

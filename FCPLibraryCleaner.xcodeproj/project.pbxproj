@@ -16,6 +16,7 @@
 		3CA7DC924D29FFD540D9C0F9 /* CleanupSummaryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51CCF038B12C81C6A16E8CB8 /* CleanupSummaryModels.swift */; };
 		3D35DDCF8B522ED7584795F1 /* LibraryScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A81F92C1AE2CD7F46C5DD5 /* LibraryScanner.swift */; };
 		491FC2B28AEE0892BCE080C5 /* AppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551DC8F234B31D7D7EDDA135 /* AppIntents.swift */; };
+		49F0254F589EC59AB3D1088A /* BrandLogos.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF7F309C15F2C9764789B035 /* BrandLogos.xcassets */; };
 		49F445DFE65E28877929ED90 /* FCP-Cleaner.icns in Resources */ = {isa = PBXBuildFile; fileRef = 2B9BBC9B025F90C7DCD54D58 /* FCP-Cleaner.icns */; };
 		512F7E263D817A8471FDBA14 /* CleanupEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7063734E2929AA7B4312BF0F /* CleanupEngine.swift */; };
 		5431CA6F560233A994C810B0 /* SecurityScopedBookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C75F3FCB9B85C9B4E79DF50B /* SecurityScopedBookmarkManager.swift */; };
@@ -51,6 +52,7 @@
 		EE498745B81537AAA82A8CE7 /* LibraryUseDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E97A6204629DCAFA53146A /* LibraryUseDetector.swift */; };
 		F3E2728BD14D09C08CFA7441 /* ScanProgressCoalescer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD611C7E0251B543CD82AB80 /* ScanProgressCoalescer.swift */; };
 		FB64447B090718D860E07B14 /* libFCPLibraryCleanerCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A80AE49AFEA3673EA904FCF9 /* libFCPLibraryCleanerCore.a */; };
+		FC22CFD02DB7D81D2B7FEA40 /* BrandLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9231E7E8323CBFDD7BB3E4FC /* BrandLinksView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -111,6 +113,7 @@
 		74CEDAF42E2A77D1E115DF2B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7D262894F14868D71757406F /* FCPStructureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FCPStructureRules.swift; sourceTree = "<group>"; };
 		81EB5DC90E9B88546895664A /* ScanResultCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultCache.swift; sourceTree = "<group>"; };
+		9231E7E8323CBFDD7BB3E4FC /* BrandLinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandLinksView.swift; sourceTree = "<group>"; };
 		934233315FECA82E62393048 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		947C6884FB3D862541C66D95 /* LibrarySizeTrend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySizeTrend.swift; sourceTree = "<group>"; };
 		9E43135B7D3A16AAB521C4AB /* WorkflowExtension-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "WorkflowExtension-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -129,6 +132,7 @@
 		E1D10701416C9D622A811DD3 /* ViewsLibraryDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsLibraryDetail.swift; sourceTree = "<group>"; };
 		E220AADA0ED9683AB76C35EA /* VolumeMountRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeMountRules.swift; sourceTree = "<group>"; };
 		E6BD3337D1822E9FFA007134 /* FCP-Cleaner-Workflow.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "FCP-Cleaner-Workflow.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF7F309C15F2C9764789B035 /* BrandLogos.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = BrandLogos.xcassets; sourceTree = "<group>"; };
 		F797C3263736A1B2858FA606 /* CleanupTransactionJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupTransactionJournal.swift; sourceTree = "<group>"; };
 		FA8075F67CDDC264BF874059 /* CleanupHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupHistoryStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -150,6 +154,7 @@
 			isa = PBXGroup;
 			children = (
 				551DC8F234B31D7D7EDDA135 /* AppIntents.swift */,
+				9231E7E8323CBFDD7BB3E4FC /* BrandLinksView.swift */,
 				A733653E2977D21F85EA8BCA /* ButtonStyles.swift */,
 				FA8075F67CDDC264BF874059 /* CleanupHistoryStore.swift */,
 				51CCF038B12C81C6A16E8CB8 /* CleanupSummaryModels.swift */,
@@ -241,6 +246,7 @@
 		FEC2DBFFE4AC0767DC0AD85D /* Assets */ = {
 			isa = PBXGroup;
 			children = (
+				EF7F309C15F2C9764789B035 /* BrandLogos.xcassets */,
 				2B9BBC9B025F90C7DCD54D58 /* FCP-Cleaner.icns */,
 			);
 			path = Assets;
@@ -351,6 +357,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				49F0254F589EC59AB3D1088A /* BrandLogos.xcassets in Resources */,
 				49F445DFE65E28877929ED90 /* FCP-Cleaner.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -398,6 +405,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				491FC2B28AEE0892BCE080C5 /* AppIntents.swift in Sources */,
+				FC22CFD02DB7D81D2B7FEA40 /* BrandLinksView.swift in Sources */,
 				B00D87CDDE7B2F62C62A7636 /* ButtonStyles.swift in Sources */,
 				A6A1BA2773F8A75980E8245C /* CleanupHistoryStore.swift in Sources */,
 				3CA7DC924D29FFD540D9C0F9 /* CleanupSummaryModels.swift in Sources */,

@@ -37,7 +37,7 @@ struct FingerprintIntegrityTests {
     }
 
     /// 同一个文件被原地换成另一个 inode，且刻意把 mtime 钉回原值：
-    /// 只有文件身份标识能抓到它。这条专门守住 inode→documentIdentifier 的取值改动。
+    /// 只有文件身份标识能抓到它。这条专门守住身份分量（fileIdentifier，即 st_ino）的取值改动。
     @Test("a same-size replacement with a restored mtime is still detected")
     func detectsReplacedFileIdentity() throws {
         let root = try makeDirectory(tree: ["a.mov": 4096])
@@ -47,8 +47,11 @@ struct FingerprintIntegrityTests {
         let originalDate = (try fileManager.attributesOfItem(atPath: target.path))[.modificationDate] as? Date ?? Date()
         let before = try CleanupPlan.fingerprint(for: root)
 
-        // 新写入会产生新 inode；再把修改时间精确还原，让 mtime 和 size 都不暴露变化。
-        try Data(repeating: 0x5A, count: 4096).write(to: target)
+        // 原子替换（临时文件 + 改名）必然产生新 inode；再把修改时间精确还原，
+        // 让 mtime 和 size 都不暴露变化，只剩文件身份能暴露替换。
+        // 必须用 .atomic：非原子重写是原地截断、不换 inode，同尺寸 + 恢复 mtime
+        // 之后不存在任何可观测差异，指纹不可能检出。
+        try Data(repeating: 0x5A, count: 4096).write(to: target, options: .atomic)
         try fileManager.setAttributes(
             [.modificationDate: originalDate, .creationDate: originalDate],
             ofItemAtPath: target.path

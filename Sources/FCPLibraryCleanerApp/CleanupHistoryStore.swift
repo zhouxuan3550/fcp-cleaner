@@ -9,6 +9,12 @@ struct CleanupHistoryFile: Codable, Hashable, Sendable {
     let trashURL: URL
 }
 
+private struct RestoreOutcome: Sendable {
+    let restored: Set<CleanupHistoryFile>
+    let failures: Int
+    let libraryInUse: Bool
+}
+
 enum HistoryExportFormat: String, CaseIterable, Identifiable {
     case csv, json
     var id: String { rawValue }
@@ -32,6 +38,10 @@ struct CleanupHistoryEntry: Codable, Identifiable, Sendable {
 final class CleanupHistoryStore {
     private(set) var entries: [CleanupHistoryEntry] = []
     @ObservationIgnored private let storageURL: URL
+    /// 历史文件可达数百 KB（200 条 × 每条完整废纸篓路径清单）；
+    /// 快照按调用顺序入队，串行写保证末次落盘即最新状态。
+    private static let persistQueue = DispatchQueue(label: "com.fcpcleaner.cleanup-history", qos: .utility)
+    private static let persistEncoder = JSONEncoder()
 
     init() {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -92,33 +102,44 @@ final class CleanupHistoryStore {
         }
     }
 
-    func restore(_ entry: CleanupHistoryEntry) -> String {
-        guard !LibraryUseDetector().libraryIsInUse(entry.libraryURL) else {
+    /// lsof 探测（FCP 运行时可达 10 秒超时）与逐项搬移全部后台执行，
+    /// 主线程只在收尾时更新内存列表。
+    func restore(_ entry: CleanupHistoryEntry) async -> String {
+        let libraryURL = entry.libraryURL
+        let trashedItems = entry.trashedItems
+        let outcome = await Task.detached(priority: .userInitiated) {
+            guard !LibraryUseDetector().libraryIsInUse(libraryURL) else {
+                return RestoreOutcome(restored: [], failures: 0, libraryInUse: true)
+            }
+            let fileManager = FileManager.default
+            var restored = Set<CleanupHistoryFile>()
+            var failures = 0
+            for item in trashedItems {
+                guard fileManager.fileExists(atPath: item.trashURL.path),
+                      !fileManager.fileExists(atPath: item.originalURL.path),
+                      fileManager.isWritableFile(atPath: item.originalURL.deletingLastPathComponent().path) else {
+                    failures += 1
+                    continue
+                }
+                do {
+                    try fileManager.moveItem(at: item.trashURL, to: item.originalURL)
+                    restored.insert(item)
+                } catch {
+                    failures += 1
+                }
+            }
+            return RestoreOutcome(restored: restored, failures: failures, libraryInUse: false)
+        }.value
+
+        guard !outcome.libraryInUse else {
             return "Final Cut Pro 正在使用此资源库"
         }
-        let fileManager = FileManager.default
-        var restored = Set<CleanupHistoryFile>()
-        var failures = 0
-        for item in entry.trashedItems {
-            guard fileManager.fileExists(atPath: item.trashURL.path),
-                  !fileManager.fileExists(atPath: item.originalURL.path),
-                  fileManager.isWritableFile(atPath: item.originalURL.deletingLastPathComponent().path) else {
-                failures += 1
-                continue
-            }
-            do {
-                try fileManager.moveItem(at: item.trashURL, to: item.originalURL)
-                restored.insert(item)
-            } catch {
-                failures += 1
-            }
-        }
         if let index = entries.firstIndex(where: { $0.id == entry.id }) {
-            entries[index].trashedItems.removeAll { restored.contains($0) }
+            entries[index].trashedItems.removeAll { outcome.restored.contains($0) }
             persist()
         }
-        if restored.isEmpty { return failures > 0 ? "没有可恢复的项目" : "项目已不在废纸篓" }
-        return failures == 0 ? "已恢复 \(restored.count) 项" : "已恢复 \(restored.count) 项，\(failures) 项失败"
+        if outcome.restored.isEmpty { return outcome.failures > 0 ? "没有可恢复的项目" : "项目已不在废纸篓" }
+        return outcome.failures == 0 ? "已恢复 \(outcome.restored.count) 项" : "已恢复 \(outcome.restored.count) 项，\(outcome.failures) 项失败"
     }
 
     func exportData(as format: HistoryExportFormat) -> Data {
@@ -182,11 +203,15 @@ final class CleanupHistoryStore {
     }
 
     private func persist() {
-        do {
-            try FileManager.default.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try JSONEncoder().encode(entries).write(to: storageURL, options: .atomic)
-        } catch {
-            // History persistence must never interfere with cleanup.
+        let snapshot = entries
+        let url = storageURL
+        Self.persistQueue.async {
+            do {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try Self.persistEncoder.encode(snapshot).write(to: url, options: .atomic)
+            } catch {
+                // History persistence must never interfere with cleanup.
+            }
         }
     }
 }

@@ -111,17 +111,14 @@ struct AppSettings: View {
 
             Divider()
             sectionHeader("关于")
+            BrandLinksView(
+                repositoryURL: URL(string: "https://github.com/zhouxuan3550/fcp-cleaner"),
+                repositoryName: "FCP Cleaner"
+            )
             Button("检查更新") {
                 UpdateController.shared.checkForUpdates()
             }
             .disabled(!UpdateController.shared.isConfigured)
-            Link(destination: URL(string: "https://space.bilibili.com/14118553")!) {
-                Label("B 站：调色师手册", systemImage: "play.tv.fill")
-            }
-                .buttonStyle(.plain)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(AppColor.secondaryText)
-                .help("打开 B 站主页")
         }
         .padding(20)
         .frame(width: LayoutMetrics.settingsPopoverWidth)
@@ -146,6 +143,7 @@ struct CleanupHistoryView: View {
     let store: CleanupHistoryStore
     var libraryStore: LibraryStore?
     @State private var restoreMessage: String?
+    @State private var isRestoring = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -193,10 +191,19 @@ struct CleanupHistoryView: View {
                                 }
                                 Spacer()
                                 if !entry.trashedItems.isEmpty {
-                                    Button("恢复") { restoreMessage = store.restore(entry) }
-                                        .buttonStyle(.borderless)
+                                    Button("恢复") {
+                                        guard !isRestoring else { return }
+                                        isRestoring = true
+                                        Task {
+                                            restoreMessage = await store.restore(entry)
+                                            isRestoring = false
+                                        }
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .disabled(isRestoring)
                                     Button("废纸篓") { store.showInTrash(entry) }
                                         .buttonStyle(.borderless)
+                                        .disabled(isRestoring)
                                 }
                             }
                             .padding(10)

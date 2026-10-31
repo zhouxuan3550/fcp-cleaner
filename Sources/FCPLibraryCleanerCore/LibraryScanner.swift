@@ -3,6 +3,8 @@ import OSLog
 
 public struct LibraryScanner: Sendable {
     private static let logger = Logger(subsystem: "com.fcplibrarycleaner", category: "LibraryScanner")
+    /// Instruments 与 Console.app 都能直接看到每次扫描的区间与耗时。
+    private static let signposter = OSSignposter(subsystem: "com.fcplibrarycleaner", category: "scan")
 
     public init() {}
 
@@ -37,6 +39,9 @@ public struct LibraryScanner: Sendable {
         control: ScanControl,
         onProgress: @escaping @Sendable (ScanProgress) -> Void
     ) throws -> LibraryScanResult {
+        let startedAt = ContinuousClock.now
+        let signpostState = signposter.beginInterval("ScanLibrary")
+        defer { signposter.endInterval("ScanLibrary", signpostState) }
         let fileManager = FileManager.default
         try validateLibrary(libraryURL, fileManager: fileManager)
 
@@ -113,10 +118,25 @@ public struct LibraryScanner: Sendable {
             }
         }
 
-        let total = try directorySize(
+        // 库内缓存目录在上面已逐文件做过指纹遍历；总量遍历复用指纹结果并跳过这些
+        // 子树，避免对渲染/代理/优化媒体（通常占文件数大头）做第二次全量遍历。
+        var preCounted: [String: (allocated: Int64, logical: Int64, files: Int)] = [:]
+        for item in cacheItems where item.storage == .library {
+            preCounted[item.url.path] = (
+                item.fingerprint.allocatedSize,
+                item.fingerprint.logicalSize,
+                item.fingerprint.entryCount
+            )
+        }
+        for (url, fingerprint) in observedFingerprints {
+            preCounted[url.path] = (fingerprint.allocatedSize, fingerprint.logicalSize, fingerprint.entryCount)
+        }
+
+        let totals = try directorySize(
             of: libraryURL,
             fileManager: fileManager,
             control: control,
+            preCounted: preCounted,
             onProgress: onProgress,
             issues: &issues
         )
@@ -140,11 +160,14 @@ public struct LibraryScanner: Sendable {
             coreDataSnapshots: coreDataSnapshots.sorted { $0.url.path < $1.url.path },
             generatedDirectories: uniqueByPath.values.sorted { $0.url.path < $1.url.path }
         )
-        logger.info("Scanned \(libraryURL.path, privacy: .private(mask: .hash))")
+        let elapsed = ContinuousClock.now - startedAt
+        let elapsedMs = Int(elapsed.components.seconds) * 1000
+            + Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
+        logger.info("Scan finished: \(totals.files) files / \(totals.directories) dirs / \(totals.allocated) bytes in \(elapsedMs)ms")
         return LibraryScanResult(
             libraryURL: libraryURL,
-            totalAllocatedSize: total.allocated,
-            totalLogicalSize: total.logical,
+            totalAllocatedSize: totals.allocated,
+            totalLogicalSize: totals.logical,
             coreDataSnapshots: coreDataSnapshots.sorted { $0.url.path < $1.url.path },
             cacheItems: cacheItems.sorted { $0.url.path < $1.url.path },
             observedCacheItems: observedCacheItems.sorted { $0.url.path < $1.url.path },
@@ -347,13 +370,21 @@ public struct LibraryScanner: Sendable {
         .fileSizeKey,
     ]
 
+    private struct TraversalTotals: Sendable {
+        let allocated: Int64
+        let logical: Int64
+        let files: Int
+        let directories: Int
+    }
+
     private static func directorySize(
         of rootURL: URL,
         fileManager: FileManager,
         control: ScanControl,
+        preCounted: [String: (allocated: Int64, logical: Int64, files: Int)],
         onProgress: @escaping @Sendable (ScanProgress) -> Void,
         issues: inout [ScanIssue]
-    ) throws -> (allocated: Int64, logical: Int64) {
+    ) throws -> TraversalTotals {
         var allocated: Int64 = 0
         var logical: Int64 = 0
         var files = 0
@@ -390,6 +421,16 @@ public struct LibraryScanner: Sendable {
                 }
                 if values.isDirectory == true {
                     directories += 1
+                    if let counted = preCounted[url.path] {
+                        allocated += counted.allocated
+                        logical += counted.logical
+                        files += counted.files
+                        enumerator.skipDescendants()
+                        // 跳过的子树不会再按 256 个文件报点；跨越一档才补发一次进度
+                        if counted.files >= 256 {
+                            onProgress(ScanProgress(files: files, directories: directories, allocatedBytes: allocated))
+                        }
+                    }
                     continue
                 }
                 allocated += Int64(values.fileAllocatedSize ?? values.fileSize ?? 0)
@@ -413,7 +454,7 @@ public struct LibraryScanner: Sendable {
             throw CleanupError.permissionDenied(rootURL)
         }
         onProgress(ScanProgress(files: files, directories: directories, allocatedBytes: allocated))
-        return (allocated, logical)
+        return TraversalTotals(allocated: allocated, logical: logical, files: files, directories: directories)
     }
 
     private static func throwIfCancelled(_ control: ScanControl) throws {

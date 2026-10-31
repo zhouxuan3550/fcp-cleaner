@@ -4,7 +4,9 @@ import FCPLibraryCleanerCore
 struct ScanResultCache: Sendable {
     /// 缓存条目格式版本。改动 Core 模型结构时 +1：旧缓存因缺少新键解码失败，
     /// 自动触发完整重扫——把"隐式解码崩溃"变成显式的版本门槛。
-    private static let schemaVersion = 3
+    /// v4：指纹身份分量从 documentIdentifier（macOS 26+ 返回 nil，恒 0）
+    /// 换成 fileIdentifier（st_ino）；旧缓存指纹与新算法必然失配，必须重扫。
+    private static let schemaVersion = 4
 
     private struct Entry: Codable, Sendable {
         let schemaVersion: Int

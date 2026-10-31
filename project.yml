@@ -72,6 +72,8 @@ targets:
       - Sources/FCPLibraryCleanerApp
       - path: Assets/FCP-Cleaner.icns
         buildPhase: resources
+      - path: Assets/BrandLogos.xcassets
+        buildPhase: resources
     dependencies:
       - target: FCPLibraryCleanerCore
       - package: Sparkle

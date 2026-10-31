@@ -113,8 +113,30 @@ enum LayoutMetrics {
 }
 
 enum FormatHelpers {
+    /// ByteCountFormatter 的类方法每次调用都会新建 formatter 实例，而侧栏行、
+    /// 徽标、菜单栏面板每次渲染都会取字节串——共享实例 + 字节串缓存，
+    /// 让重复渲染从「每次微秒级格式化」变成字典命中。
+    private static let byteFormatterLock = NSLock()
+    private nonisolated(unsafe) static let byteFormatter: ByteCountFormatter = {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter
+    }()
+    private nonisolated(unsafe) static var byteStringCache: [Int64: String] = [:]
+
     static func bytes(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+        byteFormatterLock.lock()
+        defer { byteFormatterLock.unlock() }
+        if let cached = byteStringCache[bytes] {
+            return cached
+        }
+        let string = byteFormatter.string(fromByteCount: bytes)
+        // 缓存有界：扫描期间字节数单调递增会产生大量一次性值，超限直接重置。
+        if byteStringCache.count >= 512 {
+            byteStringCache.removeAll(keepingCapacity: true)
+        }
+        byteStringCache[bytes] = string
+        return string
     }
 
     static func estimatedTime(_ seconds: Double) -> String {

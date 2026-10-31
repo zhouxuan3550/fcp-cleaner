@@ -63,7 +63,18 @@ enum LibrarySizeTrend {
             list.removeFirst(list.count - maxSamplesPerLibrary)
         }
         all[key] = list
-        if let data = try? JSONEncoder().encode(all) {
+        // 生产路径全量重编码可达数百 KB，放后台串行队列（快照按调用顺序入队，末次写入即最新）；
+        // 注入的测试套件保持同步写，保证 record() 后立即可读。
+        if defaults == UserDefaults.standard {
+            if let data = try? JSONEncoder().encode(all) {
+                // UserDefaults 本身线程安全，仅为跨过 Sendable 边界做一次轻包装。
+                let target = UncheckedSendable(defaults)
+                let key = storageKey
+                persistQueue.async {
+                    target.value.set(data, forKey: key)
+                }
+            }
+        } else if let data = try? JSONEncoder().encode(all) {
             defaults.set(data, forKey: storageKey)
         }
         lock.lock()
@@ -71,6 +82,13 @@ enum LibrarySizeTrend {
             inMemoryCache = all
         }
         lock.unlock()
+    }
+
+    private static let persistQueue = DispatchQueue(label: "com.fcpcleaner.library-size-trend", qos: .utility)
+
+    private struct UncheckedSendable<T>: @unchecked Sendable {
+        let value: T
+        init(_ value: T) { self.value = value }
     }
 
     /// 周增长：最新样本 − 基线样本（总分配体积）。样本不足或基线过期返回 nil。
