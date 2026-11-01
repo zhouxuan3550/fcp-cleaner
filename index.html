@@ -2,16 +2,81 @@
 <html lang="zh">
 <head>
 <meta charset="utf-8">
-<title>FCP Cleaner Updates</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FCP Cleaner — 安全清理 Final Cut Pro 渲染文件</title>
 <style>
-body { font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: 80px auto; padding: 0 20px; color: #333; }
-h1 { font-size: 1.5em; }
-a { color: #0066cc; }
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, system-ui, "PingFang SC", sans-serif;
+  max-width: 760px; margin: 0 auto; padding: 60px 24px 40px;
+  color: #1c1c1e; background: #f5f5f7; line-height: 1.6;
+}
+@media (prefers-color-scheme: dark) {
+  body { color: #e7e7e7; background: #202020; }
+  .card { background: #2a2a2a !important; }
+  .muted { color: #929296 !important; }
+}
+h1 { font-size: 2em; margin: 0 0 6px; }
+.tagline { font-size: 1.05em; color: #555; margin: 0 0 28px; }
+@media (prefers-color-scheme: dark) { .tagline { color: #a8a8ac; } }
+.btn {
+  display: inline-block; padding: 11px 22px; border-radius: 10px;
+  text-decoration: none; font-weight: 600; font-size: 0.95em; margin-right: 10px;
+}
+.btn-primary { background: #634cd9; color: #fff; }
+.btn-ghost { background: transparent; color: inherit; border: 1px solid #3c3c3c; }
+h2 { font-size: 1.25em; margin: 44px 0 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.card {
+  background: #fff; border-radius: 14px; padding: 18px 20px;
+}
+.card b { display: block; margin-bottom: 4px; }
+.card p { margin: 0; font-size: 0.92em; color: #555; }
+@media (prefers-color-scheme: dark) { .card p { color: #a8a8ac; } }
+ul { padding-left: 20px; }
+li { margin: 4px 0; }
+.muted { color: #6e6e73; font-size: 0.9em; }
+footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid #3c3c3c55; font-size: 0.9em; }
+footer a { color: inherit; margin-right: 14px; }
+code { background: #634cd91f; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
 </style>
 </head>
 <body>
 <h1>FCP Cleaner</h1>
-<p>安全清理 Final Cut Pro 渲染文件、代理媒体和优化媒体。</p>
-<p><a href="appcast.xml">Sparkle Appcast</a></p>
+<p class="tagline">自动扫描 · 安全清理 Final Cut Pro 的渲染文件、代理媒体和优化媒体。</p>
+
+<a class="btn btn-primary" href="https://github.com/zhouxuan3550/fcp-cleaner/releases/latest">下载最新版本</a>
+<a class="btn btn-ghost" href="https://github.com/zhouxuan3550/fcp-cleaner">GitHub 仓库</a>
+
+<h2>凭什么能放心清</h2>
+<div class="grid">
+  <div class="card"><b>🤍 白名单机制</b><p>只认 Final Cut Pro 资源库结构中可被 FCP 重新生成的目录（渲染文件 / 代理媒体 / 优化媒体）。原始媒体、数据库、分析文件、未知目录、符号链接一律保护。</p></div>
+  <div class="card"><b>🗑️ 只进废纸篓</b><p>清理即移入 macOS 废纸篓，永不永久删除。清理历史记录每个原始位置，随时可定位恢复。</p></div>
+  <div class="card"><b>🚫 绝不自动清理</b><p>自动扫描只负责发现与分析。任何清理都需要你打开应用、查看清单、手动确认——没有例外。</p></div>
+  <div class="card"><b>🧾 三重执行前复核</b><p>执行前重新验证：Final Cut Pro 未在使用该库、磁盘在线可写、文件指纹与扫描时完全一致。任一条件不满足立即停止而不是猜测。</p></div>
+  <div class="card"><b>⚡ 中断可恢复</b><p>清理事务先落盘再执行。崩溃或断电后重启，会依据事务日志自动重建待清计划，重新走完整确认流程。</p></div>
+  <div class="card"><b>🔓 源码可见</b><p>安全边界全部在 <code>FCPStructureRules</code> 一个文件里定义，任何人可以审查我们到底会动哪些目录。</p></div>
+</div>
+
+<h2>核心功能</h2>
+<ul>
+  <li>自动发现工作目录与本机所有卷中的 FCP 资源库，外置盘重新挂载后增量扫描</li>
+  <li>体积趋势图表、周增长提醒、按卷低磁盘空间预警、定时检查</li>
+  <li>按 Event 粒度勾选清理，清理前按磁盘历史速度估算耗时</li>
+  <li>批量清理、清理历史一键恢复、Shortcuts 只读自动化查询</li>
+  <li>Final Cut Pro Workflow Extension：在 FCP 内把当前资源库一键交给 FCP Cleaner</li>
+</ul>
+
+<h2>更新</h2>
+<p>应用内置 Sparkle 自动更新（<a href="appcast.xml">appcast</a>）。要求 macOS 15.0 或更高版本；使用 Workflow Extension 需要 Final Cut Pro 12.3+。</p>
+
+<p class="muted">本项目为源码可见（Source Available）软件，完整条款见仓库 <a href="https://github.com/zhouxuan3550/fcp-cleaner/blob/main/LICENSE">LICENSE</a>。</p>
+
+<footer>
+  <a href="https://space.bilibili.com/14118553">B 站：调色师手册</a>
+  <a href="https://github.com/zhouxuan3550/fcp-cleaner">GitHub</a>
+  <a href="https://xhslink.cn/o/4hskdSSr5RL">小红书</a>
+</footer>
 </body>
 </html>
