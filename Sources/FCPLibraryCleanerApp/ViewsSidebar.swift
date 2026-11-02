@@ -157,6 +157,13 @@ struct LibrarySidebar: View {
                         .textFieldStyle(.plain)
                         .font(.system(size: 12, weight: .medium))
                         .focused(searchFocused)
+                        .onSubmit {
+                            // 回车选中首个搜索结果并退出搜索，形成 ⌘F → 输入 → 回车 的键盘流。
+                            if let first = store.filteredLibraries.first {
+                                store.select(first)
+                            }
+                            searchFocused.wrappedValue = false
+                        }
                     if !store.searchText.isEmpty {
                         Button {
                             store.searchText = ""

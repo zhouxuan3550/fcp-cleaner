@@ -376,6 +376,8 @@ struct SizeTrendCard: View {
             .padding(16)
             .background(AppColor.panel)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("体积趋势：共 \(samples.count) 次扫描采样，最新 \(FormatHelpers.bytes(samples.last?.totalAllocatedSize ?? 0))")
         }
     }
 }

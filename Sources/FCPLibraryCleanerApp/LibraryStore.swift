@@ -191,7 +191,11 @@ final class LibraryStore: NSObject {
     var selectedVolumeURL: URL?
     var libraryFilter: LibraryFilter = .waiting
     var inactivityFilter: InactivityFilter = .all
-    var librarySort: LibrarySort = .sizeDescending
+    var librarySort = LibrarySort(rawValue: UserDefaults.standard.string(forKey: "librarySort") ?? "") ?? .sizeDescending {
+        didSet {
+            UserDefaults.standard.set(librarySort.rawValue, forKey: "librarySort")
+        }
+    }
     var searchText = ""
     var showsSettings = false
     var showsHistory = false
@@ -449,6 +453,7 @@ final class LibraryStore: NSObject {
         if volumeMountMonitor == nil { volumeMountMonitor = VolumeMountMonitor(store: self) }
         volumeMountMonitor?.start()
         flushRecentsOnTermination()
+        pruneOrphanedCaches()
         scheduledCheckController.restart()
         reconcileInterruptedCleanup()
         scheduleSnoozeExpiryRefresh()
@@ -1324,6 +1329,7 @@ final class LibraryStore: NSObject {
 
     func remove(_ records: [LibraryRecord]) {
         let ids = Set(records.map(\.id))
+        let removedURLs = records.map(\.url)
         for record in records {
             if let index = scanQueue.firstIndex(where: { $0.record.id == record.id }) {
                 scanQueue.remove(at: index)
@@ -1336,6 +1342,13 @@ final class LibraryStore: NSObject {
         selectedID = nil
         reconcileFilteredLibraries()
         saveRecents()
+        // 缓存清理与列表变更解耦：慢盘上删除文件也不阻塞界面。
+        let scanCache = scanCache
+        Task {
+            for url in removedURLs {
+                await scanCache.removeCache(for: url)
+            }
+        }
     }
 
     private func reconcileFilteredLibraries() {
@@ -1511,6 +1524,17 @@ final class LibraryStore: NSObject {
             reconcileFilteredLibraries()
             saveRecents()
         }
+    }
+
+    /// 启动卫生：清扫已不在列表中的扫描缓存文件与体积趋势样本。
+    /// 全部后台执行；键为路径哈希，只按集合差比对，绝不触碰现役条目。
+    private func pruneOrphanedCaches() {
+        let currentURLs = libraries.map(\.url)
+        let scanCache = scanCache
+        Task {
+            await scanCache.prune(keeping: currentURLs)
+        }
+        LibrarySizeTrend.prune(keepingKeys: Set(currentURLs.map { LibrarySizeTrend.key(for: $0) }))
     }
 
     /// 扫描健康度：让"自动扫描是否真正完成"不依赖日志即可判断。

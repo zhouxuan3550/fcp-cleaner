@@ -1,6 +1,11 @@
 import AppKit
 import SwiftUI
 
+/// ⌘F 菜单项 → ContentView 聚焦侧栏搜索框的桥接（FocusState 无法跨场景直达）。
+extension Notification.Name {
+    static let focusLibrarySearch = Notification.Name("com.fcpcleaner.focusLibrarySearch")
+}
+
 @main
 struct FCPLibraryCleanerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
@@ -23,6 +28,12 @@ struct FCPLibraryCleanerApp: App {
                     LibraryStore.shared.openLibraryPanel()
                 }
                 .keyboardShortcut("o", modifiers: [.command])
+
+                Button("搜索资源库") {
+                    NotificationCenter.default.post(name: .focusLibrarySearch, object: nil)
+                }
+                .keyboardShortcut("f", modifiers: [.command])
+                .disabled(LibraryStore.shared.libraries.isEmpty)
 
                 Button("全选可清理资源库") {
                     LibraryStore.shared.toggleSelectAllCleanableLibraries()
@@ -97,8 +108,8 @@ private struct MenuBarPanel: View {
             }
             HStack {
                 Button("打开") { store.showMainWindow() }
-                Button("扫描") { store.discoverLibraries() }
-                    .disabled(store.isDiscovering)
+                Button(store.isScanPending ? "扫描中…" : "扫描") { store.discoverLibraries() }
+                    .disabled(store.isScanPending)
                 Button("清理") { store.requestMenuBarCleanup() }
                     .disabled(store.totalCleanableSize < LibraryStore.minimumCleanableSize || store.isPreflighting || store.isCleaning)
                 Spacer()

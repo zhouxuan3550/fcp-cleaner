@@ -57,6 +57,31 @@ struct ScanResultCache: Sendable {
         }.value
     }
 
+    /// 资源库从列表移除后同步删除其缓存文件，避免 Caches 目录随时间累积孤儿条目。
+    func removeCache(for libraryURL: URL) async {
+        let source = cacheURL(for: libraryURL)
+        await Task.detached(priority: .utility) {
+            try? FileManager.default.removeItem(at: source)
+        }.value
+    }
+
+    /// 启动时清扫：删除不再对应任何现役资源库的缓存文件（改路径/换盘的历史遗留）。
+    /// 纯文件名比对，不触碰任何现役条目。
+    func prune(keeping libraryURLs: [URL]) async {
+        let keep = Set(libraryURLs.map { stableKey($0.standardizedFileURL.path) })
+        let root = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("com.fcpcleaner.app", isDirectory: true)
+            .appendingPathComponent("ScanResults", isDirectory: true)
+        await Task.detached(priority: .utility) {
+            guard let files = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil) else { return }
+            for file in files where file.pathExtension == "json" {
+                if !keep.contains(file.deletingPathExtension().lastPathComponent) {
+                    try? FileManager.default.removeItem(at: file)
+                }
+            }
+        }.value
+    }
+
     private func cacheURL(for libraryURL: URL) -> URL {
         let root = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("com.fcpcleaner.app", isDirectory: true)

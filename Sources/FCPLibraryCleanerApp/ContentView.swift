@@ -47,6 +47,9 @@ struct ContentView: View {
             return .handled
         }
         .task { store.beginAutomaticDiscovery() }
+        .onReceive(NotificationCenter.default.publisher(for: .focusLibrarySearch)) { _ in
+            isSearchFocused = true
+        }
         .onChange(of: store.appearanceMode) { _, mode in
             mode.applyToApplication()
         }

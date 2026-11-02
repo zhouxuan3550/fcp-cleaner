@@ -16,7 +16,7 @@
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
 | 最新安装包 | `Distribution/FCP-Cleaner-4.0.13-universal.dmg` |
-| 自动测试 | 83 项测试（swift-testing） |
+| 自动测试 | 108 项测试（swift-testing） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
 
@@ -358,7 +358,7 @@ swift test
 
 发布脚本通过 XcodeGen 生成 `FCPLibraryCleaner.xcodeproj`，再用 Xcode 构建完整 universal2 App：
 
-1. 运行 83 项 Swift 测试。
+1. 运行 108 项 Swift 测试。
 2. 构建 arm64 + x86_64 主程序和 Workflow Extension。
 3. 验证 `.appex` 与 `Metadata.appintents` 已嵌入。
 4. 按嵌套组件、扩展、主 App 的顺序签名并保留扩展 entitlements。

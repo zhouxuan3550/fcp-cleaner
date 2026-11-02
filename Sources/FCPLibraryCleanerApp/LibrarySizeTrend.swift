@@ -84,6 +84,33 @@ enum LibrarySizeTrend {
         lock.unlock()
     }
 
+    /// 移除不再对应任何现役资源库的样本序列（键为路径哈希无法反查，按集合差清理）。
+    /// 现役序列一律保留；无孤儿时不动存储。
+    static func prune(keepingKeys keys: Set<String>, defaults: UserDefaults = .standard) {
+        var all = index(defaults)
+        let orphans = all.keys.filter { !keys.contains($0) }
+        guard !orphans.isEmpty else { return }
+        for key in orphans {
+            all.removeValue(forKey: key)
+        }
+        lock.lock()
+        if defaults == UserDefaults.standard {
+            inMemoryCache = all
+        }
+        lock.unlock()
+        if let data = try? JSONEncoder().encode(all) {
+            if defaults == UserDefaults.standard {
+                let target = UncheckedSendable(defaults)
+                let key = storageKey
+                persistQueue.async {
+                    target.value.set(data, forKey: key)
+                }
+            } else {
+                defaults.set(data, forKey: storageKey)
+            }
+        }
+    }
+
     private static let persistQueue = DispatchQueue(label: "com.fcpcleaner.library-size-trend", qos: .utility)
 
     private struct UncheckedSendable<T>: @unchecked Sendable {
