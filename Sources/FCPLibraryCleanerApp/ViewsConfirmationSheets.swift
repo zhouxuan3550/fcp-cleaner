@@ -7,6 +7,17 @@ struct SingleCleanConfirmationSheet: View {
     let store: LibraryStore
     @Environment(\.dismiss) private var dismiss
     @State private var collapsed: Set<CacheCategory> = []
+    /// 用户取消勾选的条目（Event/共享目录级）。默认全选，只允许缩小清理范围。
+    @State private var excluded: Set<URL> = []
+
+    private var includedURLs: Set<URL> {
+        Set(confirmation.plan.entries.map(\.item.url)).subtracting(excluded)
+    }
+
+    /// 勾选裁剪后的实际执行计划；每一条仍走完整预检与指纹复核。
+    private var selectedPlan: CleanupPlan {
+        confirmation.plan.filtering(keeping: includedURLs)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -27,6 +38,10 @@ struct SingleCleanConfirmationSheet: View {
                 }
             }
 
+            Text("可按 Event 或共享目录取消勾选；确认后仅清理所选条目，全部仍逐项复核指纹")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(AppColor.tertiaryText)
+
             ScrollView {
                 VStack(spacing: 0) {
                     let groups = CleanupPreview.groups(from: confirmation.plan)
@@ -40,6 +55,7 @@ struct SingleCleanConfirmationSheet: View {
                         )) {
                             ForEach(group.entries) { item in
                                 HStack(spacing: 8) {
+                                    entryCheckbox(item.id)
                                     VStack(alignment: .leading, spacing: 1) {
                                         HStack(spacing: 5) {
                                             Text(item.locationLabel)
@@ -63,30 +79,17 @@ struct SingleCleanConfirmationSheet: View {
                                     Text("\(item.entry.item.fingerprint.entryCount) 个文件")
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(AppColor.tertiaryText)
+                                        .opacity(excluded.contains(item.id) ? 0.4 : 1)
                                     Text(FormatHelpers.bytes(item.entry.item.allocatedSize))
                                         .font(.system(size: 12, design: .monospaced))
                                         .foregroundStyle(AppColor.secondaryText)
+                                        .opacity(excluded.contains(item.id) ? 0.4 : 1)
                                 }
                                 .padding(.vertical, 5)
-                                .padding(.leading, 22)
+                                .padding(.leading, 6)
                             }
                         } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: group.category.iconName)
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(AppColor.accent)
-                                    .frame(width: 24)
-                                Text(group.category.chineseName)
-                                    .font(.system(size: 12, weight: .medium))
-                                Text("\(group.entries.count) 项")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(AppColor.tertiaryText)
-                                Spacer()
-                                Text(FormatHelpers.bytes(group.total))
-                                    .font(.system(size: 12, design: .monospaced))
-                                    .foregroundStyle(AppColor.secondaryText)
-                            }
-                            .padding(.vertical, 8)
+                            categoryHeader(group)
                         }
                         .tint(AppColor.secondaryText)
                         if group.category != groups.last?.category {
@@ -97,13 +100,18 @@ struct SingleCleanConfirmationSheet: View {
                     HStack {
                         Text("合计")
                             .font(.system(size: 12, weight: .semibold))
+                        Text("已选 \(includedURLs.count)/\(confirmation.plan.entries.count) 项")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(AppColor.tertiaryText)
                         Spacer()
-                        Text(FormatHelpers.bytes(confirmation.plan.spaceToFree))
+                        Text(FormatHelpers.bytes(selectedPlan.spaceToFree))
                             .font(.system(size: 13, weight: .bold, design: .rounded))
                             .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .animation(.snappy(duration: 0.2), value: selectedPlan.spaceToFree)
                     }
                     .padding(.top, 10)
-                    if let seconds = store.estimatedCleanupDuration(forBytes: confirmation.plan.spaceToFree, volumeID: confirmation.record.volumeID) {
+                    if let seconds = store.estimatedCleanupDuration(forBytes: selectedPlan.spaceToFree, volumeID: confirmation.record.volumeID) {
                         HStack(spacing: 4) {
                             Image(systemName: "clock")
                             Text("预计耗时 \(FormatHelpers.estimatedTime(seconds))")
@@ -125,17 +133,79 @@ struct SingleCleanConfirmationSheet: View {
                 Button("取消") { dismiss() }
                     .buttonStyle(SheetSecondaryButtonStyle())
                 Button {
-                    store.performConfirmedCleanup(confirmation)
+                    store.performConfirmedCleanup(CleanConfirmation(
+                        record: confirmation.record,
+                        plan: selectedPlan,
+                        isRetry: confirmation.isRetry
+                    ))
                     dismiss()
                 } label: {
                     Text("移入废纸篓")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(SheetDestructiveButtonStyle())
+                .disabled(includedURLs.isEmpty)
+                .opacity(includedURLs.isEmpty ? 0.4 : 1)
+                .help(includedURLs.isEmpty ? "请至少勾选一个条目" : "")
             }
         }
         .padding(22)
         .frame(width: LayoutMetrics.singleConfirmSheetWidth)
+    }
+
+    /// 条目级勾选框：默认全选（实心），取消后变空心灰。
+    private func entryCheckbox(_ url: URL) -> some View {
+        let isExcluded = excluded.contains(url)
+        return Button {
+            if isExcluded { excluded.remove(url) } else { excluded.insert(url) }
+        } label: {
+            Image(systemName: isExcluded ? "circle" : "checkmark.circle.fill")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(isExcluded ? AppColor.tertiaryText : AppColor.accent)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isExcluded ? "重新包含此项" : "跳过此项")
+    }
+
+    /// 类别级勾选：全选实心、全不选空心、部分选中半选；点击在"全选本类"与"全不选本类"间切换。
+    private func categoryHeader(_ group: (category: CacheCategory, total: Int64, entries: [CleanupPreviewEntry])) -> some View {
+        let included = group.entries.filter { !excluded.contains($0.id) }
+        let allIncluded = included.count == group.entries.count
+        let noneIncluded = included.isEmpty
+        let includedTotal = included.reduce(Int64(0)) { $0 + $1.entry.item.allocatedSize }
+        return HStack(spacing: 10) {
+            Button {
+                let categoryURLs = Set(group.entries.map(\.id))
+                if allIncluded {
+                    excluded.formUnion(categoryURLs)
+                } else {
+                    excluded.subtract(categoryURLs)
+                }
+            } label: {
+                Image(systemName: noneIncluded ? "circle" : (allIncluded ? "checkmark.circle.fill" : "circle.lefthalf.filled"))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(noneIncluded ? AppColor.tertiaryText : AppColor.accent)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(allIncluded ? "取消选择全部\(group.category.chineseName)" : "选择全部\(group.category.chineseName)")
+
+            Image(systemName: group.category.iconName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppColor.accent)
+                .frame(width: 24)
+            Text(group.category.chineseName)
+                .font(.system(size: 12, weight: .medium))
+            Text("已选 \(included.count)/\(group.entries.count) 项")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AppColor.tertiaryText)
+            Spacer()
+            Text(FormatHelpers.bytes(includedTotal))
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(AppColor.secondaryText)
+                .contentTransition(.numericText())
+                .animation(.snappy(duration: 0.2), value: includedTotal)
+        }
+        .padding(.vertical, 8)
     }
 }
 

@@ -52,6 +52,18 @@ public struct CleanupPlan: Codable, Sendable {
         )
     }
 
+    /// 按用户在确认弹窗中的勾选裁剪计划：只保留所选条目，库与数据库快照原样保留。
+    /// 裁剪只缩小清理范围——裁剪后的计划每一条仍要经过完整预检与指纹复核，
+    /// 不产生任何"绕过验证"的捷径（与 retryingItemsNotCompleted 同一安全模型）。
+    public func filtering(keeping itemURLs: Set<URL>) -> CleanupPlan {
+        let kept = entries.filter { itemURLs.contains($0.item.url) }
+        return CleanupPlan(
+            libraryURL: libraryURL,
+            coreDataSnapshots: coreDataSnapshots,
+            entries: kept
+        )
+    }
+
     /// 中断恢复（P4-7）：从事务日志重建"待清计划"。
     /// 仅保留仍未移入废纸篓（`isCompleted` 依据清理历史判定）且仍存在于原路径（`exists`）的条目；
     /// 全部无需重做时返回 nil。重建出的计划仍要走完整预检与指纹复核，绝不跳过任何安全验证。

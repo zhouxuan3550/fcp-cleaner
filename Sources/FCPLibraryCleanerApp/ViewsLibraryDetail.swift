@@ -1,4 +1,5 @@
 import AppKit
+import Charts
 import SwiftUI
 import FCPLibraryCleanerCore
 
@@ -269,6 +270,8 @@ struct ScanResultsView: View {
                     MetricCard(label: "清理项目", value: result.cacheItems.count.formatted(), icon: "folder.badge.minus")
                 }
 
+                SizeTrendCard(libraryURL: library.url)
+
                 StorageBreakdownBar(result: result)
 
                 if result.externalCleanableSize > 0 {
@@ -300,8 +303,84 @@ struct ScanResultsView: View {
     }
 }
 
-struct StorageBreakdownBar: View {
-    let result: LibraryScanResult
+/// 库体积历史曲线（数据来自 LibrarySizeTrend 的每日扫描采样，最多 90 天）。
+/// 采样不足两条时整体隐藏——没有趋势就不画趋势。
+struct SizeTrendCard: View {
+    let samples: [LibrarySizeTrend.Sample]
+
+    init(libraryURL: URL) {
+        self.samples = LibrarySizeTrend.samples(for: libraryURL)
+    }
+
+    var body: some View {
+        if samples.count >= 2 {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(AppColor.secondaryText)
+                    Text("体积趋势")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    Spacer(minLength: 0)
+                    Text("近 \(samples.count) 次扫描采样 · 总分配体积")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(AppColor.tertiaryText)
+                }
+                Chart(samples, id: \.day) { sample in
+                    AreaMark(
+                        x: .value("日期", sample.day),
+                        y: .value("总体积", sample.totalAllocatedSize)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [AppColor.accent.opacity(0.18), AppColor.accent.opacity(0.02)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .interpolationMethod(.catmullRom)
+                    LineMark(
+                        x: .value("日期", sample.day),
+                        y: .value("总体积", sample.totalAllocatedSize)
+                    )
+                    .foregroundStyle(AppColor.accent)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .interpolationMethod(.catmullRom)
+                    .symbol(.circle)
+                }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                        AxisGridLine().foregroundStyle(AppColor.border.opacity(0.4))
+                        AxisValueLabel {
+                            if let date = value.as(Date.self) {
+                                Text(date, format: .dateTime.month().day())
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(AppColor.tertiaryText)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
+                        AxisGridLine().foregroundStyle(AppColor.border.opacity(0.4))
+                        AxisValueLabel {
+                            if let bytes = value.as(Int64.self) {
+                                Text(FormatHelpers.bytes(bytes))
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(AppColor.tertiaryText)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 110)
+            }
+            .padding(16)
+            .background(AppColor.panel)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+    }
+}
+
+struct StorageBreakdownBar: View {    let result: LibraryScanResult
     let renderSize: Int64
     let proxySize: Int64
     let optimizedSize: Int64
