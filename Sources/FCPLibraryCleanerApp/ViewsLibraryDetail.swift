@@ -284,7 +284,7 @@ struct ScanResultsView: View {
                 if let growth = store.weeklyGrowth(for: library), growth > 0 {
                     Label("本周增长 \(FormatHelpers.bytes(growth))", systemImage: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(AppColor.warning)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .help("与约一周前的扫描采样相比，资源库总体积的增长量")
                 }
@@ -422,11 +422,11 @@ struct StorageBreakdownBar: View {    let result: LibraryScanResult
                             .help("渲染文件: \(FormatHelpers.bytes(renderSize))")
                     }
                     if proxySize > 0 {
-                        segment(color: Color.teal, width: max(4, w * CGFloat(proxySize) / CGFloat(total)))
+                        segment(color: AppColor.chartProxyMedia, width: max(4, w * CGFloat(proxySize) / CGFloat(total)))
                             .help("代理媒体: \(FormatHelpers.bytes(proxySize))")
                     }
                     if optimizedSize > 0 {
-                        segment(color: Color.orange, width: max(4, w * CGFloat(optimizedSize) / CGFloat(total)))
+                        segment(color: AppColor.chartOptimizedMedia, width: max(4, w * CGFloat(optimizedSize) / CGFloat(total)))
                             .help("优化媒体: \(FormatHelpers.bytes(optimizedSize))")
                     }
                     if protectedAnalysisSize > 0 {
@@ -447,10 +447,10 @@ struct StorageBreakdownBar: View {    let result: LibraryScanResult
                     legendItem(color: AppColor.accent, label: "渲染", bytes: renderSize)
                 }
                 if proxySize > 0 {
-                    legendItem(color: Color.teal, label: "代理", bytes: proxySize)
+                    legendItem(color: AppColor.chartProxyMedia, label: "代理", bytes: proxySize)
                 }
                 if optimizedSize > 0 {
-                    legendItem(color: Color.orange, label: "优化", bytes: optimizedSize)
+                    legendItem(color: AppColor.chartOptimizedMedia, label: "优化", bytes: optimizedSize)
                 }
                 if protectedAnalysisSize > 0 {
                     legendItem(color: AppColor.tertiaryText.opacity(0.8), label: "分析(受保护)", bytes: protectedAnalysisSize)

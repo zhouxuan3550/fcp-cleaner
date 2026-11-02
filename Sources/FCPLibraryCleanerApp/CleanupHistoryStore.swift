@@ -19,7 +19,6 @@ enum HistoryExportFormat: String, CaseIterable, Identifiable {
     case csv, json
     var id: String { rawValue }
     var fileExtension: String { rawValue }
-    var mimeType: String { self == .csv ? "text/csv" : "application/json" }
 }
 
 struct CleanupHistoryEntry: Codable, Identifiable, Sendable {

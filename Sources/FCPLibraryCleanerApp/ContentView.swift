@@ -43,6 +43,12 @@ struct ContentView: View {
         .animation(.snappy(duration: 0.28), value: store.cleanupNotice?.id)
         .onKeyPress(.space) {
             guard !isSearchFocused, !store.isDiscovering else { return .ignored }
+            // 空格是 macOS 滚动视图的标准翻页键：焦点已落在滚动内容上时让位给系统滚动，
+            // 只在无滚动焦点的空闲场景才触发自动扫描。
+            if let responder = NSApp.keyWindow?.firstResponder,
+               responder is NSScrollView || responder is NSClipView {
+                return .ignored
+            }
             store.discoverLibraries()
             return .handled
         }

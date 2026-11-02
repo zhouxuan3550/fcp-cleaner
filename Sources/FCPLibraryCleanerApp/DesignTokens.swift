@@ -15,7 +15,6 @@ private func dynamicColor(light: String, dark: String) -> Color {
 
 enum AppColor {
     static let brand = Color(hex: "634CD9")
-    static let canvas = dynamicColor(light: "F5F5F7", dark: "242424")
     static let workspace = dynamicColor(light: "FFFFFF", dark: "202020")
     static let panel = dynamicColor(light: "F0F0F2", dark: "2A2A2A")
     static let control = dynamicColor(light: "E8E8EA", dark: "303030")
@@ -26,7 +25,12 @@ enum AppColor {
     static let dashedBorder = dynamicColor(light: "8E8E93", dark: "747474")
     static let accent = dynamicColor(light: "634CD9", dark: "634CD9")
     static let success = dynamicColor(light: "248A3D", dark: "35B85A")
+    /// 状态警示（未到 danger 的程度）：周增长徽标、空间预警等。
+    static let warning = dynamicColor(light: "B25000", dark: "FF9F0A")
     static let danger = dynamicColor(light: "D70015", dark: "D45C57")
+    /// 占用细分图例的分类色板（条形图与图例共用）：渲染=accent，代理/优化如下。
+    static let chartProxyMedia = Color.teal
+    static let chartOptimizedMedia = Color.orange
 }
 
 struct CompatibleGlassEffect<S: Shape>: ViewModifier {

@@ -313,6 +313,10 @@ struct SidebarDiskHeader: View {
             guard store.libraryFilter == .waiting else { return }
             store.selectVolume(section.volumeURL)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(section.name)，\(section.libraries.count) 个资源库，可清理 \(FormatHelpers.bytes(section.totalCleanable))")
+        .accessibilityHint(store.libraryFilter == .waiting ? "点按只显示此磁盘的资源库" : "")
+        .accessibilityAddTraits(.isButton)
         .help(store.libraryFilter == .waiting ? (isSelected ? "显示全部磁盘" : "只显示此磁盘") : section.name)
     }
 }

@@ -248,7 +248,7 @@ struct CleanupHistoryView: View {
                 ForEach(libraryStore.interruptedCleanups) { item in
                     HStack(spacing: 9) {
                         Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(AppColor.warning)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("上次清理中断：\(item.libraryName)")
                                 .font(.system(size: 12, weight: .semibold))

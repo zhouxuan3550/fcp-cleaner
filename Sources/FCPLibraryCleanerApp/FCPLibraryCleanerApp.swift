@@ -104,7 +104,7 @@ private struct MenuBarPanel: View {
             if let warning = store.lowSpaceWarnings.first {
                 Label("\(warning.name) 剩余 \(FormatHelpers.bytes(warning.availableSize))", systemImage: "exclamationmark.triangle.fill")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(AppColor.warning)
             }
             HStack {
                 Button("打开") { store.showMainWindow() }
