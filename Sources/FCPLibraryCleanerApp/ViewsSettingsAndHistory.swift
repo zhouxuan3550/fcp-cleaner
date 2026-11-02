@@ -166,6 +166,12 @@ struct CleanupHistoryView: View {
                         .buttonStyle(.borderless)
                 }
             }
+            if let monthly = monthlySummary {
+                Label("本月已清理 \(monthly.count) 次 · 释放 \(FormatHelpers.bytes(monthly.freed))", systemImage: "calendar.badge.checkmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AppColor.accent)
+                    .help("按清理记录所在月份统计（当地时间）")
+            }
             if let libraryStore {
                 interruptedCleanupBanners(libraryStore)
             }
@@ -222,6 +228,16 @@ struct CleanupHistoryView: View {
         }
         .padding(18)
         .frame(width: LayoutMetrics.historyPopoverWidth)
+    }
+
+    /// 本月（当地时区）清理汇总：数据全部来自既有历史，无额外持久化。
+    private var monthlySummary: (freed: Int64, count: Int)? {
+        let calendar = Calendar.current
+        let monthEntries = store.entries.filter {
+            calendar.isDate($0.date, equalTo: Date(), toGranularity: .month)
+        }
+        guard !monthEntries.isEmpty else { return nil }
+        return (monthEntries.reduce(0) { $0 + $1.freedSize }, monthEntries.count)
     }
 
     /// 上次清理中断的待清计划入口：重建走普通确认流程，绝不自动清理。
