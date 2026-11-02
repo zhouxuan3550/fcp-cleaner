@@ -272,7 +272,7 @@ final class LibraryStore: NSObject {
         // 卷身份绑定：同一路径当前挂载的若是另一块盘（UUID 不同），拒绝复活旧条目，
         // 防止把上一块盘的扫描元数据安到异盘同名资源库上。
         libraries = restored.compactMap { entry -> LibraryRecord? in
-            let record = LibraryRecord(url: entry.metadata.url, restored: entry)
+            let record = LibraryRecord(url: entry.metadata.url, restored: entry, prefetched: entry.prefetched)
             if let saved = entry.metadata.volumeUUIDRaw,
                let current = record.volumeID,
                saved != current {
@@ -1878,9 +1878,17 @@ final class LibraryStore: NSObject {
             currentRecentsMetadata(),
             replacementURLs: [record.url.standardizedFileURL: picked.standardizedFileURL]
         )
-        record.accessReport = Self.probeVolumeAccess(record.url)
-        if record.accessReport?.mounted == true { record.lastAccessibleAt = Date() }
-        scan(record, force: false)
+        // 探测涉及多次文件系统调用（网络卷上可能阻塞），面板关闭后交后台执行。
+        let url = record.url
+        Task { [weak record] in
+            let report = await Task.detached(priority: .utility) {
+                Self.probeVolumeAccess(url)
+            }.value
+            guard let record else { return }
+            record.accessReport = report
+            if report.mounted { record.lastAccessibleAt = Date() }
+            scan(record, force: false)
+        }
     }
 
     /// 扫描完成、清理落账、忽略切换都会触发存档，突发时可达每秒十余次；
