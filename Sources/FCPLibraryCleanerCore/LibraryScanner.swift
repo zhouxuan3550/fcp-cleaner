@@ -21,7 +21,7 @@ public struct LibraryScanner: Sendable {
     ) async throws -> LibraryScanResult {
         let standardizedURL = libraryURL.standardizedFileURL
         return try await Task.detached(priority: .userInitiated) {
-            try Self.performScan(libraryURL: standardizedURL, control: control, onProgress: onProgress)
+            try await Self.performScan(libraryURL: standardizedURL, control: control, onProgress: onProgress)
         }.value
     }
 
@@ -30,37 +30,48 @@ public struct LibraryScanner: Sendable {
     public func changeToken(libraryURL: URL) async throws -> LibraryChangeToken {
         let standardizedURL = libraryURL.standardizedFileURL
         return try await Task.detached(priority: .utility) {
-            try Self.makeChangeToken(libraryURL: standardizedURL)
+            try await Self.makeChangeToken(libraryURL: standardizedURL)
         }.value
+    }
+
+    /// 指纹收集队列的待办项：先做便宜的枚举与分类（几次 stat），把重量级的
+    /// 逐文件遍历集中到统一的并行阶段。
+    private enum PendingFingerprint: Sendable {
+        case cacheItem(rule: FCPStructureRules.CandidateRule, url: URL, storage: CacheStorage, ruleID: String?)
+        case observed(rule: FCPStructureRules.ObservationRule, url: URL)
+
+        var url: URL {
+            switch self {
+            case .cacheItem(_, let url, _, _): url
+            case .observed(_, let url): url
+            }
+        }
     }
 
     private static func performScan(
         libraryURL: URL,
         control: ScanControl,
         onProgress: @escaping @Sendable (ScanProgress) -> Void
-    ) throws -> LibraryScanResult {
+    ) async throws -> LibraryScanResult {
         let startedAt = ContinuousClock.now
         let signpostState = signposter.beginInterval("ScanLibrary")
         defer { signposter.endInterval("ScanLibrary", signpostState) }
         let fileManager = FileManager.default
         try validateLibrary(libraryURL, fileManager: fileManager)
 
-        var issues: [ScanIssue] = []
         let libraryDatabaseURL = libraryURL.appendingPathComponent(FCPStructureRules.libraryDatabaseName)
         var coreDataSnapshots = [try coreDataSnapshot(for: libraryDatabaseURL, fileManager: fileManager)]
         var protectedItems = [ProtectedItem(url: libraryDatabaseURL, reason: .libraryDatabase)]
-        var cacheItems: [CacheItem] = []
-        var observedCacheItems: [ObservedCacheItem] = []
-        var observedFingerprints: [(URL, FileFingerprint)] = []
+        var pending: [PendingFingerprint] = []
+        var eventNames: [String] = []
         let classifier = CacheClassifier()
 
         for (rule, candidateURL) in classifier.confirmedSharedCandidates(inLibrary: libraryURL, fileManager: fileManager) {
             try throwIfCancelled(control)
-            cacheItems.append(try makeCacheItem(candidateURL, rule: rule, control: control, issues: &issues))
+            pending.append(.cacheItem(rule: rule, url: candidateURL, storage: .library, ruleID: nil))
         }
 
         let children = try directChildren(of: libraryURL, fileManager: fileManager)
-        var eventNames: [String] = []
         for child in children {
             try throwIfCancelled(control)
             let values = try resourceValues(for: child)
@@ -84,16 +95,12 @@ public struct LibraryScanner: Sendable {
                     url: eventDatabaseURL,
                     reason: .eventDatabase
                 ))
-                try appendEventItems(
+                try collectEventEntries(
                     eventURL: child,
                     classifier: classifier,
                     fileManager: fileManager,
-                    control: control,
-                    cacheItems: &cacheItems,
-                    observedCacheItems: &observedCacheItems,
-                    observedFingerprints: &observedFingerprints,
-                    protectedItems: &protectedItems,
-                    issues: &issues
+                    pending: &pending,
+                    protectedItems: &protectedItems
                 )
             } else if !FCPStructureRules.libraryCandidateRules.contains(where: { $0.relativePath.first == child.lastPathComponent }) {
                 protectedItems.append(ProtectedItem(url: child, reason: .unknownStructure))
@@ -107,16 +114,41 @@ public struct LibraryScanner: Sendable {
                 fileManager: fileManager
             ) {
                 try throwIfCancelled(control)
-                cacheItems.append(try makeCacheItem(
-                    candidateURL,
+                pending.append(.cacheItem(
                     rule: rule,
+                    url: candidateURL,
                     storage: .external,
-                    ruleID: FCPStructureRules.externalRulePrefix + rule.id,
-                    control: control,
-                    issues: &issues
+                    ruleID: FCPStructureRules.externalRulePrefix + rule.id
                 ))
             }
         }
+
+        // 重量级指纹阶段：多 Event 库有几十棵缓存目录树，逐棵串行遍历时
+        // 每棵的 I/O 延迟线性叠加；有界并行是扫描墙钟时间的最大杠杆。
+        // 有界而非无界，避免机械盘被并发寻道拖垮。
+        let fingerprints = try await fingerprintAll(pending.map(\.url), control: control)
+
+        var cacheItems: [CacheItem] = []
+        var observedCacheItems: [ObservedCacheItem] = []
+        var observedFingerprints: [(URL, FileFingerprint)] = []
+        cacheItems.reserveCapacity(pending.count)
+        for (entry, fingerprint) in zip(pending, fingerprints) {
+            switch entry {
+            case .cacheItem(let rule, let url, let storage, let ruleID):
+                cacheItems.append(makeCacheItem(url: url, rule: rule, storage: storage, ruleID: ruleID, fingerprint: fingerprint))
+            case .observed(let rule, let url):
+                observedCacheItems.append(ObservedCacheItem(
+                    url: url,
+                    category: rule.category,
+                    allocatedSize: fingerprint.allocatedSize,
+                    logicalSize: fingerprint.logicalSize,
+                    confidence: .likely,
+                    ruleID: rule.id
+                ))
+                observedFingerprints.append((url, fingerprint))
+            }
+        }
+        try throwIfCancelled(control)
 
         // 库内缓存目录在上面已逐文件做过指纹遍历；总量遍历复用指纹结果并跳过这些
         // 子树，避免对渲染/代理/优化媒体（通常占文件数大头）做第二次全量遍历。
@@ -137,8 +169,7 @@ public struct LibraryScanner: Sendable {
             fileManager: fileManager,
             control: control,
             preCounted: preCounted,
-            onProgress: onProgress,
-            issues: &issues
+            onProgress: onProgress
         )
         for snapshot in coreDataSnapshots {
             guard try coreDataSnapshot(for: snapshot.url, fileManager: fileManager) == snapshot else {
@@ -164,6 +195,7 @@ public struct LibraryScanner: Sendable {
         let elapsedMs = Int(elapsed.components.seconds) * 1000
             + Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
         logger.info("Scan finished: \(totals.files) files / \(totals.directories) dirs / \(totals.allocated) bytes in \(elapsedMs)ms")
+        // issues 恒为空：结构化问题清单的字段保留是为了缓存 schema 稳定（v4）。
         return LibraryScanResult(
             libraryURL: libraryURL,
             totalAllocatedSize: totals.allocated,
@@ -172,12 +204,12 @@ public struct LibraryScanner: Sendable {
             cacheItems: cacheItems.sorted { $0.url.path < $1.url.path },
             observedCacheItems: observedCacheItems.sorted { $0.url.path < $1.url.path },
             protectedItems: protectedItems.sorted { $0.url.path < $1.url.path },
-            issues: issues,
+            issues: [],
             changeToken: precomputedToken
         )
     }
 
-    private static func makeChangeToken(libraryURL: URL) throws -> LibraryChangeToken {
+    private static func makeChangeToken(libraryURL: URL) async throws -> LibraryChangeToken {
         let fileManager = FileManager.default
         try validateLibrary(libraryURL, fileManager: fileManager)
         let classifier = CacheClassifier()
@@ -216,45 +248,60 @@ public struct LibraryScanner: Sendable {
             ).map(\.1))
         }
 
-        let generated = try Set(generatedURLs.map(\.standardizedFileURL))
-            .map { url in
-                DirectoryChangeSnapshot(url: url, fingerprint: try CleanupPlan.fingerprint(for: url))
-            }
-            .sorted { $0.url.path < $1.url.path }
+        let unique = Array(Set(generatedURLs.map(\.standardizedFileURL))).sorted { $0.path < $1.path }
+        // 令牌构建与扫描共用同一并行指纹阶段；增量扫描每次都要走这趟，墙钟同等受益。
+        let fingerprints = try await fingerprintAll(unique, control: ScanControl())
+        let generated = zip(unique, fingerprints).map { url, fingerprint in
+            DirectoryChangeSnapshot(url: url, fingerprint: fingerprint)
+        }
         return LibraryChangeToken(
             coreDataSnapshots: databases.sorted { $0.url.path < $1.url.path },
             generatedDirectories: generated
         )
     }
 
-    private static func appendEventItems(
+    /// 有界并行的指纹收集。结果按入参顺序返回（索引即顺序），保证输出确定性；
+    /// 首个错误会取消其余任务并原样抛出，保守失败语义与串行版本一致。
+    private static func fingerprintAll(_ urls: [URL], control: ScanControl) async throws -> [FileFingerprint] {
+        guard !urls.isEmpty else { return [] }
+        var results = [FileFingerprint?](repeating: nil, count: urls.count)
+        let limit = max(2, min(8, ProcessInfo.processInfo.activeProcessorCount))
+        try await withThrowingTaskGroup(of: (index: Int, fingerprint: FileFingerprint).self) { group in
+            var next = 0
+            var inFlight = 0
+            while next < urls.count || inFlight > 0 {
+                if next < urls.count && inFlight < limit {
+                    let index = next
+                    next += 1
+                    inFlight += 1
+                    group.addTask {
+                        try throwIfCancelled(control)
+                        return (index, try CleanupPlan.fingerprint(for: urls[index]))
+                    }
+                } else {
+                    guard let (index, fingerprint) = try await group.next() else { break }
+                    results[index] = fingerprint
+                    inFlight -= 1
+                }
+            }
+        }
+        return results.map { $0! }
+    }
+
+    /// 枚举一个 Event 的指纹待办与受保护条目；只做目录 stat，不做重量级遍历。
+    private static func collectEventEntries(
         eventURL: URL,
         classifier: CacheClassifier,
         fileManager: FileManager,
-        control: ScanControl,
-        cacheItems: inout [CacheItem],
-        observedCacheItems: inout [ObservedCacheItem],
-        observedFingerprints: inout [(URL, FileFingerprint)],
-        protectedItems: inout [ProtectedItem],
-        issues: inout [ScanIssue]
+        pending: inout [PendingFingerprint],
+        protectedItems: inout [ProtectedItem]
     ) throws {
         for (rule, candidateURL) in classifier.confirmedCandidates(inEvent: eventURL, fileManager: fileManager) {
-            try throwIfCancelled(control)
-            cacheItems.append(try makeCacheItem(candidateURL, rule: rule, control: control, issues: &issues))
+            pending.append(.cacheItem(rule: rule, url: candidateURL, storage: .library, ruleID: nil))
         }
 
         for (rule, observedURL) in classifier.observedProtectedDirectories(inEvent: eventURL, fileManager: fileManager) {
-            try throwIfCancelled(control)
-            let fp = try CleanupPlan.fingerprint(for: observedURL)
-            observedCacheItems.append(ObservedCacheItem(
-                url: observedURL,
-                category: rule.category,
-                allocatedSize: fp.allocatedSize,
-                logicalSize: fp.logicalSize,
-                confidence: .likely,
-                ruleID: rule.id
-            ))
-            observedFingerprints.append((observedURL, fp))
+            pending.append(.observed(rule: rule, url: observedURL))
         }
 
         let originalMedia = eventURL.appendingPathComponent(FCPStructureRules.originalMediaName, isDirectory: true)
@@ -284,17 +331,15 @@ public struct LibraryScanner: Sendable {
         }
     }
 
+    /// 纯构造：指纹已由并行阶段算好，这里只组装模型。
     private static func makeCacheItem(
-        _ url: URL,
+        url: URL,
         rule: FCPStructureRules.CandidateRule,
-        storage: CacheStorage = .library,
-        ruleID: String? = nil,
-        control: ScanControl,
-        issues: inout [ScanIssue]
-    ) throws -> CacheItem {
-        try throwIfCancelled(control)
-        let fingerprint = try CleanupPlan.fingerprint(for: url)
-        return CacheItem(
+        storage: CacheStorage,
+        ruleID: String?,
+        fingerprint: FileFingerprint
+    ) -> CacheItem {
+        CacheItem(
             url: url,
             category: rule.category,
             allocatedSize: fingerprint.allocatedSize,
@@ -382,8 +427,7 @@ public struct LibraryScanner: Sendable {
         fileManager: FileManager,
         control: ScanControl,
         preCounted: [String: (allocated: Int64, logical: Int64, files: Int)],
-        onProgress: @escaping @Sendable (ScanProgress) -> Void,
-        issues: inout [ScanIssue]
+        onProgress: @escaping @Sendable (ScanProgress) -> Void
     ) throws -> TraversalTotals {
         var allocated: Int64 = 0
         var logical: Int64 = 0
