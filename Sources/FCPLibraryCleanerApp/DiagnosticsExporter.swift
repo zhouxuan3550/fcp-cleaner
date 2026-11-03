@@ -138,7 +138,7 @@ enum DiagnosticsWriter {
             "应用版本：\(version)（Build \(build)）",
             "系统：\(processInfo.operatingSystemVersionString)",
             "架构：\(processInfo.activeProcessorCount) 核 / \(processInfo.physicalMemory.formatted()) 内存",
-            "资源库：\(libraryCount) 个（已扫描 \(scanHealth.scanned)，失败 \(scanHealth.failed.count)）",
+            "资源库：\(libraryCount) 个（已扫描 \(scanHealth.scanned)，其中增量复用 \(scanHealth.cacheReused)，失败 \(scanHealth.failed.count)）",
             "主目录：\(homeDirectory)",
         ]
         return lines.joined(separator: "\n")

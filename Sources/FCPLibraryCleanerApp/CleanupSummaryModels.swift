@@ -4,7 +4,6 @@ import FCPLibraryCleanerCore
 struct CleanupSummaryLibrary: Identifiable, Sendable {
     let id = UUID()
     let name: String
-    let url: URL
     let freedSize: Int64
     let itemCount: Int
     let errorCount: Int
@@ -14,7 +13,6 @@ struct CleanupSummaryLibrary: Identifiable, Sendable {
 
 struct CleanupSummary: Identifiable, Sendable {
     let id = UUID()
-    let date = Date()
     let title: String
     let libraryCount: Int
     let totalFreedSize: Int64

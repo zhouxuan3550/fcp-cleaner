@@ -211,6 +211,10 @@ struct ScanningView: View {
             Button("取消") { store.cancelScan(library) }
                 .buttonStyle(.borderless)
                 .foregroundStyle(AppColor.secondaryText)
+            // 大库扫描是体验的情绪谷底：明确告知不阻塞操作，给用户掌控感
+            Text("扫描在后台进行，可继续浏览其他资源库")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AppColor.tertiaryText)
         }
     }
 }
@@ -281,14 +285,6 @@ struct ScanResultsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                if let growth = store.weeklyGrowth(for: library), growth > 0 {
-                    Label("本周增长 \(FormatHelpers.bytes(growth))", systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(AppColor.warning)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .help("与约一周前的扫描采样相比，资源库总体积的增长量")
-                }
-
                 HStack(alignment: .top, spacing: 14) {
                     CleanupList(result: result)
                     CleanupActionCard(library: library, result: result, store: store)
@@ -322,7 +318,14 @@ struct SizeTrendCard: View {
                     Text("体积趋势")
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                     Spacer(minLength: 0)
-                    Text("近 \(samples.count) 次扫描采样 · 总分配体积")
+                    // 周增长与趋势曲线同源（同一份采样），收进卡片头部替代独立的漂浮标签
+                    if let growth = LibrarySizeTrend.weeklyGrowth(samples: samples), growth > 0 {
+                        Label("本周 +\(FormatHelpers.bytes(growth))", systemImage: "arrow.up.forward")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(AppColor.warning)
+                            .help("与约一周前的扫描采样相比，资源库总体积的增长量")
+                    }
+                    Text("近 \(samples.count) 次采样")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(AppColor.tertiaryText)
                 }

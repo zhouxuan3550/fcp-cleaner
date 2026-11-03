@@ -440,8 +440,11 @@ struct LibraryRow: View {
             status = "扫描失败"
         } else if library.cleanupError != nil {
             status = "预检未通过"
-        } else if library.usedCachedScan {
+        } else if library.usedCachedScan && store.libraryFilter != .skipped {
             status = "增量复用"
+        } else if store.libraryFilter == .skipped {
+            // 在"已跳过"分组里，被跳过的原因是体积低于门槛——"已就绪"在这里是误导
+            status = "低于门槛"
         } else {
             status = "已就绪"
         }
@@ -605,5 +608,8 @@ struct EmptyDropZone: View {
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2, perform: store.openLibraryPanel)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(store.isDiscovering ? "正在查找 FCP 资源库" : "拖入 .fcpbundle 资源库，或双击选择")
+        .accessibilityAddTraits(.isButton)
     }
 }

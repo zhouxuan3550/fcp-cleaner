@@ -1188,7 +1188,6 @@ final class LibraryStore: NSObject {
                     recordsToRescan.append(record)
                     summaryLibraries.append(CleanupSummaryLibrary(
                         name: record.displayName,
-                        url: record.url,
                         freedSize: result.freedAllocatedSize,
                         itemCount: result.movedToTrash.count,
                         errorCount: result.errors.count,
@@ -1203,7 +1202,6 @@ final class LibraryStore: NSObject {
                     cleanupHistory.appendFailure(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, error: error)
                     summaryLibraries.append(CleanupSummaryLibrary(
                         name: record.displayName,
-                        url: record.url,
                         freedSize: 0,
                         itemCount: 0,
                         errorCount: 1,
