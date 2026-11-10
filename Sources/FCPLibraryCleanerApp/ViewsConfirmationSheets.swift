@@ -333,7 +333,7 @@ struct CleanupSummarySheet: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(summary.title)
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    Text("释放 \(FormatHelpers.bytes(summary.totalFreedSize)) · \(summary.totalItemCount) 项 · \(FormatHelpers.duration(summary.elapsedSeconds))")
+                    Text("移入废纸篓 \(FormatHelpers.bytes(summary.totalFreedSize)) · \(summary.totalItemCount) 项 · \(FormatHelpers.duration(summary.elapsedSeconds))")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(AppColor.secondaryText)
                 }
@@ -429,7 +429,7 @@ struct CleanupNoticeView: View {
     }
 
     private var summary: String {
-        var parts = ["释放 \(FormatHelpers.bytes(notice.freedSize))", "\(notice.cleanedItemCount) 项"]
+        var parts = ["移入废纸篓 \(FormatHelpers.bytes(notice.freedSize))", "\(notice.cleanedItemCount) 项"]
         if notice.libraryCount > 1 { parts.append("\(notice.libraryCount) 个资源库") }
         if notice.errorCount > 0 { parts.append("\(notice.errorCount) 项失败") }
         return parts.joined(separator: " · ")
@@ -477,16 +477,16 @@ struct SecurityPreflightFlowView: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(AppColor.primaryText)
                 Spacer()
-                Text("全部合规")
+                Text("预检通过")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(AppColor.success)
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                stepRow(icon: "lock.shield", title: "进程隔离", desc: "确认 Final Cut Pro 未在编辑或占用当前工程")
-                stepRow(icon: "externaldrive.badge.checkmark", title: "磁盘权限", desc: "磁盘保持挂载并具备完整读写权限")
-                stepRow(icon: "doc.badge.gearshape", title: "快照与指纹", desc: "文件指纹与扫描快照无偏差，严守白名单")
-                stepRow(icon: "trash", title: "废纸篓保护", desc: "移入 macOS 废纸篓，不永久抹掉，随时可恢复")
+                stepRow(icon: "lock.shield", title: "进程检查", desc: "已检查 Final Cut Pro 是否占用资源库")
+                stepRow(icon: "externaldrive.badge.checkmark", title: "磁盘权限", desc: "已检查资源库及目标位置")
+                stepRow(icon: "doc.badge.gearshape", title: "快照与指纹", desc: "清理前逐项复核文件指纹")
+                stepRow(icon: "trash", title: "废纸篓保护", desc: "移入废纸篓后可恢复")
             }
             .padding(.top, 2)
         }
@@ -494,7 +494,7 @@ struct SecurityPreflightFlowView: View {
         .background(AppColor.control.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("安全预检全部合规：已排查 Final Cut Pro 进程隔离，磁盘具备读写权限，文件指纹校验一致，删除动作将安全移入废纸篓。")
+        .accessibilityLabel("安全预检通过：已检查 Final Cut Pro 占用及磁盘状态，清理前会逐项复核文件指纹，并移入废纸篓。")
     }
 
     private func stepRow(icon: String, title: String, desc: String) -> some View {

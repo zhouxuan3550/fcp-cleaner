@@ -35,6 +35,7 @@ final class LibraryRecord: Identifiable {
     var isQueued = false
     var usedCachedScan = false
     var scanProgress = ScanProgress(files: 0, directories: 0, allocatedBytes: 0)
+    var scanPartialResults: ScanPartialResults?
     var scanError: String?
     var cleanupError: String?
     var lastCleanup: CleanupResult?
@@ -54,6 +55,10 @@ final class LibraryRecord: Identifiable {
     var ignoredUntil: Date?
     let discoverySource: DiscoverySource?
     @ObservationIgnored var scanControl: ScanControl?
+    @ObservationIgnored var liveEvents: FSEventsLiveLease?
+    @ObservationIgnored var eventWatchID = UUID()
+    @ObservationIgnored var eventRefreshTask: Task<Void, Never>?
+    @ObservationIgnored var eventRefreshPending = false
 
     init(url: URL, restored: RestoredLibrary? = nil, discoveredVia source: DiscoverySource? = nil, prefetched: ValidatedLibraryCandidate? = nil) {
         self.url = url
@@ -83,6 +88,19 @@ final class LibraryRecord: Identifiable {
     }
 
     var displayName: String { url.deletingPathExtension().lastPathComponent }
+    func acceptPartialResults(_ partial: ScanPartialResults, control: ScanControl) {
+        guard isScanning, scanControl === control, !control.isCancelled,
+              partial.completedDirectories > (scanPartialResults?.completedDirectories ?? 0) else { return }
+        scanPartialResults = partial
+    }
+
+    func acceptLiveCacheChange(watchID: UUID) -> Bool {
+        guard eventWatchID == watchID else { return false }
+        eventRefreshPending = true
+        if !isScanning { scanResult = nil }
+        return true
+    }
+
     var spaceToFree: Int64 {
         if let cachedSpaceToFree { return cachedSpaceToFree }
         let total = scanResult?.cacheItems.reduce(0) { $0 + $1.allocatedSize } ?? 0
@@ -180,6 +198,7 @@ final class LibraryStore: NSObject {
     var libraries: [LibraryRecord] = []
     var workDirectories: [URL] = []
     var workDirectoryStatuses: [URL: WorkDirectoryStatus] = [:]
+    var possibleOrphanCaches: [PossibleOrphanCache] = []
     /// 目录级忽略集（标准化的绝对路径）。仅作用于自动发现与列表分层，
     /// 手动添加/拖入不受影响；绝不影响清理链路。
     var ignoredLibraryDirectories: [String] = UserDefaults.standard.stringArray(forKey: "ignoredLibraryDirectories") ?? [] {
@@ -242,6 +261,7 @@ final class LibraryStore: NSObject {
         }
     }
     let cleanupHistory = CleanupHistoryStore()
+    @ObservationIgnored private let cleanupCoordinator = CleanupCoordinator()
     @ObservationIgnored private let bookmarks = SecurityScopedBookmarkManager()
     @ObservationIgnored private lazy var scheduledCheckController = ScheduledCheckController(store: self)
     @ObservationIgnored private let cleanupJournal = CleanupTransactionJournal()
@@ -250,9 +270,9 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var metadataQuery: NSMetadataQuery?
     @ObservationIgnored private var didBeginAutomaticDiscovery = false
     @ObservationIgnored private var discoveryRunID = UUID()
+    @ObservationIgnored private var orphanDiscoveryTask: Task<Void, Never>?
     @ObservationIgnored private var pendingMergeCount = 0
-    @ObservationIgnored private var scanQueue: [ScanRequest] = []
-    @ObservationIgnored private var activeScanIDs = Set<LibraryRecord.ID>()
+    @ObservationIgnored private let scanQueue = LibraryScanQueue()
     @ObservationIgnored private var noticeDismissalTask: Task<Void, Never>?
     @ObservationIgnored private var lastLowSpaceNotification: [URL: Date] = [:]
     @ObservationIgnored private var lastAutomaticLowSpaceScan: [URL: Date] = [:]
@@ -268,7 +288,6 @@ final class LibraryStore: NSObject {
     @ObservationIgnored private var isExportingDiagnosticsInternal = false
     /// 菜单项禁用态（诊断导出进行中）。
     var isExportingDiagnostics: Bool { isExportingDiagnosticsInternal }
-    private let maximumConcurrentScans = 3
 
     private override init() {
         super.init()
@@ -311,7 +330,7 @@ final class LibraryStore: NSObject {
 
     /// 还有排队或运行中的扫描（定时检查与 Shortcuts 意图据此等待静默）。
     var isScanPending: Bool {
-        !scanQueue.isEmpty || !activeScanIDs.isEmpty
+        scanQueue.isPending
     }
 
     var skippedLibraries: [LibraryRecord] {
@@ -466,6 +485,8 @@ final class LibraryStore: NSObject {
 
     func discoverLibraries() {
         discoveryRunID = UUID()
+        orphanDiscoveryTask?.cancel()
+        possibleOrphanCaches = []
         if let metadataQuery {
             metadataQuery.stop()
             NotificationCenter.default.removeObserver(self, name: .NSMetadataQueryDidFinishGathering, object: metadataQuery)
@@ -498,6 +519,19 @@ final class LibraryStore: NSObject {
                     }
                 )
                 isDiscovering = false
+                let knownLibraries = Array(Set(libraries.map(\.url) + outcome.byRoot.values.flatMap { $0 }))
+                orphanDiscoveryTask = Task {
+                    let references = await Task.detached(priority: .utility) {
+                        knownLibraries.compactMap { FCPStructureRules.externalCacheRoot(for: $0) }
+                    }.value
+                    let candidates = outcome.orphanCandidates.candidates(referencedRoots: references)
+                    for candidate in candidates {
+                        guard !Task.isCancelled, runID == discoveryRunID else { return }
+                        let result = await OrphanCacheDiscovery.measure(candidate)
+                        guard !Task.isCancelled, runID == discoveryRunID else { return }
+                        possibleOrphanCaches.append(result)
+                    }
+                }
             }
             return
         }
@@ -742,12 +776,13 @@ final class LibraryStore: NSObject {
         if !newRecords.isEmpty { saveRecents() }
     }
 
-    nonisolated private static func findLibraries(
+    nonisolated static func findLibraries(
         in roots: [URL]
-    ) -> (byRoot: [URL: [URL]], failedRoots: Set<URL>) {
+    ) -> (byRoot: [URL: [URL]], failedRoots: Set<URL>, orphanCandidates: OrphanCacheDiscovery) {
         let fileManager = FileManager.default
         var byRoot: [URL: [URL]] = [:]
         var failedRoots = Set<URL>()
+        var orphanCandidates = OrphanCacheDiscovery()
         let keys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey]
 
         for root in roots {
@@ -777,16 +812,22 @@ final class LibraryStore: NSObject {
             }
 
             var found: [URL] = []
-            for case let url as URL in enumerator where url.pathExtension.lowercased() == "fcpbundle" {
-                if isLibraryDirectory(url, fileManager: fileManager) {
-                    found.append(url.standardizedFileURL)
+            for case let url as URL in enumerator {
+                if url.pathExtension.lowercased() == "fcpbundle" {
+                    if isLibraryDirectory(url, fileManager: fileManager) {
+                        found.append(url.standardizedFileURL)
+                        enumerator.skipDescendants()
+                    }
+                } else if OrphanCacheDiscovery.recognizedNames.contains(url.lastPathComponent),
+                          let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+                          values.isDirectory == true, values.isSymbolicLink != true {
+                    orphanCandidates.observe(url, under: standardizedRoot)
                 }
-                enumerator.skipDescendants()
             }
             if hadError.isSet { failedRoots.insert(standardizedRoot) }
             byRoot[standardizedRoot] = found.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
         }
-        return (byRoot, failedRoots)
+        return (byRoot, failedRoots, orphanCandidates)
     }
 
     nonisolated private static func isLibraryDirectory(_ url: URL, fileManager: FileManager) -> Bool {
@@ -816,35 +857,30 @@ final class LibraryStore: NSObject {
 
     func scan(_ record: LibraryRecord, preserveLastCleanup: Bool = false, force: Bool = true) {
         guard !record.isScanning else { return }
-        if let index = scanQueue.firstIndex(where: { $0.record.id == record.id }) {
-            scanQueue[index].force = scanQueue[index].force || force
-            scanQueue[index].preserveLastCleanup = scanQueue[index].preserveLastCleanup || preserveLastCleanup
-            drainScanQueue()
-            return
-        }
-        record.isQueued = true
-        scanQueue.append(ScanRequest(record: record, preserveLastCleanup: preserveLastCleanup, force: force))
+        scanQueue.enqueue(record, preserveLastCleanup: preserveLastCleanup, force: force)
         drainScanQueue()
     }
 
     private func drainScanQueue() {
-        while activeScanIDs.count < maximumConcurrentScans, !scanQueue.isEmpty {
-            let nextIndex = scanQueue.firstIndex { $0.record.id == selectedID } ?? scanQueue.startIndex
-            let request = scanQueue.remove(at: nextIndex)
+        while let request = scanQueue.takeNext(preferredID: selectedID) {
             startScan(request)
         }
     }
 
     private func startScan(_ request: ScanRequest) {
         let record = request.record
-        guard !activeScanIDs.contains(record.id) else { return }
-        activeScanIDs.insert(record.id)
+        record.eventRefreshTask?.cancel()
+        record.liveEvents = nil
+        record.eventRefreshPending = false
+        let watchID = UUID()
+        record.eventWatchID = watchID
         record.isQueued = false
         let control = ScanControl()
         record.scanControl = control
         record.isScanning = true
         record.usedCachedScan = false
         record.scanProgress = ScanProgress(files: 0, directories: 0, allocatedBytes: 0)
+        record.scanPartialResults = nil
         record.scanError = nil
         if !request.preserveLastCleanup {
             record.lastCleanup = nil
@@ -863,18 +899,43 @@ final class LibraryStore: NSObject {
             do {
                 let result: LibraryScanResult
                 var scannedFresh = false
-                if !request.force, let cached = await scanCache.loadIfCurrent(libraryURL: record.url) {
+                var checkpoint: FSEventsCheckpoint?
+                if !request.force, let live = await scanCache.loadWithLiveEvents(libraryURL: record.url, control: control, onChange: { [weak self, weak record] in
+                    Task { @MainActor [weak self, weak record] in
+                        guard let self, let record, !control.isCancelled else { return }
+                        self.liveCacheChanged(record, watchID: watchID)
+                    }
+                }) {
+                    if control.isCancelled { throw CancellationError() }
+                    result = live.result
+                    record.liveEvents = live.lease
+                    record.usedCachedScan = true
+                } else if !request.force, let cached = await scanCache.loadIfCurrent(libraryURL: record.url, control: control) {
+                    if control.isCancelled { throw CancellationError() }
                     result = cached
                     record.usedCachedScan = true
                 } else {
-                    let progressCoalescer = ScanProgressCoalescer()
+                    let checkpointURL = record.url
+                    checkpoint = await Task.detached(priority: .utility) {
+                        FSEventsCheckpoint.capture(libraryURL: checkpointURL)
+                    }.value
+                    let progressCoalescer = ScanProgressCoalescer<ScanProgress>()
+                    let partialCoalescer = ScanProgressCoalescer<ScanPartialResults>()
                     result = try await LibraryScanner().scan(
                         libraryURL: record.url,
                         control: control,
                         onProgress: { [weak record] progress in
                             if let merged = progressCoalescer.consume(progress) {
                                 Task { @MainActor [weak record] in
-                                    record?.scanProgress = merged
+                                    guard let record, record.isScanning, record.scanControl === control, !control.isCancelled else { return }
+                                    record.scanProgress = merged
+                                }
+                            }
+                        },
+                        onPartialResults: { [weak record] partial in
+                            if let merged = partialCoalescer.consume(partial, force: partial.completedDirectories == partial.totalDirectories) {
+                                Task { @MainActor [weak record] in
+                                    record?.acceptPartialResults(merged, control: control)
                                 }
                             }
                         }
@@ -896,7 +957,8 @@ final class LibraryStore: NSObject {
                 if scannedFresh {
                     let scanCache = scanCache
                     let freshResult = result
-                    Task { await scanCache.save(freshResult) }
+                    let freshCheckpoint = checkpoint
+                    Task { await scanCache.save(freshResult, checkpoint: freshCheckpoint) }
                 }
                 LibrarySizeTrend.record(
                     libraryURL: record.url,
@@ -917,17 +979,36 @@ final class LibraryStore: NSObject {
                 record.pendingFreedSize = 0
             }
             record.isScanning = false
+            if record.eventRefreshPending && record.liveEvents != nil { record.scanResult = nil }
+            record.scanPartialResults = nil
             record.scanControl = nil
-            activeScanIDs.remove(record.id)
+            scanQueue.finish(record)
             reconcileFilteredLibraries()
             drainScanQueue()
         }
     }
 
+    private func liveCacheChanged(_ record: LibraryRecord, watchID: UUID) {
+        guard libraries.contains(where: { $0.id == record.id }), record.acceptLiveCacheChange(watchID: watchID) else { return }
+        record.eventRefreshTask?.cancel()
+        record.eventRefreshTask = Task { [weak self, weak record] in
+            try? await Task.sleep(for: .seconds(1))
+            while !Task.isCancelled {
+                guard let self, let record, record.eventWatchID == watchID,
+                      self.libraries.contains(where: { $0.id == record.id }) else { return }
+                if !record.isScanning && !self.isCleaning && !self.isBatchCleaning && !self.isPreflighting {
+                    guard record.eventRefreshPending else { return }
+                    record.eventRefreshPending = false
+                    self.scan(record, force: true)
+                    return
+                }
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+
     func cancelScan(_ record: LibraryRecord) {
-        if let index = scanQueue.firstIndex(where: { $0.record.id == record.id }) {
-            scanQueue.remove(at: index)
-            record.isQueued = false
+        if scanQueue.removePending(record) {
             reconcileFilteredLibraries()
             return
         }
@@ -1094,7 +1175,7 @@ final class LibraryStore: NSObject {
             var failure: (Error, LibraryRecord)?
             for entry in entries {
                 do {
-                    try await CleanupEngine().preflight(plan: entry.plan, verifyContents: false)
+                    try await cleanupCoordinator.preflight(entry.plan)
                 } catch {
                     failure = (error, entry.record)
                     break
@@ -1118,7 +1199,7 @@ final class LibraryStore: NSObject {
             do {
                 cleanupPreparationCompleted = 0
                 cleanupPreparationTotal = 1
-                try await CleanupEngine().preflight(plan: plan, verifyContents: false)
+                try await cleanupCoordinator.preflight(plan)
                 cleanupPreparationCompleted = 1
                 cleanConfirmation = CleanConfirmation(record: record, plan: plan, isRetry: isRetry)
             } catch {
@@ -1167,10 +1248,7 @@ final class LibraryStore: NSObject {
                 record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
                 record.cleanupAfterSize = nil
                 do {
-                    let start = ContinuousClock.now
-                    let result = try await CleanupEngine().execute(plan: entry.plan)
-                    let elapsed = ContinuousClock.now - start
-                    CleanupThroughputStore.record(volumeID: entry.record.volumeID, bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
+                    let result = try await cleanupCoordinator.execute(entry.plan, volumeID: entry.record.volumeID)
                     record.lastCleanup = result
                     applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
                     cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, result: result)
@@ -1269,10 +1347,7 @@ final class LibraryStore: NSObject {
             )
             defer { ProcessInfo.processInfo.endActivity(cleanActivity) }
             do {
-                let start = ContinuousClock.now
-                let result = try await CleanupEngine().execute(plan: confirmation.plan)
-                let elapsed = ContinuousClock.now - start
-                CleanupThroughputStore.record(volumeID: record.volumeID, bytes: result.freedAllocatedSize, seconds: Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18)
+                let result = try await cleanupCoordinator.execute(confirmation.plan, volumeID: record.volumeID)
                 record.lastCleanup = result
                 applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
                 cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: confirmation.plan, result: result)
@@ -1329,11 +1404,11 @@ final class LibraryStore: NSObject {
         let ids = Set(records.map(\.id))
         let removedURLs = records.map(\.url)
         for record in records {
-            if let index = scanQueue.firstIndex(where: { $0.record.id == record.id }) {
-                scanQueue.remove(at: index)
-                record.isQueued = false
-            }
+            scanQueue.removePending(record)
             record.scanControl?.cancel()
+            record.eventRefreshTask?.cancel()
+            record.liveEvents = nil
+            record.eventWatchID = UUID()
         }
         libraries.removeAll { ids.contains($0.id) }
         batchSelectedIDs.subtract(ids)
@@ -1758,7 +1833,7 @@ final class LibraryStore: NSObject {
             scan(record, force: false)
         }
         // 等待扫描队列静默（上限 15 分钟），扫描本身已在后台并发执行
-        while (!scanQueue.isEmpty || !activeScanIDs.isEmpty), Date() < deadline {
+        while scanQueue.isPending, Date() < deadline {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
         }
@@ -1828,6 +1903,7 @@ final class LibraryStore: NSObject {
     /// 外置卷重新挂载：库内该卷资源库入队增量扫描（有效缓存直接复用），
     /// 工作目录所在卷重连后重新发现一次。判断本身是纯路径匹配，无主线程 I/O。
     func handleVolumeMount(volumeURL: URL) {
+        cleanupHistory.recoverPendingPurge()
         let volumePath = volumeURL.standardizedFileURL.path
         let affected = libraries.filter {
             VolumeMountRules.residesOnVolume(recordPath: $0.url.path, volumePath: volumePath)
@@ -1855,10 +1931,7 @@ final class LibraryStore: NSObject {
         }
         guard !affected.isEmpty else { return }
         for record in affected {
-            if let index = scanQueue.firstIndex(where: { $0.record.id == record.id }) {
-                scanQueue.remove(at: index)
-                record.isQueued = false
-            }
+            scanQueue.removePending(record)
             record.scanControl?.cancel()
             record.accessReport = VolumeAccessReport(
                 libraryURL: record.url,
@@ -1958,13 +2031,6 @@ final class LibraryStore: NSObject {
             )
         }
     }
-}
-
-@MainActor
-private struct ScanRequest {
-    let record: LibraryRecord
-    var preserveLastCleanup: Bool
-    var force: Bool
 }
 
 /// 后台发现流程取齐的建档元数据；已入库 URL 的字段为 nil（复用现有记录，不再探测）。

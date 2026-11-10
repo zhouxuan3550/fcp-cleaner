@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import OSLog
 
@@ -6,31 +7,57 @@ public struct LibraryScanner: Sendable {
     /// Instruments 与 Console.app 都能直接看到每次扫描的区间与耗时。
     private static let signposter = OSSignposter(subsystem: "com.fcplibrarycleaner", category: "scan")
 
-    public init() {}
+    private let maximumConcurrentFingerprints: Int
+
+    public init(maximumConcurrentFingerprints: Int = max(2, min(8, ProcessInfo.processInfo.activeProcessorCount))) {
+        self.maximumConcurrentFingerprints = max(1, maximumConcurrentFingerprints)
+    }
 
     /// Performs read-only filesystem analysis away from the caller's executor.
     public func scan(libraryURL: URL) async throws -> LibraryScanResult {
         try await scan(libraryURL: libraryURL, control: ScanControl(), onProgress: { _ in })
     }
 
+    /// Read-only size measurement sharing the same per-volume traversal budget.
+    public func allocatedSize(of directory: URL) async throws -> Int64 {
+        let control = ScanControl()
+        let worker = Task.detached(priority: .utility) {
+            let profile = try VolumeScanProfile.resolve(directory)
+            return try await VolumeTraversalScheduler.shared.withPermit(volumeID: profile.id, limit: profile.traversalLimit, control: control) {
+                try Self.directorySize(of: directory, fileManager: .default, control: control, preCounted: [:], onProgress: { _ in }).allocated
+            }
+        }
+        return try await withTaskCancellationHandler {
+            try await worker.value
+        } onCancel: {
+            control.cancel()
+            worker.cancel()
+        }
+    }
+
     /// Progress is reported while traversing the Library. Cancellation never changes files.
     public func scan(
         libraryURL: URL,
         control: ScanControl,
-        onProgress: @escaping @Sendable (ScanProgress) -> Void
+        onProgress: @escaping @Sendable (ScanProgress) -> Void,
+        onPartialResults: @escaping @Sendable (ScanPartialResults) -> Void = { _ in }
     ) async throws -> LibraryScanResult {
         let standardizedURL = libraryURL.standardizedFileURL
+        let limit = maximumConcurrentFingerprints
         return try await Task.detached(priority: .userInitiated) {
-            try await Self.performScan(libraryURL: standardizedURL, control: control, onProgress: onProgress)
+            try await Self.performScan(libraryURL: standardizedURL, control: control, fingerprintLimit: limit, onProgress: onProgress, onPartialResults: onPartialResults)
         }.value
     }
 
     /// Builds the validation token used by the app-level scan cache without traversing original
     /// media. Recognized generated directories are fingerprinted recursively.
-    public func changeToken(libraryURL: URL) async throws -> LibraryChangeToken {
+    public func changeToken(libraryURL: URL, control: ScanControl = ScanControl()) async throws -> LibraryChangeToken {
         let standardizedURL = libraryURL.standardizedFileURL
+        let limit = maximumConcurrentFingerprints
         return try await Task.detached(priority: .utility) {
-            try await Self.makeChangeToken(libraryURL: standardizedURL)
+            let interval = Self.signposter.beginInterval("ChangeToken")
+            defer { Self.signposter.endInterval("ChangeToken", interval) }
+            return try await Self.makeChangeToken(libraryURL: standardizedURL, control: control, fingerprintLimit: limit)
         }.value
     }
 
@@ -51,7 +78,9 @@ public struct LibraryScanner: Sendable {
     private static func performScan(
         libraryURL: URL,
         control: ScanControl,
-        onProgress: @escaping @Sendable (ScanProgress) -> Void
+        fingerprintLimit: Int,
+        onProgress: @escaping @Sendable (ScanProgress) -> Void,
+        onPartialResults: @escaping @Sendable (ScanPartialResults) -> Void
     ) async throws -> LibraryScanResult {
         let startedAt = ContinuousClock.now
         let signpostState = signposter.beginInterval("ScanLibrary")
@@ -126,16 +155,29 @@ public struct LibraryScanner: Sendable {
         // 重量级指纹阶段：多 Event 库有几十棵缓存目录树，逐棵串行遍历时
         // 每棵的 I/O 延迟线性叠加；有界并行是扫描墙钟时间的最大杠杆。
         // 有界而非无界，避免机械盘被并发寻道拖垮。
-        let fingerprints = try await fingerprintAll(pending.map(\.url), control: control)
+        var partialTotals: [CacheCategory: Int64] = [:]
+        var completedDirectories = 0
+        let fingerprints = try await fingerprintAll(pending.map(\.url), control: control, limit: fingerprintLimit, includeEstimate: true) { index, fingerprint in
+            completedDirectories += 1
+            if case .cacheItem(let rule, _, _, _) = pending[index] {
+                partialTotals[rule.category, default: 0] += fingerprint.allocatedSize
+            }
+            onPartialResults(ScanPartialResults(
+                completedDirectories: completedDirectories,
+                totalDirectories: pending.count,
+                allocatedByCategory: partialTotals
+            ))
+        }
 
         var cacheItems: [CacheItem] = []
         var observedCacheItems: [ObservedCacheItem] = []
         var observedFingerprints: [(URL, FileFingerprint)] = []
         cacheItems.reserveCapacity(pending.count)
-        for (entry, fingerprint) in zip(pending, fingerprints) {
+        for (entry, measurement) in zip(pending, fingerprints) {
+            let fingerprint = measurement.fingerprint
             switch entry {
             case .cacheItem(let rule, let url, let storage, let ruleID):
-                cacheItems.append(makeCacheItem(url: url, rule: rule, storage: storage, ruleID: ruleID, fingerprint: fingerprint))
+                cacheItems.append(makeCacheItem(url: url, rule: rule, storage: storage, ruleID: ruleID, fingerprint: fingerprint, reclaimableEstimate: measurement.reclaimable))
             case .observed(let rule, let url):
                 observedCacheItems.append(ObservedCacheItem(
                     url: url,
@@ -164,13 +206,12 @@ public struct LibraryScanner: Sendable {
             preCounted[url.path] = (fingerprint.allocatedSize, fingerprint.logicalSize, fingerprint.entryCount)
         }
 
-        let totals = try directorySize(
-            of: libraryURL,
-            fileManager: fileManager,
-            control: control,
-            preCounted: preCounted,
-            onProgress: onProgress
-        )
+        let profile = try VolumeScanProfile.resolve(libraryURL)
+        let precounted = preCounted
+        let totals = try await VolumeTraversalScheduler.shared.withPermit(volumeID: profile.id, limit: profile.traversalLimit, control: control) {
+            try directorySize(of: libraryURL, fileManager: .default, control: control,
+                              preCounted: precounted, onProgress: onProgress)
+        }
         for snapshot in coreDataSnapshots {
             guard try coreDataSnapshot(for: snapshot.url, fileManager: fileManager) == snapshot else {
                 throw CleanupError.fileChanged(snapshot.url)
@@ -209,8 +250,9 @@ public struct LibraryScanner: Sendable {
         )
     }
 
-    private static func makeChangeToken(libraryURL: URL) async throws -> LibraryChangeToken {
+    private static func makeChangeToken(libraryURL: URL, control: ScanControl, fingerprintLimit: Int) async throws -> LibraryChangeToken {
         let fileManager = FileManager.default
+        try throwIfCancelled(control)
         try validateLibrary(libraryURL, fileManager: fileManager)
         let classifier = CacheClassifier()
         var databases = [try coreDataSnapshot(
@@ -225,6 +267,7 @@ public struct LibraryScanner: Sendable {
 
         for child in try directChildren(of: libraryURL, fileManager: fileManager)
             where isEventDirectory(child, fileManager: fileManager) {
+            try throwIfCancelled(control)
             eventNames.append(child.lastPathComponent)
             databases.append(try coreDataSnapshot(
                 for: child.appendingPathComponent(FCPStructureRules.eventDatabaseName),
@@ -250,9 +293,10 @@ public struct LibraryScanner: Sendable {
 
         let unique = Array(Set(generatedURLs.map(\.standardizedFileURL))).sorted { $0.path < $1.path }
         // 令牌构建与扫描共用同一并行指纹阶段；增量扫描每次都要走这趟，墙钟同等受益。
-        let fingerprints = try await fingerprintAll(unique, control: ScanControl())
-        let generated = zip(unique, fingerprints).map { url, fingerprint in
-            DirectoryChangeSnapshot(url: url, fingerprint: fingerprint)
+        let fingerprints = try await fingerprintAll(unique, control: control, limit: fingerprintLimit)
+        try throwIfCancelled(control)
+        let generated = zip(unique, fingerprints).map { url, measurement in
+            DirectoryChangeSnapshot(url: url, fingerprint: measurement.fingerprint)
         }
         return LibraryChangeToken(
             coreDataSnapshots: databases.sorted { $0.url.path < $1.url.path },
@@ -262,11 +306,16 @@ public struct LibraryScanner: Sendable {
 
     /// 有界并行的指纹收集。结果按入参顺序返回（索引即顺序），保证输出确定性；
     /// 首个错误会取消其余任务并原样抛出，保守失败语义与串行版本一致。
-    private static func fingerprintAll(_ urls: [URL], control: ScanControl) async throws -> [FileFingerprint] {
+    private static func fingerprintAll(
+        _ urls: [URL],
+        control: ScanControl,
+        limit: Int,
+        includeEstimate: Bool = false,
+        onCompleted: ((Int, FileFingerprint) -> Void)? = nil
+    ) async throws -> [FingerprintMeasurement] {
         guard !urls.isEmpty else { return [] }
-        var results = [FileFingerprint?](repeating: nil, count: urls.count)
-        let limit = max(2, min(8, ProcessInfo.processInfo.activeProcessorCount))
-        try await withThrowingTaskGroup(of: (index: Int, fingerprint: FileFingerprint).self) { group in
+        var results = [FingerprintMeasurement?](repeating: nil, count: urls.count)
+        try await withThrowingTaskGroup(of: (index: Int, measurement: FingerprintMeasurement).self) { group in
             var next = 0
             var inFlight = 0
             while next < urls.count || inFlight > 0 {
@@ -276,11 +325,20 @@ public struct LibraryScanner: Sendable {
                     inFlight += 1
                     group.addTask {
                         try throwIfCancelled(control)
-                        return (index, try CleanupPlan.fingerprint(for: urls[index]))
+                        let url = urls[index]
+                        let profile = try VolumeScanProfile.resolve(url)
+                        let measurement = try await VolumeTraversalScheduler.shared.withPermit(volumeID: profile.id, limit: profile.traversalLimit, control: control) {
+                            try throwIfCancelled(control)
+                            return try includeEstimate
+                                ? CleanupPlan.scanMeasurement(for: url)
+                                : FingerprintMeasurement(fingerprint: CleanupPlan.fingerprint(for: url), reclaimable: nil)
+                        }
+                        return (index, measurement)
                     }
                 } else {
-                    guard let (index, fingerprint) = try await group.next() else { break }
-                    results[index] = fingerprint
+                    guard let (index, measurement) = try await group.next() else { break }
+                    results[index] = measurement
+                    onCompleted?(index, measurement.fingerprint)
                     inFlight -= 1
                 }
             }
@@ -337,7 +395,8 @@ public struct LibraryScanner: Sendable {
         rule: FCPStructureRules.CandidateRule,
         storage: CacheStorage,
         ruleID: String?,
-        fingerprint: FileFingerprint
+        fingerprint: FileFingerprint,
+        reclaimableEstimate: ReclaimableSpaceEstimate?
     ) -> CacheItem {
         CacheItem(
             url: url,
@@ -347,7 +406,8 @@ public struct LibraryScanner: Sendable {
             confidence: .confirmed,
             ruleID: ruleID ?? rule.id,
             storage: storage,
-            fingerprint: fingerprint
+            fingerprint: fingerprint,
+            reclaimableEstimate: reclaimableEstimate
         )
     }
 
@@ -415,7 +475,7 @@ public struct LibraryScanner: Sendable {
         .fileSizeKey,
     ]
 
-    private struct TraversalTotals: Sendable {
+    struct TraversalTotals: Sendable, Equatable {
         let allocated: Int64
         let logical: Int64
         let files: Int
@@ -423,6 +483,73 @@ public struct LibraryScanner: Sendable {
     }
 
     private static func directorySize(
+        of rootURL: URL,
+        fileManager: FileManager,
+        control: ScanControl,
+        preCounted: [String: (allocated: Int64, logical: Int64, files: Int)],
+        onProgress: @escaping @Sendable (ScanProgress) -> Void
+    ) throws -> TraversalTotals {
+        do {
+            return try bulkDirectorySize(of: rootURL, control: control, preCounted: preCounted, onProgress: onProgress)
+        } catch BulkDirectoryWalker.Failure.unsupported {
+            return try foundationDirectorySize(of: rootURL, fileManager: fileManager, control: control, preCounted: preCounted, onProgress: onProgress)
+        } catch is BulkDirectoryWalker.Failure {
+            throw CleanupError.permissionDenied(rootURL)
+        }
+    }
+
+    static func bulkDirectorySize(
+        of rootURL: URL,
+        control: ScanControl,
+        preCounted: [String: (allocated: Int64, logical: Int64, files: Int)],
+        onProgress: @escaping @Sendable (ScanProgress) -> Void
+    ) throws -> TraversalTotals {
+        var canonicalPreCounted: [String: (allocated: Int64, logical: Int64, files: Int)] = [:]
+        for (path, totals) in preCounted {
+            var buffer = [CChar](repeating: 0, count: Int(PATH_MAX))
+            guard path.withCString({ realpath($0, &buffer) }) != nil,
+                  let canonical = String(bytes: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, encoding: .utf8) else {
+                throw BulkDirectoryWalker.Failure.unsupported
+            }
+            canonicalPreCounted[canonical] = totals
+        }
+        func path(of entry: BulkDirectoryWalker.Entry) -> String {
+            entry.parentPath == "/" ? "/" + entry.name : entry.parentPath + "/" + entry.name
+        }
+        var allocated: Int64 = 0
+        var logical: Int64 = 0
+        var files = 0
+        var directories = 0
+        var visited = 0
+        try BulkDirectoryWalker.walk(rootURL, shouldDescend: { canonicalPreCounted[path(of: $0)] == nil }) { entry in
+            visited += 1
+            if visited.isMultiple(of: 64) { try throwIfCancelled(control) }
+            if entry.type == UInt32(VLNK.rawValue) { return }
+            if entry.type == UInt32(VDIR.rawValue) {
+                directories += 1
+                if let counted = canonicalPreCounted[path(of: entry)] {
+                    allocated += counted.allocated
+                    logical += counted.logical
+                    files += counted.files
+                    if counted.files >= 256 {
+                        onProgress(ScanProgress(files: files, directories: directories, allocatedBytes: allocated))
+                    }
+                }
+                return
+            }
+            allocated += entry.allocatedSize
+            logical += entry.logicalSize
+            files += 1
+            if files.isMultiple(of: 256) {
+                onProgress(ScanProgress(files: files, directories: directories, allocatedBytes: allocated))
+            }
+        }
+        try throwIfCancelled(control)
+        onProgress(ScanProgress(files: files, directories: directories, allocatedBytes: allocated))
+        return TraversalTotals(allocated: allocated, logical: logical, files: files, directories: directories)
+    }
+
+    static func foundationDirectorySize(
         of rootURL: URL,
         fileManager: FileManager,
         control: ScanControl,

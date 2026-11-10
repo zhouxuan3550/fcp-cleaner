@@ -3,6 +3,32 @@ import Testing
 @testable import FCPLibraryCleanerCore
 
 struct LibraryScannerTests {
+    @Test func partialResultsAccumulateCompletedFingerprintsWithoutExposingPlans() async throws {
+        final class Collector: @unchecked Sendable {
+            private let lock = NSLock()
+            private var values: [ScanPartialResults] = []
+            func append(_ value: ScanPartialResults) { lock.lock(); values.append(value); lock.unlock() }
+            func snapshot() -> [ScanPartialResults] { lock.lock(); defer { lock.unlock() }; return values }
+        }
+        let library = try MockLibrary.make()
+        defer { try? FileManager.default.removeItem(at: library.root) }
+        let collector = Collector()
+        let result = try await LibraryScanner().scan(
+            libraryURL: library.url,
+            control: ScanControl(),
+            onProgress: { _ in },
+            onPartialResults: { collector.append($0) }
+        )
+        let updates = collector.snapshot()
+        let last = try #require(updates.last)
+        #expect(updates.map(\.completedDirectories) == Array(1...updates.count))
+        #expect(last.completedDirectories == last.totalDirectories)
+        for category in CacheCategory.cleanableCases {
+            let expected = result.cacheItems.filter { $0.category == category }.reduce(Int64(0)) { $0 + $1.allocatedSize }
+            #expect(last.allocatedByCategory[category, default: 0] == expected)
+        }
+    }
+
     @Test func changeTokenIsStableWhenGeneratedDataIsUnchanged() async throws {
         let library = try MockLibrary.make()
         defer { try? FileManager.default.removeItem(at: library.root) }
@@ -35,6 +61,21 @@ struct LibraryScannerTests {
         #expect(Set(result.cacheItems.map(\.category)) == [.renderFiles, .proxyMedia, .optimizedMedia])
         #expect(result.cacheItems.allSatisfy { $0.confidence == .confirmed })
         #expect(result.cacheItems.allSatisfy { $0.allocatedSize > 0 })
+    }
+
+    @Test("scan estimates match an independent APFS measurement and preserve fingerprints")
+    func scanCollectsSpaceEstimates() async throws {
+        let library = try MockLibrary.make()
+        defer { try? FileManager.default.removeItem(at: library.root) }
+        let result = try await LibraryScanner().scan(libraryURL: library.url)
+        for item in result.cacheItems {
+            #expect(item.reclaimableEstimate == (try ReclaimableSpaceEstimate.measure(at: item.url)))
+            #expect(item.fingerprint == (try CleanupPlan.foundationFingerprint(for: item.url)))
+        }
+        if result.cacheItems.allSatisfy({ $0.reclaimableEstimate != nil }), !result.cacheItems.isEmpty {
+            let estimate = try #require(result.reclaimableEstimate)
+            #expect(estimate.minimumBytes <= estimate.maximumBytes)
+        }
     }
 
     @Test func protectsOriginalMediaAndUnknownDirectories() async throws {
@@ -115,6 +156,17 @@ struct LibraryScannerTests {
         }
     }
 
+    @Test func cancelledIncrementalValidationNeverProducesAChangeToken() async throws {
+        let library = try MockLibrary.make()
+        defer { try? FileManager.default.removeItem(at: library.root) }
+        let control = ScanControl()
+        control.cancel()
+
+        await #expect(throws: CancellationError.self) {
+            try await LibraryScanner().changeToken(libraryURL: library.url, control: control)
+        }
+    }
+
     @Test func scannerReportsProgress() async throws {
         let library = try MockLibrary.make()
         defer { try? FileManager.default.removeItem(at: library.root) }
@@ -164,6 +216,38 @@ struct LibraryScannerTests {
         await #expect(throws: CleanupError.self) {
             try await CleanupEngine(isFinalCutProRunning: { false }).execute(plan: plan)
         }
+    }
+
+    @Test("cleanup rechecks each fingerprint even inside the global validation interval")
+    func cleanupRechecksEachFingerprint() async throws {
+        final class Mutator: @unchecked Sendable {
+            private let lock = NSLock()
+            private var checks = 0
+            let target: URL
+            init(target: URL) { self.target = target }
+            func check() -> Bool {
+                lock.lock()
+                defer { lock.unlock() }
+                checks += 1
+                if checks == 3 { try? Data("changed".utf8).write(to: target.appendingPathComponent("new-file")) }
+                return false
+            }
+        }
+        let library = try MockLibrary.make()
+        defer { try? FileManager.default.removeItem(at: library.root) }
+        let scan = try await LibraryScanner().scan(libraryURL: library.url)
+        let plan = try CleanupPlan(scanResult: scan, categories: [.renderFiles, .proxyMedia])
+        #expect(plan.entries.count == 2)
+        let second = try #require(plan.entries.last?.item.url)
+        let mutator = Mutator(target: second)
+        let result = try await CleanupEngine(isFinalCutProRunning: { mutator.check() }).execute(plan: plan)
+        defer { result.trashedItems.forEach { try? FileManager.default.removeItem(at: $0.trashURL) } }
+        #expect(result.movedToTrash.contains(plan.entries[0].item.url))
+        let trashed = try #require(result.trashedItems.first)
+        let snapshot = try #require(trashed.snapshot)
+        #expect(snapshot == (try TrashItemSnapshot.capture(at: trashed.trashURL)))
+        #expect(!result.movedToTrash.contains(second))
+        #expect(result.errors.contains { if case .fileChanged = $0 { return true }; return false })
     }
 
     @Test func libraryWithoutRenderFilesHasNoRenderCandidate() async throws {

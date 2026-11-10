@@ -62,6 +62,33 @@ struct AppSettings: View {
                 }
             }
 
+            if !store.possibleOrphanCaches.isEmpty {
+                DisclosureGroup("疑似孤立缓存（\(store.possibleOrphanCaches.count)）") {
+                    ScrollView {
+                        VStack(spacing: 8) {
+                            ForEach(store.possibleOrphanCaches) { cache in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(cache.url.lastPathComponent).lineLimit(1)
+                                        Text(cache.allocatedBytes.map { "识别缓存 \(FormatHelpers.bytes($0))" } ?? "大小不可用")
+                                            .font(.caption)
+                                            .foregroundStyle(AppColor.secondaryText)
+                                    }
+                                    Spacer()
+                                    Button("显示") { NSWorkspace.shared.activateFileViewerSelecting([cache.url]) }
+                                        .buttonStyle(.borderless)
+                                }
+                                .help(cache.url.path)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 150)
+                    .padding(.top, 4)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .help("仅识别工作目录中的疑似缓存文件夹，无法确认其是否被其他资源库使用。")
+            }
+
             if !store.ignoredLibraryDirectories.isEmpty {
                 sectionHeader("已忽略目录（自动发现不再扫描）")
                 VStack(spacing: 8) {
@@ -144,6 +171,7 @@ struct CleanupHistoryView: View {
     var libraryStore: LibraryStore?
     @State private var restoreMessage: String?
     @State private var isRestoring = false
+    @State private var entryToPurge: CleanupHistoryEntry?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -164,10 +192,11 @@ struct CleanupHistoryView: View {
                     .fixedSize()
                     Button("清空") { store.clear() }
                         .buttonStyle(.borderless)
+                        .disabled(isRestoring || store.isBusy)
                 }
             }
             if let monthly = monthlySummary {
-                Label("本月已清理 \(monthly.count) 次 · 释放 \(FormatHelpers.bytes(monthly.freed))", systemImage: "calendar.badge.checkmark")
+                Label("本月已清理 \(monthly.count) 次 · 移入废纸篓 \(FormatHelpers.bytes(monthly.freed))", systemImage: "calendar.badge.checkmark")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(AppColor.accent)
                     .help("按清理记录所在月份统计（当地时间）")
@@ -191,9 +220,15 @@ struct CleanupHistoryView: View {
                                     Text(entry.libraryName)
                                         .font(.system(size: 12, weight: .semibold))
                                         .lineLimit(1)
-                                    Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · \(FormatHelpers.bytes(entry.freedSize))")
+                                    Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · 移入废纸篓 \(FormatHelpers.bytes(entry.freedSize))")
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundStyle(AppColor.secondaryText)
+                                    if let delta = entry.availableSpaceChange {
+                                        Text("可用空间变化 \(delta < 0 ? "−" : "+")\(FormatHelpers.bytes(delta.magnitude > UInt64(Int64.max) ? Int64.max : Int64(delta.magnitude)))")
+                                            .font(.system(size: 11, weight: .medium))
+                                            .foregroundStyle(AppColor.secondaryText)
+                                            .help("此值包含操作期间磁盘上其他活动造成的变化")
+                                    }
                                 }
                                 Spacer()
                                 if !entry.trashedItems.isEmpty {
@@ -206,10 +241,15 @@ struct CleanupHistoryView: View {
                                         }
                                     }
                                     .buttonStyle(.borderless)
-                                    .disabled(isRestoring)
+                                    .disabled(isRestoring || store.isBusy)
                                     Button("废纸篓") { store.showInTrash(entry) }
                                         .buttonStyle(.borderless)
-                                        .disabled(isRestoring)
+                                        .disabled(isRestoring || store.isBusy)
+                                    if entry.trashedItems.contains(where: { $0.snapshot != nil }) {
+                                        Button("清空本次") { entryToPurge = entry }
+                                            .buttonStyle(.borderless)
+                                            .disabled(isRestoring || store.isBusy)
+                                    }
                                 }
                             }
                             .padding(10)
@@ -228,6 +268,21 @@ struct CleanupHistoryView: View {
         }
         .padding(18)
         .frame(width: LayoutMetrics.historyPopoverWidth)
+        .alert("永久删除本次清理的项目？", isPresented: Binding(
+            get: { entryToPurge != nil },
+            set: { if !$0 { entryToPurge = nil } }
+        ), presenting: entryToPurge) { entry in
+            Button("永久删除", role: .destructive) {
+                isRestoring = true
+                Task {
+                    restoreMessage = await store.purge(entry.id)
+                    isRestoring = false
+                }
+            }
+            Button("取消", role: .cancel) { }
+        } message: { _ in
+            Text("仅清空本次记录中可验证的废纸篓项目，删除后无法恢复。")
+        }
     }
 
     /// 本月（当地时区）清理汇总：数据全部来自既有历史，无额外持久化。

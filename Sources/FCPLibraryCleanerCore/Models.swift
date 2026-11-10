@@ -48,6 +48,7 @@ public struct CacheItem: Codable, Hashable, Sendable, Identifiable {
     public let ruleID: String
     public let storage: CacheStorage
     public let fingerprint: FileFingerprint
+    public let reclaimableEstimate: ReclaimableSpaceEstimate?
 
     public var id: URL { url }
 
@@ -59,7 +60,8 @@ public struct CacheItem: Codable, Hashable, Sendable, Identifiable {
         confidence: DetectionConfidence,
         ruleID: String,
         storage: CacheStorage = .library,
-        fingerprint: FileFingerprint
+        fingerprint: FileFingerprint,
+        reclaimableEstimate: ReclaimableSpaceEstimate? = nil
     ) {
         self.url = url
         self.category = category
@@ -69,6 +71,7 @@ public struct CacheItem: Codable, Hashable, Sendable, Identifiable {
         self.ruleID = ruleID
         self.storage = storage
         self.fingerprint = fingerprint
+        self.reclaimableEstimate = reclaimableEstimate
     }
 }
 
@@ -145,6 +148,19 @@ public struct ScanProgress: Sendable, Equatable {
         self.files = files
         self.directories = directories
         self.allocatedBytes = allocatedBytes
+    }
+}
+
+/// Display-only totals collected from directories whose fingerprints completed.
+public struct ScanPartialResults: Sendable, Equatable {
+    public let completedDirectories: Int
+    public let totalDirectories: Int
+    public let allocatedByCategory: [CacheCategory: Int64]
+
+    public init(completedDirectories: Int, totalDirectories: Int, allocatedByCategory: [CacheCategory: Int64]) {
+        self.completedDirectories = completedDirectories
+        self.totalDirectories = totalDirectories
+        self.allocatedByCategory = allocatedByCategory
     }
 }
 
@@ -228,6 +244,24 @@ public struct LibraryScanResult: Codable, Sendable {
         cacheItems
             .filter { $0.confidence == .confirmed }
             .reduce(0) { $0 + $1.allocatedSize }
+    }
+
+    /// A range for permanently deleting all confirmed cache items, when every
+    /// involved volume provides the required allocation metadata.
+    public var reclaimableEstimate: ReclaimableSpaceEstimate? {
+        let confirmed = cacheItems.filter { $0.confidence == .confirmed }
+        guard !confirmed.isEmpty else { return nil }
+        var minimum: Int64 = 0
+        var maximum: Int64 = 0
+        for item in confirmed {
+            guard let estimate = item.reclaimableEstimate else { return nil }
+            let (nextMinimum, minOverflow) = minimum.addingReportingOverflow(estimate.minimumBytes)
+            let (nextMaximum, maxOverflow) = maximum.addingReportingOverflow(estimate.maximumBytes)
+            guard !minOverflow, !maxOverflow else { return nil }
+            minimum = nextMinimum
+            maximum = nextMaximum
+        }
+        return ReclaimableSpaceEstimate(minimumBytes: minimum, maximumBytes: maximum)
     }
 
     public var externalCleanableSize: Int64 {

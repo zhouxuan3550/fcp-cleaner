@@ -21,7 +21,10 @@ targets:
     type: library.static
     platform: macOS
     sources:
-      - Sources/FCPLibraryCleanerCore
+      - path: Sources/FCPLibraryCleanerCore
+        excludes:
+          - "**/*.baiduyun.uploading.cfg"
+          - ".*.baiduyun.uploading.cfg"
     settings:
       base:
         PRODUCT_MODULE_NAME: FCPLibraryCleanerCore
@@ -41,8 +44,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.fcpcleaner.app.workflow-extension
         PRODUCT_NAME: FCP-Cleaner-Workflow
         PRODUCT_MODULE_NAME: FCPCleanerWorkflow
-        MARKETING_VERSION: "4.0.13"
-        CURRENT_PROJECT_VERSION: "413"
+        MARKETING_VERSION: "4.2"
+        CURRENT_PROJECT_VERSION: "420"
         SKIP_INSTALL: YES
         APPLICATION_EXTENSION_API_ONLY: YES
         MACH_O_TYPE: mh_execute
@@ -69,7 +72,10 @@ targets:
     type: application
     platform: macOS
     sources:
-      - Sources/FCPLibraryCleanerApp
+      - path: Sources/FCPLibraryCleanerApp
+        excludes:
+          - "**/*.baiduyun.uploading.cfg"
+          - ".*.baiduyun.uploading.cfg"
       - path: Assets/FCP-Cleaner.icns
         buildPhase: resources
       - path: Assets/BrandLogos.xcassets
@@ -88,8 +94,8 @@ targets:
         EXECUTABLE_NAME: FCP-Cleaner
         PRODUCT_MODULE_NAME: FCPLibraryCleanerApp
         ASSETCATALOG_COMPILER_APPICON_NAME: ''
-        MARKETING_VERSION: "4.0.13"
-        CURRENT_PROJECT_VERSION: "413"
+        MARKETING_VERSION: "4.2"
+        CURRENT_PROJECT_VERSION: "420"
         LD_RUNPATH_SEARCH_PATHS:
           - $(inherited)
           - '@executable_path/../Frameworks'

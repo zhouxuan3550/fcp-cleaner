@@ -1,6 +1,20 @@
 import Foundation
 import OSLog
 
+struct CleanupValidationThrottle {
+    private var lastValidatedAt: ContinuousClock.Instant?
+    let interval: Duration
+
+    init(interval: Duration = .seconds(1)) { self.interval = interval }
+
+    func isDue(at now: ContinuousClock.Instant) -> Bool {
+        guard let lastValidatedAt else { return true }
+        return now - lastValidatedAt >= interval
+    }
+
+    mutating func didValidate(at now: ContinuousClock.Instant) { lastValidatedAt = now }
+}
+
 public struct CleanupEngine: Sendable {
     private static let logger = Logger(subsystem: "com.fcplibrarycleaner", category: "CleanupEngine")
     /// Instruments 与诊断包里的 os-log.txt 都能看到每次清理的区间与耗时。
@@ -53,6 +67,7 @@ public struct CleanupEngine: Sendable {
         var trashedItems: [TrashedItem] = []
         var freedAllocatedSize: Int64 = 0
         var errors: [CleanupError] = []
+        var validationThrottle = CleanupValidationThrottle()
 
         for entry in plan.entries {
             try Task.checkCancellation()
@@ -61,15 +76,23 @@ public struct CleanupEngine: Sendable {
                 break
             }
             do {
-                try validateLibraryStorage(for: plan)
+                if validationThrottle.isDue(at: .now) {
+                    try validateLibraryStorage(for: plan)
+                    try validateCoreData(plan.coreDataSnapshots)
+                    validationThrottle.didValidate(at: .now)
+                }
                 try validateEntryStorage(entry, fallbackVolume: libraryVolume, fileManager: fileManager)
-                try validateCoreData(plan.coreDataSnapshots)
                 try validate(entry, libraryURL: plan.libraryURL, fileManager: fileManager, verifyContents: true)
+                // A missing or mismatched snapshot disables later permanent
+                // deletion; it must not prevent the reversible move to Trash.
+                let beforeTrash = try? TrashItemSnapshot.capture(at: entry.item.url)
                 var resultingURL: NSURL?
                 try fileManager.trashItem(at: entry.item.url, resultingItemURL: &resultingURL)
                 movedToTrash.append(entry.item.url)
                 if let trashURL = resultingURL as URL? {
-                    trashedItems.append(TrashedItem(originalURL: entry.item.url, trashURL: trashURL))
+                    let afterTrash = try? TrashItemSnapshot.capture(at: trashURL)
+                    let verified = beforeTrash != nil && beforeTrash == afterTrash ? afterTrash : nil
+                    trashedItems.append(TrashedItem(originalURL: entry.item.url, trashURL: trashURL, snapshot: verified))
                 }
                 freedAllocatedSize += entry.item.allocatedSize
             } catch let error as CleanupError {
@@ -82,7 +105,7 @@ public struct CleanupEngine: Sendable {
         let elapsed = ContinuousClock.now - startedAt
         let elapsedMs = Int(elapsed.components.seconds) * 1000
             + Int(elapsed.components.attoseconds / 1_000_000_000_000_000)
-        logger.info("Cleanup finished: \(movedToTrash.count)/\(plan.entries.count) entries moved / \(freedAllocatedSize) bytes freed / \(errors.count) errors in \(elapsedMs)ms")
+        logger.info("Cleanup finished: \(movedToTrash.count)/\(plan.entries.count) entries moved / \(freedAllocatedSize) bytes moved to Trash / \(errors.count) errors in \(elapsedMs)ms")
         return CleanupResult(
             movedToTrash: movedToTrash,
             trashedItems: trashedItems,

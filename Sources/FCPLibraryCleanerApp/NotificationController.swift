@@ -16,7 +16,7 @@ final class NotificationController {
         guard enabled else { return }
         let content = UNMutableNotificationContent()
         content.title = errorCount == 0 ? "FCP Cleaner 清理完成" : "FCP Cleaner 清理结束"
-        content.body = "释放 \(FormatHelpers.bytes(freedSize)) · \(libraryCount) 个资源库" + (errorCount > 0 ? " · \(errorCount) 项失败" : "")
+        content.body = "移入废纸篓 \(FormatHelpers.bytes(freedSize)) · \(libraryCount) 个资源库" + (errorCount > 0 ? " · \(errorCount) 项失败" : "")
         content.sound = .default
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
@@ -25,7 +25,7 @@ final class NotificationController {
         guard enabled else { return }
         let content = UNMutableNotificationContent()
         content.title = "\(volumeName) 空间不足"
-        content.body = "剩余 \(FormatHelpers.bytes(availableSize))，FCP Cleaner 可释放 \(FormatHelpers.bytes(cleanableSize))"
+        content.body = "剩余 \(FormatHelpers.bytes(availableSize))，FCP Cleaner 可清理 \(FormatHelpers.bytes(cleanableSize))"
         content.sound = .default
         UNUserNotificationCenter.current().add(UNNotificationRequest(
             identifier: "low-space-\(volumeName)",
@@ -40,7 +40,7 @@ final class NotificationController {
         let content = UNMutableNotificationContent()
         content.title = "FCP Cleaner 定时检查完成"
         content.body = cleanableSize >= LibraryStore.minimumCleanableSize
-            ? "当前可释放 \(FormatHelpers.bytes(cleanableSize))（\(libraryCount) 个资源库），请打开应用确认后清理"
+            ? "当前可清理 \(FormatHelpers.bytes(cleanableSize))（\(libraryCount) 个资源库），请打开应用确认后清理"
             : "未发现足够可清理的空间"
         content.sound = .default
         UNUserNotificationCenter.current().add(UNNotificationRequest(

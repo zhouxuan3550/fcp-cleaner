@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 public struct FileFingerprint: Codable, Hashable, Sendable {
@@ -12,6 +13,11 @@ public struct FileFingerprint: Codable, Hashable, Sendable {
         self.entryCount = entryCount
         self.contentsSignature = contentsSignature
     }
+}
+
+struct FingerprintMeasurement: Sendable {
+    let fingerprint: FileFingerprint
+    let reclaimable: ReclaimableSpaceEstimate?
 }
 
 public struct CleanupPlanEntry: Codable, Hashable, Sendable, Identifiable {
@@ -102,6 +108,78 @@ public struct CleanupPlan: Codable, Sendable {
     ]
 
     public static func fingerprint(for url: URL) throws -> FileFingerprint {
+        do {
+            return try bulkFingerprint(for: url)
+        } catch BulkDirectoryWalker.Failure.unsupported {
+            return try foundationFingerprint(for: url)
+        } catch is BulkDirectoryWalker.Failure {
+            throw CleanupError.permissionDenied(url)
+        }
+    }
+
+    static func bulkFingerprint(for url: URL) throws -> FileFingerprint {
+        try bulkMeasurement(for: url, includeEstimate: false).fingerprint
+    }
+
+    static func scanMeasurement(for url: URL) throws -> FingerprintMeasurement {
+        let includeEstimate = try ReclaimableSpaceEstimate.isAPFS(url)
+        do {
+            return try bulkMeasurement(for: url, includeEstimate: includeEstimate)
+        } catch BulkDirectoryWalker.Failure.unsupported {
+            do {
+                return try FingerprintMeasurement(fingerprint: bulkFingerprint(for: url), reclaimable: nil)
+            } catch BulkDirectoryWalker.Failure.unsupported {
+                return try FingerprintMeasurement(fingerprint: foundationFingerprint(for: url), reclaimable: nil)
+            } catch is BulkDirectoryWalker.Failure {
+                throw CleanupError.permissionDenied(url)
+            }
+        } catch is BulkDirectoryWalker.Failure {
+            throw CleanupError.permissionDenied(url)
+        }
+    }
+
+    private static func bulkMeasurement(for url: URL, includeEstimate: Bool) throws -> FingerprintMeasurement {
+        var allocatedSize: Int64 = 0
+        var logicalSize: Int64 = 0
+        var entryCount = 0
+        var contentsSignature: UInt64 = 0
+        var parentHashes: [String: FNVHasher] = [:]
+        var estimate = ReclaimableSpaceEstimate.Accumulator()
+        try BulkDirectoryWalker.walk(url, includePrivateSize: includeEstimate) { entry in
+            if includeEstimate { estimate.add(entry) }
+            guard entry.type != UInt32(VDIR.rawValue), entry.type != UInt32(VLNK.rawValue) else { return }
+            allocatedSize += entry.allocatedSize
+            logicalSize += entry.logicalSize
+            entryCount += 1
+            var hasher: FNVHasher
+            if let parent = parentHashes[entry.parentPath] {
+                hasher = parent
+            } else {
+                var parent = FNVHasher()
+                parent.combine(entry.parentPath.utf8)
+                if entry.parentPath != "/" { parent.combine(UInt8(ascii: "/")) }
+                parentHashes[entry.parentPath] = parent
+                hasher = parent
+            }
+            hasher.combine(entry.name.utf8)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(entry.allocatedSize)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(entry.logicalSize)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(entry.modificationTime)
+            hasher.combine(UInt8(ascii: "|"))
+            hasher.combine(entry.fileID)
+            contentsSignature &+= hasher.hash
+        }
+        return FingerprintMeasurement(
+            fingerprint: FileFingerprint(allocatedSize: allocatedSize, logicalSize: logicalSize,
+                                         entryCount: entryCount, contentsSignature: contentsSignature),
+            reclaimable: includeEstimate ? estimate.result : nil
+        )
+    }
+
+    static func foundationFingerprint(for url: URL) throws -> FileFingerprint {
         let fileManager = FileManager.default
         var enumerationError: Error?
         guard let enumerator = fileManager.enumerator(
@@ -198,10 +276,12 @@ public struct CleanupPlan: Codable, Sendable {
 public struct TrashedItem: Sendable {
     public let originalURL: URL
     public let trashURL: URL
+    public let snapshot: TrashItemSnapshot?
 
-    public init(originalURL: URL, trashURL: URL) {
+    public init(originalURL: URL, trashURL: URL, snapshot: TrashItemSnapshot? = nil) {
         self.originalURL = originalURL
         self.trashURL = trashURL
+        self.snapshot = snapshot
     }
 }
 

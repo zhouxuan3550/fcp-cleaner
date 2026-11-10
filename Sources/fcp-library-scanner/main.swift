@@ -6,14 +6,14 @@ struct FCPLibraryScannerCLI {
     static func main() async {
         let arguments = Array(CommandLine.arguments.dropFirst())
         guard let path = arguments.first, !["--help", "-h"].contains(path) else {
-            print("用法：fcp-library-scanner <资源库.fcpbundle> [--json] [--dry-run]")
+            print("用法：fcp-library-scanner <资源库.fcpbundle> [--json] [--plan]")
             print("只读扫描，不会删除或移动文件。")
             return
         }
 
         do {
             let result = try await LibraryScanner().scan(libraryURL: URL(fileURLWithPath: path))
-            let dryRun = arguments.contains("--dry-run")
+            let dryRun = arguments.contains("--plan") || arguments.contains("--dry-run")
             let plan = dryRun
                 ? try CleanupPlan(scanResult: result, categories: Set(CacheCategory.cleanableCases))
                 : nil

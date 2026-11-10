@@ -208,6 +208,13 @@ struct ScanningView: View {
                 ScanCounter(value: library.scanProgress.directories.formatted(), label: "文件夹")
                 ScanCounter(value: FormatHelpers.bytes(library.scanProgress.allocatedBytes), label: "已扫描")
             }
+            if let partial = library.scanPartialResults {
+                HStack(spacing: 12) {
+                    ForEach(CacheCategory.cleanableCases, id: \.self) { category in
+                        ScanCounter(value: FormatHelpers.bytes(partial.allocatedByCategory[category, default: 0]), label: category.chineseName)
+                    }
+                }
+            }
             Button("取消") { store.cancelScan(library) }
                 .buttonStyle(.borderless)
                 .foregroundStyle(AppColor.secondaryText)
@@ -601,7 +608,7 @@ struct CleanupActionCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
-            Text("可释放空间")
+            Text("可清理空间")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AppColor.secondaryText)
             Text(FormatHelpers.bytes(library.spaceToFree))
@@ -610,6 +617,12 @@ struct CleanupActionCard: View {
                 .contentTransition(.numericText())
                 .shadow(color: AppColor.accent.opacity(0.35), radius: 12)
                 .animation(.snappy, value: library.spaceToFree)
+            if library.pendingFreedSize == 0, let estimate = result.reclaimableEstimate {
+                Text("彻底删除后预计 \(FormatHelpers.bytes(estimate.minimumBytes))–\(FormatHelpers.bytes(estimate.maximumBytes))")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(AppColor.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Spacer(minLength: 5)
             Button(actionTitle) {
                 store.requestClean(library)
@@ -668,19 +681,10 @@ struct CleanupStatus: View {
                     HStack(spacing: 8) {
                         Image(systemName: cleanup.errors.isEmpty ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                             .foregroundStyle(cleanup.errors.isEmpty ? AppColor.success : AppColor.danger)
-                        Text("已清理 \(FormatHelpers.bytes(cleanup.freedAllocatedSize))")
+                        Text("移入废纸篓 \(FormatHelpers.bytes(cleanup.freedAllocatedSize))")
                         if let before = library.cleanupBeforeSize, let after = library.cleanupAfterSize {
                             Text("\(FormatHelpers.bytes(before)) → \(FormatHelpers.bytes(after))")
                                 .foregroundStyle(AppColor.secondaryText)
-                            // APFS 延迟回收或废纸篓未清空时，实际统计可能小于计划释放
-                            let actual = max(0, before - after)
-                            if cleanup.freedAllocatedSize > 0,
-                               Double(actual) < Double(cleanup.freedAllocatedSize) * 0.9 {
-                                Text("空间统计待系统刷新（计划释放 \(FormatHelpers.bytes(cleanup.freedAllocatedSize))）")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundStyle(AppColor.tertiaryText)
-                                    .lineLimit(1)
-                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
