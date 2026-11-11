@@ -3,7 +3,7 @@ set -uo pipefail
 
 # ─── FCP Cleaner 多文件系统兼容矩阵 ───
 # 在 APFS / HFS+ / ExFAT 稀疏镜像上各建一个最小 FCP 资源库，
-# 用只读 CLI (fcp-library-scanner --dry-run --json) 验证白名单分类结果一致。
+# 用只读 CLI (fcp-library-scanner --json) 验证白名单分类结果一致。
 #
 # 用法：Scripts/fs_matrix.sh            （跑全部三种格式）
 #       SKIP_FORMATS="HFS+" Scripts/fs_matrix.sh

@@ -1437,11 +1437,6 @@ final class LibraryStore: NSObject {
         return record.lastKnownCleanableSize ?? 0
     }
 
-    /// 该库相对约一周前的总体积增长；采样不足返回 nil。
-    func weeklyGrowth(for record: LibraryRecord) -> Int64? {
-        LibrarySizeTrend.weeklyGrowth(samples: LibrarySizeTrend.samples(for: record.url))
-    }
-
     /// 待清理列表中周增长最大者（须为正增长），供列表突出显示。
     var fastestGrowingLibraryID: LibraryRecord.ID? {
         let records = waitingLibraries

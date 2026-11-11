@@ -88,7 +88,7 @@ targets:
         embed: true
     settings:
       base:
-        INFOPLIST_FILE: Distribution/FCP Cleaner.app/Contents/Info.plist
+        INFOPLIST_FILE: Config/App-Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.fcpcleaner.app
         PRODUCT_NAME: FCP Cleaner
         EXECUTABLE_NAME: FCP-Cleaner

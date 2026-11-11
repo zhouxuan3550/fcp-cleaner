@@ -626,7 +626,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 420;
 				EXECUTABLE_NAME = "FCP-Cleaner";
-				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
+				INFOPLIST_FILE = "Config/App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -651,7 +651,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 420;
 				EXECUTABLE_NAME = "FCP-Cleaner";
-				INFOPLIST_FILE = "Distribution/FCP Cleaner.app/Contents/Info.plist";
+				INFOPLIST_FILE = "Config/App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

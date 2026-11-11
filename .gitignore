@@ -8,10 +8,7 @@ Distribution/*.dmg
 Distribution/dmg-staging-*/
 Distribution/updates/
 Distribution/appcast.xml
-Distribution/FCP\ Cleaner.app/Contents/MacOS/
-Distribution/FCP\ Cleaner.app/Contents/Frameworks/
-Distribution/FCP\ Cleaner.app/Contents/Resources/
-Distribution/FCP\ Cleaner.app/Contents/_CodeSignature/
+Distribution/FCP\ Cleaner.app/
 
 # Legacy app bundle
 Distribution/FCP\ Library\ Cleaner.app/
