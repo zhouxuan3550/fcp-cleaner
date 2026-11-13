@@ -6,12 +6,13 @@ import FCPLibraryCleanerCore
 struct LibraryPanel: View {
     @Bindable var library: LibraryRecord
     let store: LibraryStore
+    @ScaledMetric(relativeTo: .body) private var headerIconSize: CGFloat = 20
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 13) {
                 Image(systemName: "square.stack.3d.up.fill")
-                    .font(.system(size: 20))
+                    .font(.system(size: headerIconSize))
                     .foregroundStyle(AppColor.accent)
                     .frame(width: 42, height: 42)
                     .background(AppColor.control)
@@ -19,9 +20,9 @@ struct LibraryPanel: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(library.displayName)
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .font(AppFont.title(.semibold, design: .rounded))
                     Text(shortPath(library.url))
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(AppFont.small(design: .monospaced))
                         .foregroundStyle(AppColor.secondaryText)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -111,7 +112,7 @@ struct LibraryPanel: View {
                     Button("从列表移除", role: .destructive) { store.remove([library]) }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(AppFont.body(.semibold))
                         .foregroundStyle(AppColor.secondaryText)
                         .frame(width: 32, height: 32)
                 }
@@ -165,7 +166,7 @@ struct LibraryStatusBadge: View {
                 "已就绪"
             )
         }
-        .font(.system(size: 11, weight: .semibold))
+        .font(AppFont.small(.semibold))
         .foregroundStyle(AppColor.secondaryText)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -177,14 +178,16 @@ struct LibraryStatusBadge: View {
 struct QueuedScanView: View {
     let library: LibraryRecord
     let store: LibraryStore
+    @ScaledMetric(relativeTo: .largeTitle) private var queuedIconSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .title2) private var queuedTitleSize: CGFloat = 19
 
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "hourglass")
-                .font(.system(size: 28, weight: .light))
+                .font(.system(size: queuedIconSize, weight: .light))
                 .foregroundStyle(AppColor.accent)
             Text("等待扫描")
-                .font(.system(size: 19, weight: .semibold, design: .rounded))
+                .font(.system(size: queuedTitleSize, weight: .semibold, design: .rounded))
             Button("取消") { store.cancelScan(library) }
                 .buttonStyle(.borderless)
                 .foregroundStyle(AppColor.secondaryText)
@@ -195,6 +198,7 @@ struct QueuedScanView: View {
 struct ScanningView: View {
     let library: LibraryRecord
     let store: LibraryStore
+    @ScaledMetric(relativeTo: .title2) private var scanningTitleSize: CGFloat = 20
 
     var body: some View {
         VStack(spacing: 20) {
@@ -202,7 +206,7 @@ struct ScanningView: View {
                 .controlSize(.large)
                 .tint(AppColor.accent)
             Text("正在扫描资源库")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .font(.system(size: scanningTitleSize, weight: .semibold, design: .rounded))
             HStack(spacing: 12) {
                 ScanCounter(value: library.scanProgress.files.formatted(), label: "文件")
                 ScanCounter(value: library.scanProgress.directories.formatted(), label: "文件夹")
@@ -220,7 +224,7 @@ struct ScanningView: View {
                 .foregroundStyle(AppColor.secondaryText)
             // 大库扫描是体验的情绪谷底：明确告知不阻塞操作，给用户掌控感
             Text("扫描在后台进行，可继续浏览其他资源库")
-                .font(.system(size: 11, weight: .medium))
+                .font(AppFont.small(.medium))
                 .foregroundStyle(AppColor.tertiaryText)
         }
     }
@@ -233,7 +237,7 @@ struct ScanCounter: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .font(AppFont.heading(.semibold, design: .monospaced))
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .animation(.snappy(duration: 0.25), value: value)
@@ -250,14 +254,15 @@ struct ScanCounter: View {
 struct ScanErrorView: View {
     let library: LibraryRecord
     let store: LibraryStore
+    @ScaledMetric(relativeTo: .largeTitle) private var errorIconSize: CGFloat = 30
 
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 30))
+                .font(.system(size: errorIconSize))
                 .foregroundStyle(AppColor.danger)
             Text(library.scanError ?? "尚未扫描")
-                .font(.system(size: 13))
+                .font(AppFont.body())
                 .foregroundStyle(AppColor.secondaryText)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 520)
@@ -287,7 +292,7 @@ struct ScanResultsView: View {
 
                 if result.externalCleanableSize > 0 {
                     Label("包含外置缓存 \(FormatHelpers.bytes(result.externalCleanableSize))", systemImage: "externaldrive.fill")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppFont.small(.medium))
                         .foregroundStyle(AppColor.accent)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -320,20 +325,20 @@ struct SizeTrendCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AppFont.small(.semibold))
                         .foregroundStyle(AppColor.secondaryText)
                     Text("体积趋势")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .font(AppFont.body(.semibold, design: .rounded))
                     Spacer(minLength: 0)
                     // 周增长与趋势曲线同源（同一份采样），收进卡片头部替代独立的漂浮标签
                     if let growth = LibrarySizeTrend.weeklyGrowth(samples: samples), growth > 0 {
                         Label("本周 +\(FormatHelpers.bytes(growth))", systemImage: "arrow.up.forward")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AppFont.small(.semibold))
                             .foregroundStyle(AppColor.warning)
                             .help("与约一周前的扫描采样相比，资源库总体积的增长量")
                     }
                     Text("近 \(samples.count) 次采样")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppFont.small(.medium))
                         .foregroundStyle(AppColor.tertiaryText)
                 }
                 Chart(samples, id: \.day) { sample in
@@ -363,7 +368,7 @@ struct SizeTrendCard: View {
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
                                 Text(date, format: .dateTime.month().day())
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(AppFont.caption(.medium))
                                     .foregroundStyle(AppColor.tertiaryText)
                             }
                         }
@@ -375,7 +380,7 @@ struct SizeTrendCard: View {
                         AxisValueLabel {
                             if let bytes = value.as(Int64.self) {
                                 Text(FormatHelpers.bytes(bytes))
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(AppFont.caption(.medium))
                                     .foregroundStyle(AppColor.tertiaryText)
                             }
                         }
@@ -468,7 +473,7 @@ struct StorageBreakdownBar: View {    let result: LibraryScanResult
                 legendItem(color: AppColor.tertiaryText, label: "原始媒体/工程", bytes: otherOrMediaSize)
                 Spacer(minLength: 0)
             }
-            .font(.system(size: 11, weight: .medium))
+            .font(AppFont.small(.medium))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -503,21 +508,22 @@ struct MetricCard: View {
     let value: String
     let icon: String
     var emphasized = false
+    @ScaledMetric(relativeTo: .title2) private var valueSize: CGFloat = 20
 
     var body: some View {
         HStack(spacing: 13) {
             Image(systemName: icon)
-                .font(.system(size: 17, weight: .semibold))
+                .font(AppFont.title(.semibold))
                 .foregroundStyle(emphasized ? .white : AppColor.secondaryText)
                 .frame(width: 38, height: 38)
                 .background(emphasized ? AppColor.accent : AppColor.control)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(label)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.secondaryText)
                 Text(value)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.system(size: valueSize, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .contentTransition(.numericText())
             }
@@ -554,7 +560,7 @@ struct CleanupList: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("最大安全清理")
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(AppFont.title(.semibold, design: .rounded))
                 .padding(.bottom, 10)
 
             ForEach(CacheCategory.cleanableCases, id: \.self) { category in
@@ -567,15 +573,15 @@ struct CleanupList: View {
                         .background(AppColor.control)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     Text(category.chineseName)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(AppFont.body(.medium))
                     Spacer()
                     if isEmpty {
                         Text("—")
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AppFont.callout(design: .monospaced))
                             .foregroundStyle(AppColor.tertiaryText)
                     } else {
                         Text(FormatHelpers.bytes(info.size))
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(AppFont.callout(design: .monospaced))
                             .foregroundStyle(AppColor.secondaryText)
                     }
                 }
@@ -597,6 +603,7 @@ struct CleanupActionCard: View {
     let library: LibraryRecord
     let result: LibraryScanResult
     let store: LibraryStore
+    @ScaledMetric(relativeTo: .largeTitle) private var heroNumberSize: CGFloat = 32
 
     private var protectedAnalysisSize: Int64 {
         result.observedCacheItems.reduce(0) { $0 + $1.allocatedSize }
@@ -609,17 +616,17 @@ struct CleanupActionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
             Text("可清理空间")
-                .font(.system(size: 12, weight: .medium))
+                .font(AppFont.callout(.medium))
                 .foregroundStyle(AppColor.secondaryText)
             Text(FormatHelpers.bytes(library.spaceToFree))
-                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .font(.system(size: heroNumberSize, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .shadow(color: AppColor.accent.opacity(0.35), radius: 12)
                 .animation(.snappy, value: library.spaceToFree)
             if library.pendingFreedSize == 0, let estimate = result.reclaimableEstimate {
                 Text("彻底删除后预计 \(FormatHelpers.bytes(estimate.minimumBytes))–\(FormatHelpers.bytes(estimate.maximumBytes))")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -633,20 +640,20 @@ struct CleanupActionCard: View {
 
             if isBelowThreshold && !store.isPreflighting && !store.isCleaning {
                 Label("低于 \(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)) 的资源库会自动跳过", systemImage: "info.circle")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.tertiaryText)
                     .lineLimit(1)
             }
 
             if protectedAnalysisSize > 0 {
                 Label("已保护分析文件 \(FormatHelpers.bytes(protectedAnalysisSize))", systemImage: "lock.fill")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.tertiaryText)
                     .lineLimit(1)
             }
             if let seconds = store.estimatedCleanupDuration(forBytes: library.spaceToFree, volumeID: library.volumeID) {
                 Label("预计耗时 \(FormatHelpers.estimatedTime(seconds))", systemImage: "clock")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.tertiaryText)
                     .lineLimit(1)
             }
@@ -695,7 +702,7 @@ struct CleanupStatus: View {
                         .textSelection(.enabled)
                 }
             }
-            .font(.system(size: 12, weight: .medium))
+            .font(AppFont.callout(.medium))
             if let retryPlan = library.failedCleanupPlan {
                 Button("重试失败项 \(retryPlan.entries.count)") {
                     store.requestRetry(library)

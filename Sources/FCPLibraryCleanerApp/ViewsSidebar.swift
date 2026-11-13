@@ -100,7 +100,7 @@ struct LibrarySidebar: View {
             Text("资源库 \(health.total) 个")
                 .foregroundStyle(AppColor.tertiaryText)
         }
-        .font(.system(size: 11, weight: .medium))
+        .font(AppFont.small(.medium))
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }
@@ -119,12 +119,12 @@ struct LibrarySidebar: View {
                     } label: {
                         HStack(spacing: 3) {
                             Text(filter.title)
-                                .font(.system(size: 11, weight: .medium))
+                                .font(AppFont.small(.medium))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
                             Text(count.formatted())
                                 .monospacedDigit()
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(AppFont.caption(.semibold))
                                 .foregroundStyle(filter == store.libraryFilter ? Color.white.opacity(0.9) : AppColor.tertiaryText)
                         }
                         .frame(maxWidth: .infinity)
@@ -151,11 +151,11 @@ struct LibrarySidebar: View {
             HStack(spacing: 6) {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AppFont.small(.semibold))
                         .foregroundStyle(AppColor.tertiaryText)
                     TextField("搜索资源库", text: $store.searchText)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFont.callout(.medium))
                         .focused(searchFocused)
                         .onSubmit {
                             // 回车选中首个搜索结果并退出搜索，形成 ⌘F → 输入 → 回车 的键盘流。
@@ -169,7 +169,7 @@ struct LibrarySidebar: View {
                             store.searchText = ""
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 12))
+                                .font(AppFont.callout())
                                 .foregroundStyle(AppColor.tertiaryText)
                                 .frame(width: 20, height: 20)
                                 .contentShape(Rectangle())
@@ -197,7 +197,7 @@ struct LibrarySidebar: View {
                     }
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(AppFont.small(.semibold))
                         .foregroundStyle(AppColor.secondaryText)
                         .frame(width: 28, height: 28)
                         .background(AppColor.control)
@@ -222,7 +222,7 @@ struct LibrarySidebar: View {
                     }
                 } label: {
                     Image(systemName: "clock")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppFont.callout(.semibold))
                         .foregroundStyle(AppColor.secondaryText)
                         .frame(width: 28, height: 28)
                         .background(AppColor.control)
@@ -240,7 +240,7 @@ struct LibrarySidebar: View {
                         }
                     } label: {
                         Image(systemName: store.areAllCleanableLibrariesSelected ? "checkmark.circle.fill" : "checkmark.circle")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(AppFont.small(.semibold))
                             .foregroundStyle(store.areAllCleanableLibrariesSelected ? AppColor.accent : AppColor.secondaryText)
                             .frame(width: 28, height: 28)
                             .background(AppColor.control)
@@ -290,19 +290,19 @@ struct SidebarDiskHeader: View {
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: isLowSpace ? "externaldrive.badge.exclamationmark" : "externaldrive.fill")
-                .font(.system(size: 11, weight: .semibold))
+                .font(AppFont.small(.semibold))
                 .foregroundStyle(isSelected ? AppColor.accent : (isLowSpace ? AppColor.danger : AppColor.tertiaryText))
             Text(section.name)
-                .font(.system(size: 11, weight: .semibold))
+                .font(AppFont.small(.semibold))
                 .foregroundStyle(isSelected ? AppColor.primaryText : AppColor.secondaryText)
                 .lineLimit(1)
             Text(FormatHelpers.bytes(section.totalCleanable))
-                .font(.system(size: 11, weight: .medium))
+                .font(AppFont.small(.medium))
                 .foregroundStyle(AppColor.secondaryText)
                 .monospacedDigit()
             Spacer(minLength: 4)
             Text("\(section.libraries.count) 个")
-                .font(.system(size: 11, weight: .medium))
+                .font(AppFont.small(.medium))
                 .foregroundStyle(AppColor.tertiaryText)
         }
         .padding(.horizontal, 8)
@@ -340,12 +340,12 @@ struct LibraryRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 5) {
                             Text(library.displayName)
-                                .font(.system(size: 13, weight: .medium))
+                                .font(AppFont.body(.medium))
                                 .foregroundStyle(AppColor.primaryText)
                                 .lineLimit(1)
                             if isFastestGrowing {
                                 Label("增长最快", systemImage: "arrow.up.forward")
-                                    .font(.system(size: 9, weight: .bold))
+                                    .font(AppFont.caption(.bold))
                                     .foregroundStyle(AppColor.accent)
                                     .padding(.horizontal, 5)
                                     .padding(.vertical, 2)
@@ -355,7 +355,7 @@ struct LibraryRow: View {
                             }
                         }
                         Text(subtitle)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(AppFont.small(.medium))
                             .foregroundStyle(library.scanError != nil || library.cleanupError != nil ? AppColor.danger : AppColor.tertiaryText)
                             .lineLimit(1)
                     }
@@ -395,7 +395,7 @@ struct LibraryRow: View {
                 }
             } label: {
                 Image(systemName: isBatchSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(AppFont.heading(.medium))
                     .foregroundStyle(isBatchSelected ? AppColor.accent : AppColor.tertiaryText)
             }
             .buttonStyle(.plain)
@@ -403,7 +403,7 @@ struct LibraryRow: View {
             .help(isBatchSelected ? "取消勾选" : "加入批量清理")
         } else {
             Image(systemName: store.libraryFilter == .scanning ? "hourglass" : (store.libraryFilter == .ignored ? "bell.slash" : "minus.circle"))
-                .font(.system(size: 15, weight: .medium))
+                .font(AppFont.heading(.medium))
                 .foregroundStyle(AppColor.tertiaryText)
         }
     }
@@ -416,7 +416,7 @@ struct LibraryRow: View {
                 .tint(AppColor.accent)
         } else {
             Text(FormatHelpers.bytes(library.cleanableDisplaySize))
-                .font(.system(size: 11, weight: .medium))
+                .font(AppFont.small(.medium))
                 .foregroundStyle(AppColor.secondaryText)
                 .monospacedDigit()
         }
@@ -462,14 +462,14 @@ struct BatchActionBar: View {
         HStack(spacing: 12) {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(AppFont.heading(.semibold))
                     .foregroundStyle(AppColor.accent)
                 Text("已选 \(store.batchSelectedIDs.count) 个资源库")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AppFont.callout(.semibold))
             }
 
             Text(FormatHelpers.bytes(store.selectedBatchSpace))
-                .font(.system(size: 11, weight: .semibold))
+                .font(AppFont.small(.semibold))
                 .foregroundStyle(AppColor.accent)
                 .monospacedDigit()
                 .padding(.horizontal, 8)
@@ -517,16 +517,18 @@ struct BatchActionBar: View {
 
 struct NoCleanupView: View {
     let store: LibraryStore
+    @ScaledMetric(relativeTo: .title2) private var emptyIconSize: CGFloat = 36
+    @ScaledMetric(relativeTo: .title2) private var emptyTitleSize: CGFloat = 19
 
     var body: some View {
         VStack(spacing: 13) {
             Image(systemName: emptyIcon)
-                .font(.system(size: 36, weight: .light))
+                .font(.system(size: emptyIconSize, weight: .light))
                 .foregroundStyle(store.libraryFilter == .waiting ? AppColor.success : AppColor.secondaryText)
             Text(emptyTitle)
-                .font(.system(size: 19, weight: .semibold, design: .rounded))
+                .font(.system(size: emptyTitleSize, weight: .semibold, design: .rounded))
             Text(emptySubtitle)
-                .font(.system(size: 12, weight: .medium))
+                .font(AppFont.callout(.medium))
                 .foregroundStyle(AppColor.secondaryText)
             Button("重新扫描") { store.discoverLibraries() }
                 .buttonStyle(HeaderButtonStyle())
@@ -569,6 +571,8 @@ struct NoCleanupView: View {
 struct EmptyDropZone: View {
     let store: LibraryStore
     let isDropTargeted: Bool
+    @ScaledMetric(relativeTo: .largeTitle) private var dropIconSize: CGFloat = 39
+    @ScaledMetric(relativeTo: .title2) private var dropTitleSize: CGFloat = 20
 
     var body: some View {
         VStack(spacing: 14) {
@@ -578,13 +582,13 @@ struct EmptyDropZone: View {
                     .tint(AppColor.accent)
             } else {
                 Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 39, weight: .light))
+                    .font(.system(size: dropIconSize, weight: .light))
                     .foregroundStyle(AppColor.secondaryText)
             }
             Text(store.isDiscovering ? "正在查找 FCP 资源库" : "拖入 .fcpbundle 资源库")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .font(.system(size: dropTitleSize, weight: .semibold, design: .rounded))
             Text(store.isDiscovering ? "发现后将自动扫描" : "双击此处选择")
-                .font(.system(size: 13, weight: .medium))
+                .font(AppFont.body(.medium))
                 .foregroundStyle(AppColor.secondaryText)
             if let error = store.discoveryError {
                 Text(error)

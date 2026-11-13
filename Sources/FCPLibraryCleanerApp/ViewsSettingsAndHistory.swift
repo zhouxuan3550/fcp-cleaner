@@ -8,12 +8,12 @@ struct AppSettings: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("设置")
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .font(AppFont.title(.semibold, design: .rounded))
 
             sectionHeader("扫描")
             HStack {
                 Text("工作目录")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AppFont.body(.semibold))
                 Spacer()
                 Button("添加") { store.openWorkDirectoryPanel() }
                     .buttonStyle(.borderless)
@@ -31,16 +31,16 @@ struct AppSettings: View {
                                 .foregroundStyle(AppColor.accent)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(url.lastPathComponent)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(AppFont.callout(.medium))
                                     .lineLimit(1)
                                 Text(url.path)
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .font(AppFont.caption(design: .monospaced))
                                     .foregroundStyle(AppColor.secondaryText)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                                 if let status = store.workDirectoryStatuses[url] {
                                     Text(workDirectoryStatusText(status))
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(AppFont.caption(.medium))
                                         .foregroundStyle(status.failed ? AppColor.danger : AppColor.tertiaryText)
                                         .lineLimit(1)
                                 }
@@ -85,7 +85,7 @@ struct AppSettings: View {
                     .frame(maxHeight: 150)
                     .padding(.top, 4)
                 }
-                .font(.system(size: 12, weight: .medium))
+                .font(AppFont.callout(.medium))
                 .help("仅识别工作目录中的疑似缓存文件夹，无法确认其是否被其他资源库使用。")
             }
 
@@ -97,14 +97,14 @@ struct AppSettings: View {
                             Image(systemName: "bell.slash.fill")
                                 .foregroundStyle(AppColor.tertiaryText)
                             Text(path)
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(AppFont.caption(design: .monospaced))
                                 .foregroundStyle(AppColor.secondaryText)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             Spacer(minLength: 4)
                             Button("恢复") { store.resumeDirectory(path) }
                                 .buttonStyle(.borderless)
-                                .font(.system(size: 11, weight: .medium))
+                                .font(AppFont.small(.medium))
                         }
                         .padding(9)
                         .background(AppColor.control)
@@ -120,10 +120,10 @@ struct AppSettings: View {
             }
             .pickerStyle(.segmented)
             Text("到点自动发现并增量扫描，完成后仅发送通知，绝不自动清理")
-                .font(.system(size: 10, weight: .medium))
+                .font(AppFont.caption(.medium))
                 .foregroundStyle(AppColor.tertiaryText)
             Stepper("磁盘预警：\(store.lowSpaceWarningGB) GB", value: $store.lowSpaceWarningGB, in: 10...500, step: 10)
-                .font(.system(size: 12, weight: .medium))
+                .font(AppFont.callout(.medium))
 
             Divider()
             sectionHeader("通知与外观")
@@ -160,7 +160,7 @@ struct AppSettings: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 11, weight: .semibold))
+            .font(AppFont.small(.semibold))
             .foregroundStyle(AppColor.tertiaryText)
             .textCase(.uppercase)
     }
@@ -177,7 +177,7 @@ struct CleanupHistoryView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("清理记录")
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .font(AppFont.title(.semibold, design: .rounded))
                 Spacer()
                 if !store.entries.isEmpty {
                     Menu {
@@ -185,7 +185,7 @@ struct CleanupHistoryView: View {
                         Button("导出 JSON") { store.presentExportPanel(as: .json) }
                     } label: {
                         Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(AppFont.callout(.medium))
                     }
                     .accessibilityLabel("导出清理记录")
                     .menuStyle(.borderlessButton)
@@ -197,7 +197,7 @@ struct CleanupHistoryView: View {
             }
             if let monthly = monthlySummary {
                 Label("本月已清理 \(monthly.count) 次 · 移入废纸篓 \(FormatHelpers.bytes(monthly.freed))", systemImage: "calendar.badge.checkmark")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AppFont.small(.semibold))
                     .foregroundStyle(AppColor.accent)
                     .help("按清理记录所在月份统计（当地时间）")
             }
@@ -206,7 +206,7 @@ struct CleanupHistoryView: View {
             }
             if store.entries.isEmpty {
                 Text("暂无记录")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppFont.callout(.medium))
                     .foregroundStyle(AppColor.secondaryText)
                     .frame(maxWidth: .infinity, minHeight: 90)
             } else {
@@ -218,14 +218,14 @@ struct CleanupHistoryView: View {
                                     .foregroundStyle(entry.errorMessages.isEmpty ? AppColor.success : AppColor.danger)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(entry.libraryName)
-                                        .font(.system(size: 12, weight: .semibold))
+                                        .font(AppFont.callout(.semibold))
                                         .lineLimit(1)
                                     Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · 移入废纸篓 \(FormatHelpers.bytes(entry.freedSize))")
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(AppFont.small(.medium))
                                         .foregroundStyle(AppColor.secondaryText)
                                     if let delta = entry.availableSpaceChange {
                                         Text("可用空间变化 \(delta < 0 ? "−" : "+")\(FormatHelpers.bytes(delta.magnitude > UInt64(Int64.max) ? Int64.max : Int64(delta.magnitude)))")
-                                            .font(.system(size: 11, weight: .medium))
+                                            .font(AppFont.small(.medium))
                                             .foregroundStyle(AppColor.secondaryText)
                                             .help("此值包含操作期间磁盘上其他活动造成的变化")
                                     }
@@ -262,7 +262,7 @@ struct CleanupHistoryView: View {
             }
             if let restoreMessage {
                 Text(restoreMessage)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.secondaryText)
             }
         }
@@ -306,10 +306,10 @@ struct CleanupHistoryView: View {
                             .foregroundStyle(AppColor.warning)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("上次清理中断：\(item.libraryName)")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(AppFont.callout(.semibold))
                                 .lineLimit(1)
                             Text("\(item.pendingCount) 项未完成 · \(FormatHelpers.bytes(item.pendingSize))")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(AppFont.small(.medium))
                                 .foregroundStyle(AppColor.secondaryText)
                         }
                         Spacer(minLength: 6)

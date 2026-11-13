@@ -44,7 +44,7 @@ struct BrandLinksView: View {
             .buttonStyle(.plain)
             .foregroundStyle(AppColor.secondaryText)
         }
-        .font(.system(size: 12, weight: .medium))
+        .font(AppFont.callout(.medium))
     }
 
     private func logo(_ name: String, size: CGFloat) -> some View {

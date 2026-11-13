@@ -23,23 +23,23 @@ struct SingleCleanConfirmationSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
                 Image(systemName: "trash.fill")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppFont.title(.semibold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(AppColor.danger)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(confirmation.isRetry ? "重试失败项目？" : "将已选生成文件移入废纸篓？")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .font(AppFont.title(.semibold, design: .rounded))
                     Text(confirmation.record.displayName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFont.callout(.medium))
                         .foregroundStyle(AppColor.secondaryText)
                         .lineLimit(1)
                 }
             }
 
             Text("可按 Event 或共享目录取消勾选；确认后仅清理所选条目，全部仍逐项复核指纹")
-                .font(.system(size: 10, weight: .medium))
+                .font(AppFont.caption(.medium))
                 .foregroundStyle(AppColor.tertiaryText)
 
             ScrollView {
@@ -59,11 +59,11 @@ struct SingleCleanConfirmationSheet: View {
                                     VStack(alignment: .leading, spacing: 1) {
                                         HStack(spacing: 5) {
                                             Text(item.locationLabel)
-                                                .font(.system(size: 12, weight: .medium))
+                                                .font(AppFont.callout(.medium))
                                                 .lineLimit(1)
                                             if item.entry.item.storage == .external {
                                                 Text("外置")
-                                                    .font(.system(size: 9, weight: .semibold))
+                                                    .font(AppFont.caption(.semibold))
                                                     .foregroundStyle(AppColor.accent)
                                                     .padding(.horizontal, 4).padding(.vertical, 1)
                                                     .background(AppColor.accent.opacity(0.16))
@@ -71,17 +71,17 @@ struct SingleCleanConfirmationSheet: View {
                                             }
                                         }
                                         Text(item.pathDetail)
-                                            .font(.system(size: 10, design: .monospaced))
+                                            .font(AppFont.caption(design: .monospaced))
                                             .foregroundStyle(AppColor.tertiaryText)
                                             .lineLimit(1)
                                     }
                                     Spacer(minLength: 6)
                                     Text("\(item.entry.item.fingerprint.entryCount) 个文件")
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(AppFont.small(.medium))
                                         .foregroundStyle(AppColor.tertiaryText)
                                         .opacity(excluded.contains(item.id) ? 0.4 : 1)
                                     Text(FormatHelpers.bytes(item.entry.item.allocatedSize))
-                                        .font(.system(size: 12, design: .monospaced))
+                                        .font(AppFont.callout(design: .monospaced))
                                         .foregroundStyle(AppColor.secondaryText)
                                         .opacity(excluded.contains(item.id) ? 0.4 : 1)
                                 }
@@ -99,13 +99,13 @@ struct SingleCleanConfirmationSheet: View {
                     Divider().overlay(AppColor.border)
                     HStack {
                         Text("合计")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AppFont.callout(.semibold))
                         Text("已选 \(includedURLs.count)/\(confirmation.plan.entries.count) 项")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(AppFont.small(.medium))
                             .foregroundStyle(AppColor.tertiaryText)
                         Spacer()
                         Text(FormatHelpers.bytes(selectedPlan.spaceToFree))
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(AppFont.body(.bold, design: .rounded))
                             .monospacedDigit()
                             .contentTransition(.numericText())
                             .animation(.snappy(duration: 0.2), value: selectedPlan.spaceToFree)
@@ -116,7 +116,7 @@ struct SingleCleanConfirmationSheet: View {
                             Image(systemName: "clock")
                             Text("预计耗时 \(FormatHelpers.estimatedTime(seconds))")
                         }
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppFont.small(.medium))
                         .foregroundStyle(AppColor.tertiaryText)
                         .padding(.top, 6)
                     }
@@ -160,7 +160,7 @@ struct SingleCleanConfirmationSheet: View {
             if isExcluded { excluded.remove(url) } else { excluded.insert(url) }
         } label: {
             Image(systemName: isExcluded ? "circle" : "checkmark.circle.fill")
-                .font(.system(size: 15, weight: .medium))
+                .font(AppFont.heading(.medium))
                 .foregroundStyle(isExcluded ? AppColor.tertiaryText : AppColor.accent)
         }
         .buttonStyle(.plain)
@@ -183,24 +183,24 @@ struct SingleCleanConfirmationSheet: View {
                 }
             } label: {
                 Image(systemName: noneIncluded ? "circle" : (allIncluded ? "checkmark.circle.fill" : "circle.lefthalf.filled"))
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppFont.heading(.medium))
                     .foregroundStyle(noneIncluded ? AppColor.tertiaryText : AppColor.accent)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(allIncluded ? "取消选择全部\(group.category.chineseName)" : "选择全部\(group.category.chineseName)")
 
             Image(systemName: group.category.iconName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(AppFont.callout(.semibold))
                 .foregroundStyle(AppColor.accent)
                 .frame(width: 24)
             Text(group.category.chineseName)
-                .font(.system(size: 12, weight: .medium))
+                .font(AppFont.callout(.medium))
             Text("已选 \(included.count)/\(group.entries.count) 项")
-                .font(.system(size: 11, weight: .medium))
+                .font(AppFont.small(.medium))
                 .foregroundStyle(AppColor.tertiaryText)
             Spacer()
             Text(FormatHelpers.bytes(includedTotal))
-                .font(.system(size: 12, design: .monospaced))
+                .font(AppFont.callout(design: .monospaced))
                 .foregroundStyle(AppColor.secondaryText)
                 .contentTransition(.numericText())
                 .animation(.snappy(duration: 0.2), value: includedTotal)
@@ -219,22 +219,22 @@ struct BatchCleanConfirmationSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
                 Image(systemName: "trash.fill")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(AppFont.title(.semibold))
                     .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
                     .background(AppColor.danger)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
                     Text("批量清理 \(confirmation.entries.count) 个资源库？")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .font(AppFont.title(.semibold, design: .rounded))
                     Text("共 \(FormatHelpers.bytes(confirmation.totalSpaceToFree))")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFont.callout(.medium))
                         .foregroundStyle(AppColor.secondaryText)
                     if let seconds = store.estimatedBatchCleanupDuration(
                         entries: confirmation.entries.map { (bytes: $0.plan.spaceToFree, volumeID: $0.record.volumeID) }
                     ) {
                         Text("预计耗时 \(FormatHelpers.estimatedTime(seconds))")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(AppFont.small(.medium))
                             .foregroundStyle(AppColor.tertiaryText)
                     }
                 }
@@ -258,14 +258,14 @@ struct BatchCleanConfirmationSheet: View {
                                     if size > 0 {
                                         HStack(spacing: 10) {
                                             Image(systemName: category.iconName)
-                                                .font(.system(size: 11, weight: .semibold))
+                                                .font(AppFont.small(.semibold))
                                                 .foregroundStyle(AppColor.accent)
                                                 .frame(width: 20)
                                             Text(category.chineseName)
-                                                .font(.system(size: 11, weight: .medium))
+                                                .font(AppFont.small(.medium))
                                             Spacer()
                                             Text(FormatHelpers.bytes(size))
-                                                .font(.system(size: 11, design: .monospaced))
+                                                .font(AppFont.small(design: .monospaced))
                                                 .foregroundStyle(AppColor.secondaryText)
                                         }
                                         .padding(.vertical, 4)
@@ -276,14 +276,14 @@ struct BatchCleanConfirmationSheet: View {
                         } label: {
                             HStack(spacing: 10) {
                                 Image(systemName: "square.stack.3d.up.fill")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(AppFont.small(.semibold))
                                     .foregroundStyle(AppColor.accent)
                                 Text(entry.record.displayName)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(AppFont.callout(.medium))
                                     .lineLimit(1)
                                 Spacer()
                                 Text(FormatHelpers.bytes(entry.plan.spaceToFree))
-                                    .font(.system(size: 12, design: .monospaced))
+                                    .font(AppFont.callout(design: .monospaced))
                                     .foregroundStyle(AppColor.secondaryText)
                             }
                             .padding(.vertical, 7)
@@ -323,18 +323,19 @@ struct BatchCleanConfirmationSheet: View {
 struct CleanupSummarySheet: View {
     let summary: CleanupSummary
     @Environment(\.dismiss) private var dismiss
+    @ScaledMetric(relativeTo: .title2) private var summaryIconSize: CGFloat = 23
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 12) {
                 Image(systemName: summary.errorCount == 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                    .font(.system(size: 23, weight: .semibold))
+                    .font(.system(size: summaryIconSize, weight: .semibold))
                     .foregroundStyle(summary.errorCount == 0 ? AppColor.success : AppColor.danger)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(summary.title)
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .font(AppFont.title(.semibold, design: .rounded))
                     Text("移入废纸篓 \(FormatHelpers.bytes(summary.totalFreedSize)) · \(summary.totalItemCount) 项 · \(FormatHelpers.duration(summary.elapsedSeconds))")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFont.callout(.medium))
                         .foregroundStyle(AppColor.secondaryText)
                 }
             }
@@ -347,18 +348,18 @@ struct CleanupSummarySheet: View {
                                 .foregroundStyle(library.succeeded ? AppColor.success : AppColor.danger)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(library.name)
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(AppFont.body(.semibold))
                                     .lineLimit(1)
                                 if let errorMessage = library.errorMessage {
                                     Text(errorMessage)
-                                        .font(.system(size: 10, weight: .medium))
+                                        .font(AppFont.caption(.medium))
                                         .foregroundStyle(AppColor.danger)
                                         .lineLimit(2)
                                 }
                             }
                             Spacer(minLength: 8)
                             Text("\(FormatHelpers.bytes(library.freedSize)) · \(library.itemCount) 项")
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .font(AppFont.small(.medium, design: .monospaced))
                                 .foregroundStyle(AppColor.secondaryText)
                         }
                         .padding(11)
@@ -381,36 +382,37 @@ struct CleanupSummarySheet: View {
 struct CleanupNoticeView: View {
     let notice: CleanupNotice
     let dismiss: () -> Void
+    @ScaledMetric(relativeTo: .title2) private var noticeIconSize: CGFloat = 22
 
     var body: some View {
         HStack(spacing: 13) {
             Image(systemName: notice.errorCount == 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: noticeIconSize, weight: .semibold))
                 .foregroundStyle(notice.errorCount == 0 ? AppColor.success : AppColor.danger)
             VStack(alignment: .leading, spacing: 4) {
                 Text(notice.title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(AppFont.body(.semibold))
                     .lineLimit(1)
                 Text(summary)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.secondaryText)
                     .lineLimit(1)
                 if let errorMessage = notice.errorMessage {
                     Text(errorMessage)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppFont.small(.medium))
                         .foregroundStyle(AppColor.danger)
                         .lineLimit(2)
                 }
                 if !categorySummary.isEmpty {
                     Text(categorySummary)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(AppFont.small(.medium))
                         .foregroundStyle(AppColor.tertiaryText)
                         .lineLimit(1)
                 }
             }
             Button(action: dismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(AppFont.caption(.bold))
                     .frame(width: 24, height: 24)
                     .background(AppColor.control)
                     .clipShape(Circle())
@@ -471,14 +473,14 @@ struct SecurityPreflightFlowView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 5) {
                 Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AppFont.small(.semibold))
                     .foregroundStyle(AppColor.success)
                 Text("安全预检与保护机制")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AppFont.small(.semibold))
                     .foregroundStyle(AppColor.primaryText)
                 Spacer()
                 Text("预检通过")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(AppFont.caption(.medium))
                     .foregroundStyle(AppColor.success)
             }
 
@@ -500,16 +502,16 @@ struct SecurityPreflightFlowView: View {
     private func stepRow(icon: String, title: String, desc: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 10))
+                .font(AppFont.caption())
                 .foregroundStyle(AppColor.success)
             Text(title)
-                .font(.system(size: 10, weight: .semibold))
+                .font(AppFont.caption(.semibold))
                 .foregroundStyle(AppColor.primaryText)
             Text("·")
-                .font(.system(size: 10))
+                .font(AppFont.caption())
                 .foregroundStyle(AppColor.tertiaryText)
             Text(desc)
-                .font(.system(size: 10))
+                .font(AppFont.caption())
                 .foregroundStyle(AppColor.secondaryText)
                 .lineLimit(1)
             Spacer(minLength: 0)

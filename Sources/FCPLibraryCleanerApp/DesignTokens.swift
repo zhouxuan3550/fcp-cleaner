@@ -1,5 +1,41 @@
 import SwiftUI
 
+/// 语义字体令牌：全部界面文字经这些档位取字体，跟随系统
+/// 「辅助功能 → 显示 → 文字大小」设置缩放（Dynamic Type）。
+/// 默认档位与原硬编码字号逐档对齐（实测 macOS preferredFont）：
+/// caption2=10, subheadline=11, callout=12, body=13, title3=15, title2=17。
+enum AppFont {
+    /// 徽标、计数、极小注记（原 9/10pt）。
+    static func caption(_ weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(.caption2, design: design).weight(weight)
+    }
+
+    /// 侧栏路径、次级标签（原 11pt）。
+    static func small(_ weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(.subheadline, design: design).weight(weight)
+    }
+
+    /// 表格内容、按钮辅助文字（原 12pt）。
+    static func callout(_ weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(.callout, design: design).weight(weight)
+    }
+
+    /// 正文、主要按钮（原 13pt）。
+    static func body(_ weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(.body, design: design).weight(weight)
+    }
+
+    /// 区块标题（原 14/15pt）。
+    static func heading(_ weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(.title3, design: design).weight(weight)
+    }
+
+    /// 卡片标题、资源库名（原 16/17/18pt）。
+    static func title(_ weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(.title2, design: design).weight(weight)
+    }
+}
+
 private func dynamicColor(light: String, dark: String) -> Color {
     Color(nsColor: NSColor(name: nil) { appearance in
         let hex = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light

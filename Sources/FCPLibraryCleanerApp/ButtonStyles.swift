@@ -7,7 +7,7 @@ struct QueueActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: .semibold))
+            .font(AppFont.callout(.semibold))
             .foregroundStyle(emphasized ? Color.white : AppColor.primaryText)
             .padding(.horizontal, 11)
             .frame(height: LayoutMetrics.controlHeight)
@@ -29,7 +29,7 @@ struct HeaderButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .semibold))
+            .font(AppFont.body(.semibold))
             .foregroundStyle(emphasized ? Color.white : AppColor.primaryText)
             .padding(.horizontal, 17)
             .frame(height: LayoutMetrics.headerHeight)
@@ -50,7 +50,7 @@ struct PrimaryActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .bold))
+            .font(AppFont.heading(.bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: LayoutMetrics.primaryButtonHeight)
@@ -68,7 +68,7 @@ struct SheetSecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .semibold))
+            .font(AppFont.body(.semibold))
             .foregroundStyle(AppColor.primaryText)
             .frame(height: LayoutMetrics.sheetButtonHeight)
             .frame(maxWidth: .infinity)
@@ -85,7 +85,7 @@ struct SheetDestructiveButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .bold))
+            .font(AppFont.body(.bold))
             .foregroundStyle(.white)
             .frame(height: LayoutMetrics.sheetButtonHeight)
             .frame(maxWidth: .infinity)

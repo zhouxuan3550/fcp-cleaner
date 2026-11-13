@@ -4,6 +4,7 @@ import FCPLibraryCleanerCore
 
 struct AppHeader: View {
     @Bindable var store: LibraryStore
+    @ScaledMetric(relativeTo: .largeTitle) private var appNameSize: CGFloat = 25
 
     var body: some View {
         HStack(spacing: 18) {
@@ -12,9 +13,9 @@ struct AppHeader: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("FCP Cleaner")
-                    .font(.system(size: 25, weight: .bold, design: .rounded))
+                    .font(.system(size: appNameSize, weight: .bold, design: .rounded))
                 Text("自动扫描 · 安全清理")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(AppFont.body(.medium))
                     .foregroundStyle(AppColor.secondaryText)
             }
 
@@ -99,7 +100,7 @@ struct CleanerVectorMark: View {
 
     private var star: some View {
         Image(systemName: "star.fill")
-            .font(.system(size: 11, weight: .semibold))
+            .font(AppFont.small(.semibold))
             .foregroundStyle(.white.opacity(0.88))
     }
 }

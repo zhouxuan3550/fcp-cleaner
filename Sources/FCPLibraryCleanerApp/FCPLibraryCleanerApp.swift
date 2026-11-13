@@ -94,16 +94,16 @@ private struct MenuBarPanel: View {
             HStack {
                 CleanerMenuMark()
                 Text("FCP Cleaner")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(AppFont.heading(.semibold, design: .rounded))
                 Spacer()
                 Text(FormatHelpers.bytes(store.totalCleanableSize))
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(AppFont.body(.bold, design: .rounded))
                     .contentTransition(.numericText())
                     .animation(.snappy, value: store.totalCleanableSize)
             }
             if let warning = store.lowSpaceWarnings.first {
                 Label("\(warning.name) 剩余 \(FormatHelpers.bytes(warning.availableSize))", systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.warning)
             }
             HStack {
