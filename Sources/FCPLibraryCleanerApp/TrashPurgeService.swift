@@ -24,7 +24,8 @@ enum TrashPurgeService {
     /// touching a real Trash directory.
     static func purge(_ items: [CleanupHistoryFile], trashRoot: (CleanupHistoryFile) throws -> URL,
                       journalURL: URL? = nil,
-                      afterValidation: (CleanupHistoryFile) throws -> Void = { _ in }) -> TrashPurgeOutcome {
+                      afterValidation: (CleanupHistoryFile) throws -> Void = { _ in },
+                      performRemoval: (CleanupHistoryFile, URL) throws -> Void = { _, url in try FileManager.default.removeItem(at: url) }) -> TrashPurgeOutcome {
         let fileManager = FileManager.default
         var removed = Set<CleanupHistoryFile>()
         var failures = 0
@@ -64,7 +65,7 @@ enum TrashPurgeService {
                 let before = availableCapacity(at: root)
                 do {
                     guard try TrashItemSnapshot.capture(at: staged) == snapshot else { throw CocoaError(.fileReadCorruptFile) }
-                    try fileManager.removeItem(at: staged)
+                    try performRemoval(item, staged)
                 } catch {
                     if renameatx_np(directory, stagingName, directory, path.lastPathComponent, UInt32(RENAME_EXCL)) != 0,
                        fileManager.fileExists(atPath: staged.path) {

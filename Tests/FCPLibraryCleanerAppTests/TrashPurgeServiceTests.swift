@@ -80,4 +80,75 @@ struct TrashPurgeServiceTests {
         #expect(FileManager.default.fileExists(atPath: saved.appendingPathComponent("old").path))
         #expect(FileManager.default.fileExists(atPath: target.appendingPathComponent("new").path))
     }
+
+    @Test("a failed removal with an occupied original name relocates the staged item and keeps its journal")
+    func relocationKeepsStagedItemAndJournal() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let trash = base.appendingPathComponent("trash", isDirectory: true)
+        try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let url = trash.appendingPathComponent("item", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        try Data("original".utf8).write(to: url.appendingPathComponent("file"))
+        let item = CleanupHistoryFile(originalURL: base.appendingPathComponent("original"),
+                                      trashURL: url, snapshot: try TrashItemSnapshot.capture(at: url))
+        let journalURL = base.appendingPathComponent("TrashPurgeJournal.json")
+
+        let result = TrashPurgeService.purge([item], trashRoot: { _ in trash }, journalURL: journalURL,
+                                             performRemoval: { original, _ in
+            // Occupy the vacated name exactly as a racing writer would, then fail.
+            try FileManager.default.createDirectory(at: original.trashURL, withIntermediateDirectories: false)
+            try Data("rival".utf8).write(to: original.trashURL.appendingPathComponent("rival"))
+            throw CocoaError(.fileWriteUnknown)
+        })
+
+        let staged = try #require(result.relocated[item])
+        #expect(result.removed.isEmpty)
+        #expect(result.failedCount == 1)
+        #expect(staged.deletingLastPathComponent() == trash)
+        #expect(staged.lastPathComponent.hasPrefix("FCP Cleaner 验证中 "))
+        #expect(try Data(contentsOf: staged.appendingPathComponent("file")) == Data("original".utf8))
+        // The replacement at the recorded path survives, and the journal still
+        // points at the staged location so a later run can repair history.
+        #expect(try Data(contentsOf: item.trashURL.appendingPathComponent("rival")) == Data("rival".utf8))
+        let journal = try JSONDecoder().decode(TrashPurgeJournal.self, from: Data(contentsOf: journalURL))
+        #expect(journal.item == item)
+        #expect(journal.stagedURL == staged)
+    }
+
+    @Test("a pending relocation stops the run and abandons the remaining items unattempted")
+    func pendingRelocationAbandonsRemainingItems() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let trash = base.appendingPathComponent("trash", isDirectory: true)
+        try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        func make(_ name: String) throws -> CleanupHistoryFile {
+            let url = trash.appendingPathComponent(name, isDirectory: true)
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            try Data("content".utf8).write(to: url.appendingPathComponent("file"))
+            return CleanupHistoryFile(originalURL: base.appendingPathComponent("original-" + name),
+                                      trashURL: url, snapshot: try TrashItemSnapshot.capture(at: url))
+        }
+        let first = try make("first")
+        let second = try make("second")
+        let third = try make("third")
+        var attempted: [CleanupHistoryFile] = []
+
+        let result = TrashPurgeService.purge([first, second, third], trashRoot: { _ in trash },
+                                             performRemoval: { item, _ in
+            attempted.append(item)
+            // Only the first item relocates; its pending relocation must stop the run.
+            try FileManager.default.createDirectory(at: item.trashURL, withIntermediateDirectories: false)
+            throw CocoaError(.fileWriteUnknown)
+        })
+
+        #expect(attempted == [first])
+        #expect(result.removed.isEmpty)
+        #expect(result.failedCount == 3)
+        #expect(result.relocated.count == 1)
+        #expect(result.relocated[first] != nil)
+        for item in [first, second, third] {
+            #expect(FileManager.default.fileExists(atPath: item.trashURL.path))
+        }
+    }
 }
