@@ -24,3 +24,6 @@ FCPLibraryCleaner/
 
 # Old update staging
 Distribution/Updates-*/
+
+# Historical DMG archive stays local only (git history already carries 16MB)
+Distribution/archive/
