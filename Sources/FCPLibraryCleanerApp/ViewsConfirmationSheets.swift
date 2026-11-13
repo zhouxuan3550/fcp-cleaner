@@ -402,8 +402,8 @@ struct CleanupNoticeView: View {
                         .font(AppFont.small(.medium))
                         .foregroundStyle(AppColor.danger)
                         .lineLimit(2)
-                }
-                if !categorySummary.isEmpty {
+                } else if !categorySummary.isEmpty, notice.errorCount > 0 || notice.freedSize == 0 {
+                    // 类目明细只在异常/空结果时补充说明；成功通知保持两行紧凑。
                     Text(categorySummary)
                         .font(AppFont.small(.medium))
                         .foregroundStyle(AppColor.tertiaryText)

@@ -625,7 +625,7 @@ struct CleanupActionCard: View {
                 .shadow(color: AppColor.accent.opacity(0.35), radius: 12)
                 .animation(.snappy, value: library.spaceToFree)
             if library.pendingFreedSize == 0, let estimate = result.reclaimableEstimate {
-                Text("彻底删除后预计 \(FormatHelpers.bytes(estimate.minimumBytes))–\(FormatHelpers.bytes(estimate.maximumBytes))")
+                Text(reclaimEstimateText(estimate))
                     .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
@@ -661,6 +661,15 @@ struct CleanupActionCard: View {
         .padding(20)
         .background(AppColor.panel)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    /// min==max 时显示单值，避免「2.46 GB–2.46 GB」这类同值范围。
+    private func reclaimEstimateText(_ estimate: ReclaimableSpaceEstimate) -> String {
+        let min = FormatHelpers.bytes(estimate.minimumBytes)
+        let max = FormatHelpers.bytes(estimate.maximumBytes)
+        return min == max
+            ? "彻底删除后预计可释放 \(min)"
+            : "彻底删除后预计 \(min)–\(max)"
     }
 
     private var actionTitle: String {
