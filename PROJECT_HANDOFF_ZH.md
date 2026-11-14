@@ -8,15 +8,15 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 产品名称 | FCP Cleaner |
-| 当前版本 | 4.2（Build 420） |
-| 项目路径 | `/Users/macstudio/Documents/VoxCPM2/FCPLibraryCleaner` |
+| 当前版本 | 4.2.1（Build 421） |
+| 项目路径 | `/Users/macstudio/Documents/CodeX/FCP Cleaner` |
 | 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager、XcodeGen |
 | 最低系统 | 主程序 macOS 15.0；Workflow Extension macOS 15.6 |
 | 当前架构 | universal2（arm64 + x86_64） |
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
-| 最新安装包 | `Distribution/FCP-Cleaner-4.2-universal.dmg` |
-| 自动测试 | 108 项测试（swift-testing） |
+| 最新安装包 | `Distribution/FCP-Cleaner-4.2.1-universal.dmg`（无 Workflow 扩展的预览包，待验收） |
+| 自动测试 | 147 项测试（swift-testing） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
 
@@ -213,9 +213,25 @@ FCPLibraryCleaner/
 | 文件 | 作用 |
 | --- | --- |
 | `FCPLibraryCleanerApp.swift` | SwiftUI App、菜单命令和菜单栏入口 |
-| `ContentView.swift` | 主界面、设置、历史和全部 UI 组件 |
-| `LibraryStore.swift` | 主状态、扫描队列、批量清理和磁盘监控 |
-| `ScanResultCache.swift` | 增量扫描结果缓存 |
+| `ContentView.swift` | 主界面骨架、完成通知浮层与拖放 |
+| `ViewsSidebar.swift` | 侧栏列表、筛选、批量操作条（MainWorkspace） |
+| `ViewsLibraryDetail.swift` | 详情面板：指标卡、趋势图、清理操作卡 |
+| `ViewsConfirmationSheets.swift` | 清理确认/批量确认/完成摘要弹窗 |
+| `ViewsSettingsAndHistory.swift` | 设置弹层与清理历史弹层 |
+| `ViewsHeader.swift` | 顶栏（品牌、Finder、历史、设置、自动扫描） |
+| `DesignTokens.swift` | AppColor/AppFont/LayoutMetrics/FormatHelpers 设计令牌 |
+| `LibraryStore.swift` | 主状态、筛选分层与启动引导（主体拆入下列扩展） |
+| `LibraryStore+Discovery.swift` | 发现：Spotlight / 工作目录 / 手动添加与候选校验 |
+| `LibraryStore+Scanning.swift` | 扫描队列执行与缓存复用 |
+| `LibraryStore+Cleanup.swift` | 清理请求、中断恢复、预检与批量执行 |
+| `LibraryStore+LiveCache.swift` | FSEvents 实时失效、低空间监控、定时检查、卷热插拔 |
+| `LibraryStore+Orphans.swift` | 忽略/稍后、孤儿缓存清理、诊断导出、存档 |
+| `ScanResultCache.swift` | 增量扫描结果缓存（schema v5） |
+| `LibraryScanQueue.swift` | 扫描队列（最多 3 并发、优先选中库） |
+| `CleanupCoordinator.swift` | 预检与执行编排 |
+| `FSEventsCheckpoint.swift` / `FSEventsLiveLease.swift` / `FSEventsHistoryProbe.swift` | FSEvents 检查点、实时租约与历史重放 |
+| `TrashPurgeService.swift` / `TrashPurgeJournal.swift` | 历史页定向永久删除与中断日志（红线内） |
+| `OrphanCacheDiscovery.swift` | 疑似孤立缓存的只读发现与测体积 |
 | `SecurityScopedBookmarkManager.swift` | 权限书签和最近资源库 |
 | `CleanupHistoryStore.swift` | 清理历史、废纸篓定位和恢复 |
 | `NotificationController.swift` | 系统通知（含定时检查完成通知） |
