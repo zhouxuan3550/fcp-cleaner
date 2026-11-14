@@ -28,8 +28,8 @@ struct MainWorkspace: View {
 
                     if !store.batchSelectedIDs.isEmpty {
                         BatchActionBar(store: store)
-                            .padding(.trailing, 22)
-                            .padding(.bottom, 20)
+                            .padding(.trailing, LayoutMetrics.batchBarTrailingInset)
+                            .padding(.bottom, LayoutMetrics.batchBarBottomInset)
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .offset(y: 16)),
                                 removal: .opacity.combined(with: .offset(y: 8))
@@ -488,6 +488,7 @@ struct BatchActionBar: View {
             }
             .buttonStyle(QueueActionButtonStyle(enabled: !store.isBatchCleaning && !store.isPreflighting))
             .disabled(store.isBatchCleaning || store.isPreflighting)
+            .accessibilityLabel("取消批量选择")
 
             Button {
                 store.requestBatchClean()
@@ -496,6 +497,7 @@ struct BatchActionBar: View {
             }
             .buttonStyle(QueueActionButtonStyle(emphasized: true, enabled: !store.isBatchCleaning && !store.isPreflighting))
             .disabled(store.isBatchCleaning || store.isPreflighting)
+            .accessibilityLabel(batchActionTitle)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

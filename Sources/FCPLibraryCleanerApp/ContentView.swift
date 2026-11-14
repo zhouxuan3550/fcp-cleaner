@@ -31,12 +31,14 @@ struct ContentView: View {
                 CleanupNoticeView(notice: notice) {
                     store.dismissCleanupNotice()
                 }
-                // 批量操作条同住右下角（窗口右缘 40pt 处）：通知上移到它的正上方
-                // 垂直堆叠，右缘对齐，避免浮层压住操作卡与批量条。
-                .padding(.top, 24)
-                .padding(.leading, 24)
-                .padding(.trailing, store.batchSelectedIDs.isEmpty ? 24 : 40)
-                .padding(.bottom, store.batchSelectedIDs.isEmpty ? 24 : 88)
+                // 批量操作条同住右下角：通知上移到它的正上方垂直堆叠，
+                // 右缘对齐，避免浮层压住操作卡与批量条。
+                .padding(.top, LayoutMetrics.noticeEdgeInset)
+                .padding(.leading, LayoutMetrics.noticeEdgeInset)
+                .padding(.trailing, store.batchSelectedIDs.isEmpty
+                    ? LayoutMetrics.noticeEdgeInset : LayoutMetrics.noticeTrailingWithBatchBar)
+                .padding(.bottom, store.batchSelectedIDs.isEmpty
+                    ? LayoutMetrics.noticeEdgeInset : LayoutMetrics.noticeBottomWithBatchBar)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .animation(.snappy(duration: 0.22), value: store.batchSelectedIDs.isEmpty)

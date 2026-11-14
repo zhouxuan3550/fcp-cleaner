@@ -63,6 +63,7 @@ struct AppHeader: View {
             }
             .buttonStyle(HeaderButtonStyle())
             .disabled(store.isDiscovering)
+            .accessibilityLabel(store.isDiscovering ? "正在扫描资源库" : "自动扫描资源库")
             .help("自动扫描资源库 (空格键)")
 
             Button(action: store.openLibraryPanel) {

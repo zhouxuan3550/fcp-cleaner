@@ -665,11 +665,11 @@ struct CleanupActionCard: View {
 
     /// min==max 时显示单值，避免「2.46 GB–2.46 GB」这类同值范围。
     private func reclaimEstimateText(_ estimate: ReclaimableSpaceEstimate) -> String {
-        let min = FormatHelpers.bytes(estimate.minimumBytes)
-        let max = FormatHelpers.bytes(estimate.maximumBytes)
-        return min == max
-            ? "彻底删除后预计可释放 \(min)"
-            : "彻底删除后预计 \(min)–\(max)"
+        let minText = FormatHelpers.bytes(estimate.minimumBytes)
+        let maxText = FormatHelpers.bytes(estimate.maximumBytes)
+        return minText == maxText
+            ? "彻底删除后预计可释放 \(minText)"
+            : "彻底删除后预计 \(minText)–\(maxText)"
     }
 
     private var actionTitle: String {

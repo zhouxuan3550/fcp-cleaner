@@ -150,6 +150,13 @@ enum LayoutMetrics {
     static let headerHorizontalPadding: CGFloat = 18
     static let headerTopPadding: CGFloat = 16
     static let headerBottomPadding: CGFloat = 14
+    /// 批量操作条与完成通知同住详情面板右下角；通知的右/下内边距须与
+    /// 批量条的 trailing/bottom 定位配对，保证两者右缘对齐且互不遮挡。
+    static let batchBarTrailingInset: CGFloat = 22
+    static let batchBarBottomInset: CGFloat = 20
+    static let noticeTrailingWithBatchBar: CGFloat = 40
+    static let noticeBottomWithBatchBar: CGFloat = 88
+    static let noticeEdgeInset: CGFloat = 24
 }
 
 enum FormatHelpers {

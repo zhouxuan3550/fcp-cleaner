@@ -263,12 +263,12 @@ final class LibraryStore: NSObject {
     let cleanupHistory = CleanupHistoryStore()
     @ObservationIgnored let cleanupCoordinator = CleanupCoordinator()
     @ObservationIgnored let bookmarks = SecurityScopedBookmarkManager()
-    @ObservationIgnored lazy var scheduledCheckController = ScheduledCheckController(store: self)
+    @ObservationIgnored private lazy var scheduledCheckController = ScheduledCheckController(store: self)
     @ObservationIgnored let cleanupJournal = CleanupTransactionJournal()
     @ObservationIgnored var interruptedReconciliationID = UUID()
     @ObservationIgnored let scanCache = ScanResultCache()
     @ObservationIgnored var metadataQuery: NSMetadataQuery?
-    @ObservationIgnored var didBeginAutomaticDiscovery = false
+    @ObservationIgnored private var didBeginAutomaticDiscovery = false
     @ObservationIgnored var discoveryRunID = UUID()
     @ObservationIgnored var orphanDiscoveryTask: Task<Void, Never>?
     @ObservationIgnored var pendingMergeCount = 0
@@ -282,7 +282,7 @@ final class LibraryStore: NSObject {
     /// 本轮结束后按最新状态重跑一次，保证最后一次变更不被吞掉。
     @ObservationIgnored var needsLowSpaceReevaluation = false
     @ObservationIgnored var workDirectoryMonitor: WorkDirectoryMonitor?
-    @ObservationIgnored var volumeMountMonitor: VolumeMountMonitor?
+    @ObservationIgnored private var volumeMountMonitor: VolumeMountMonitor?
     @ObservationIgnored var snoozeExpiryTask: Task<Void, Never>?
     @ObservationIgnored var saveRecentsTask: Task<Void, Never>?
     @ObservationIgnored var isExportingDiagnosticsInternal = false
