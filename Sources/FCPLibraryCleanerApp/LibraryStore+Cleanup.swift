@@ -220,10 +220,10 @@ extension LibraryStore {
                 record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
                 record.cleanupAfterSize = nil
                 do {
-                    let result = try await cleanupCoordinator.execute(entry.plan, volumeID: entry.record.volumeID)
+                    let result = try await cleanupCoordinator.execute(entry.plan, volumeID: entry.record.volumeID, snapshotEnabled: cleanupSnapshotsEnabled)
                     record.lastCleanup = result
                     applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
-                    cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, result: result)
+                    cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: entry.plan, result: result, volumeName: record.volumeName)
                     record.failedCleanupPlan = result.errors.isEmpty
                         ? nil
                         : entry.plan.retryingItemsNotCompleted(in: result)
@@ -316,10 +316,10 @@ extension LibraryStore {
             )
             defer { ProcessInfo.processInfo.endActivity(cleanActivity) }
             do {
-                let result = try await cleanupCoordinator.execute(confirmation.plan, volumeID: record.volumeID)
+                let result = try await cleanupCoordinator.execute(confirmation.plan, volumeID: record.volumeID, snapshotEnabled: cleanupSnapshotsEnabled)
                 record.lastCleanup = result
                 applyImmediateCleanupDelta(record, freed: result.freedAllocatedSize)
-                cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: confirmation.plan, result: result)
+                cleanupHistory.append(libraryName: record.displayName, libraryURL: record.url, plan: confirmation.plan, result: result, volumeName: record.volumeName)
                 record.failedCleanupPlan = result.errors.isEmpty
                     ? nil
                     : confirmation.plan.retryingItemsNotCompleted(in: result)

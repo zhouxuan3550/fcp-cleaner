@@ -168,6 +168,15 @@ if [ -x "${SPARKLE_TOOLS}/generate_appcast" ]; then
     curl --fail --silent --show-error --location \
         "${FEED_URL}" -o "${UPDATES_DIR}/appcast.xml" || true
 
+    # 预置历史版本 DMG：generate_appcast 对同目录旧包自动生成 BinaryDelta，
+    # 6MB 的全量更新可缩到 1-2MB 增量。单个下载失败不阻塞（退化为全量包）。
+    grep -o 'url="[^"]*\.dmg"' "${UPDATES_DIR}/appcast.xml" | sed 's/url="//; s/"$//' | while read -r url; do
+        target="${UPDATES_DIR}/$(basename "$url")"
+        if [ ! -f "$target" ]; then
+            curl --fail --silent --location --max-time 300 -o "$target" "$url" || rm -f "$target"
+        fi
+    done
+
     DOWNLOAD_PREFIX="https://github.com/zhouxuan3550/${REPO_NAME:-fcp-cleaner}/releases/download/v${VERSION}/"
     "${SPARKLE_TOOLS}/generate_appcast" \
         --maximum-versions 0 \

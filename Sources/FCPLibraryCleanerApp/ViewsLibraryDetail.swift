@@ -290,6 +290,8 @@ struct ScanResultsView: View {
 
                 StorageBreakdownBar(result: result)
 
+                EventBreakdownCard(result: result)
+
                 if result.externalCleanableSize > 0 {
                     Label("包含外置缓存 \(FormatHelpers.bytes(result.externalCleanableSize))", systemImage: "externaldrive.fill")
                         .font(AppFont.small(.medium))
@@ -298,7 +300,7 @@ struct ScanResultsView: View {
                 }
 
                 HStack(alignment: .top, spacing: 14) {
-                    CleanupList(result: result)
+                    CleanupList(result: result, scannedAt: library.lastScanned)
                     CleanupActionCard(library: library, result: result, store: store)
                         .frame(width: LayoutMetrics.cleanupActionCardWidth)
                 }
@@ -543,29 +545,107 @@ struct MetricCard: View {
     }
 }
 
+/// 按 Event 拆分的缓存分布：数据与确认弹窗的 Event 勾选完全同源，
+/// 让用户在确认前就知道每个 Event 各占多少。
+struct EventBreakdownCard: View {
+    let result: LibraryScanResult
+
+    private struct Slice: Identifiable {
+        let id: String
+        let size: Int64
+    }
+
+    private var slices: [Slice] {
+        var totals: [String: Int64] = [:]
+        for item in result.cacheItems {
+            let event = FCPStructureRules.candidateLocation(for: item.url, ruleID: item.ruleID)?.eventName ?? "库级共享"
+            totals[event, default: 0] += item.allocatedSize
+        }
+        let sorted = totals.sorted { $0.value > $1.value }
+        guard sorted.count > 8 else { return sorted.map { Slice(id: $0.key, size: $0.value) } }
+        let head = sorted.prefix(7).map { Slice(id: $0.key, size: $0.value) }
+        let rest = sorted.dropFirst(7)
+        let tail = rest.reduce(Int64(0)) { $0 + $1.value }
+        return head + [Slice(id: "其他 \(rest.count) 个 Event", size: tail)]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("按 Event 拆分")
+                .font(AppFont.title(.semibold, design: .rounded))
+            if slices.isEmpty {
+                Text("本次扫描没有候选目录")
+                    .font(AppFont.callout(.medium))
+                    .foregroundStyle(AppColor.tertiaryText)
+            } else {
+                Chart(slices) { slice in
+                    BarMark(
+                        x: .value("可清理体积", slice.size),
+                        y: .value("Event", slice.id)
+                    )
+                    .foregroundStyle(AppColor.accent.gradient)
+                    .cornerRadius(4)
+                }
+                .chartXAxis {
+                    AxisMarks { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let bytes = value.as(Int64.self) {
+                                Text(FormatHelpers.bytes(bytes))
+                                    .font(AppFont.caption(.medium))
+                            }
+                        }
+                    }
+                }
+                .frame(height: CGFloat(max(slices.count, 1)) * 28 + 8)
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(AppColor.panel)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+/// 「为什么可清理」透明化：每个类目可展开为逐目录明细——
+/// 实际路径、命中的规则 ID、置信度与体积，全部来自扫描缓存的原始数据。
 struct CleanupList: View {
     let result: LibraryScanResult
+    let scannedAt: Date?
     let categorySummary: [CacheCategory: (count: Int, size: Int64)]
+    private let itemsByCategory: [CacheCategory: [CacheItem]]
+    @State private var expandedCategory: CacheCategory?
 
-    init(result: LibraryScanResult) {
+    init(result: LibraryScanResult, scannedAt: Date?) {
         self.result = result
+        self.scannedAt = scannedAt
         var summary: [CacheCategory: (count: Int, size: Int64)] = [:]
+        var items: [CacheCategory: [CacheItem]] = [:]
         for item in result.cacheItems {
             let current = summary[item.category] ?? (0, 0)
             summary[item.category] = (current.count + 1, current.size + item.allocatedSize)
+            items[item.category, default: []].append(item)
         }
         self.categorySummary = summary
+        self.itemsByCategory = items
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("最大安全清理")
                 .font(AppFont.title(.semibold, design: .rounded))
-                .padding(.bottom, 10)
+                .padding(.bottom, 2)
+            if let scannedAt {
+                Text("以下判定基于 \(scannedAt.formatted(date: .abbreviated, time: .shortened)) 的扫描指纹")
+                    .font(AppFont.caption(.medium))
+                    .foregroundStyle(AppColor.tertiaryText)
+                    .padding(.bottom, 8)
+            }
 
             ForEach(CacheCategory.cleanableCases, id: \.self) { category in
                 let info = categorySummary[category] ?? (0, 0)
                 let isEmpty = info.count == 0
+                let isExpanded = expandedCategory == category && !isEmpty
                 HStack(spacing: 12) {
                     Image(systemName: category.iconName)
                         .foregroundStyle(isEmpty ? AppColor.tertiaryText : AppColor.accent)
@@ -583,10 +663,55 @@ struct CleanupList: View {
                         Text(FormatHelpers.bytes(info.size))
                             .font(AppFont.callout(design: .monospaced))
                             .foregroundStyle(AppColor.secondaryText)
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(AppFont.caption(.semibold))
+                            .foregroundStyle(AppColor.tertiaryText)
                     }
                 }
+                .contentShape(Rectangle())
+                .onTapGesture { if !isEmpty {
+                    withAnimation(.snappy(duration: 0.18)) {
+                        expandedCategory = isExpanded ? nil : category
+                    }
+                } }
+                .accessibilityAddTraits(isEmpty ? [] : .isButton)
+                .accessibilityLabel("\(category.chineseName)，\(isEmpty ? "无候选" : "可展开查看明细")")
                 .padding(.vertical, 10)
                 .opacity(isEmpty ? 0.45 : 1)
+
+                if isExpanded, let items = itemsByCategory[category] {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(items) { item in
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(item.url.path)
+                                    .font(AppFont.caption(design: .monospaced))
+                                    .foregroundStyle(AppColor.primaryText)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .textSelection(.enabled)
+                                HStack(spacing: 10) {
+                                    Label(item.ruleID, systemImage: "checkmark.seal")
+                                        .font(AppFont.caption(.medium))
+                                        .foregroundStyle(AppColor.accent)
+                                    Text(item.confidence == .confirmed ? "已验证" : item.confidence.rawValue)
+                                        .font(AppFont.caption(.medium))
+                                        .foregroundStyle(AppColor.secondaryText)
+                                    Text(FormatHelpers.bytes(item.allocatedSize))
+                                        .font(AppFont.caption(.medium, design: .monospaced))
+                                        .foregroundStyle(AppColor.secondaryText)
+                                    Text("\(item.fingerprint.entryCount) 项")
+                                        .font(AppFont.caption(.medium, design: .monospaced))
+                                        .foregroundStyle(AppColor.tertiaryText)
+                                }
+                            }
+                            .padding(9)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(AppColor.control.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        }
+                    }
+                    .padding(.bottom, 10)
+                }
                 if category != CacheCategory.cleanableCases.last {
                     Divider().overlay(AppColor.border)
                 }
@@ -712,6 +837,11 @@ struct CleanupStatus: View {
                 }
             }
             .font(AppFont.callout(.medium))
+            if let snapshotDate = library.lastCleanup?.snapshotDate {
+                Label("已创建本地快照 \(snapshotDate.formatted(date: .omitted, time: .shortened))，系统可按需自动回收", systemImage: "camera.on.rectangle")
+                    .font(AppFont.small(.medium))
+                    .foregroundStyle(AppColor.tertiaryText)
+            }
             if let retryPlan = library.failedCleanupPlan {
                 Button("重试失败项 \(retryPlan.entries.count)") {
                     store.requestRetry(library)

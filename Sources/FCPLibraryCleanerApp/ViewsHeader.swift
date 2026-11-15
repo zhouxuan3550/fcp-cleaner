@@ -34,6 +34,15 @@ struct AppHeader: View {
             .help("在 Finder 中显示当前资源库")
 
             Button {
+                store.showsDashboard.toggle()
+            } label: {
+                Image(systemName: "chart.bar.doc.horizontal")
+            }
+            .buttonStyle(HeaderButtonStyle())
+            .accessibilityLabel("总览")
+            .help("总览：合计、各卷压力与推荐")
+
+            Button {
                 store.showsHistory.toggle()
             } label: {
                 Image(systemName: "clock.arrow.circlepath")

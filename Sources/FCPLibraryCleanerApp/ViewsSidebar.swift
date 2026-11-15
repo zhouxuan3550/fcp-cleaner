@@ -18,7 +18,9 @@ struct MainWorkspace: View {
 
                 ZStack(alignment: .bottomTrailing) {
                     Group {
-                        if let library = store.selectedLibrary {
+                        if store.showsDashboard {
+                            DashboardView(store: store)
+                        } else if let library = store.selectedLibrary {
                             LibraryPanel(library: library, store: store)
                         } else {
                             NoCleanupView(store: store)

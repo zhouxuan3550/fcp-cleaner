@@ -126,6 +126,15 @@ struct AppSettings: View {
                 .font(AppFont.callout(.medium))
 
             Divider()
+            sectionHeader("清理安全")
+            Toggle("清理前创建 APFS 快照", isOn: $store.cleanupSnapshotsEnabled)
+                .toggleStyle(.switch)
+            Text("内置卷清理前自动创建本地快照，误删可整体回滚；快照由系统按需自动回收。外置卷的系统机制不可用，仍以废纸篓为回滚保障。")
+                .font(AppFont.caption(.medium))
+                .foregroundStyle(AppColor.tertiaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Divider()
             sectionHeader("通知与外观")
             Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
                 .toggleStyle(.switch)
@@ -200,6 +209,9 @@ struct CleanupHistoryView: View {
                     .font(AppFont.small(.semibold))
                     .foregroundStyle(AppColor.accent)
                     .help("按清理记录所在月份统计（当地时间）")
+            }
+            if !store.entries.isEmpty {
+                insightsSection
             }
             if let libraryStore {
                 interruptedCleanupBanners(libraryStore)
@@ -286,6 +298,42 @@ struct CleanupHistoryView: View {
     }
 
     /// 本月（当地时区）清理汇总：数据全部来自既有历史，无额外持久化。
+    /// 历史洞察：按卷合计、按类目合计与平均耗时，全部由内存态条目聚合。
+    @ViewBuilder
+    private var insightsSection: some View {
+        let volumeTotals = Dictionary(grouping: store.entries, by: { $0.volumeName ?? "未知卷" })
+            .mapValues { entries in entries.reduce(Int64(0)) { $0 + $1.freedSize } }
+            .sorted { $0.value > $1.value }
+        let categoryTotals = Dictionary(grouping: store.entries.flatMap { $0.categories }, by: { $0 })
+            .mapValues { $0.count }
+            .sorted { $0.value > $1.value }
+        let durations = store.entries.compactMap(\.elapsedSeconds)
+
+        VStack(alignment: .leading, spacing: 6) {
+            Text("洞察")
+                .font(AppFont.caption(.semibold))
+                .foregroundStyle(AppColor.tertiaryText)
+            if !volumeTotals.isEmpty {
+                let top = volumeTotals.prefix(3)
+                Text("按卷：\(top.map { "\($0.key) \(FormatHelpers.bytes($0.value))" }.joined(separator: " · "))")
+                    .font(AppFont.small(.medium))
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+            if !categoryTotals.isEmpty {
+                Text("按类目：\(categoryTotals.map { "\($0.key.chineseName) \($0.value) 次" }.joined(separator: " · "))")
+                    .font(AppFont.small(.medium))
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+            if durations.count >= 2 {
+                let average = durations.reduce(0.0, +) / Double(durations.count)
+                Text("平均执行耗时：\(FormatHelpers.duration(average))（\(durations.count) 次有记录）")
+                    .font(AppFont.small(.medium))
+                    .foregroundStyle(AppColor.secondaryText)
+            }
+        }
+        .padding(.top, 2)
+    }
+
     private var monthlySummary: (freed: Int64, count: Int)? {
         let calendar = Calendar.current
         let monthEntries = store.entries.filter {

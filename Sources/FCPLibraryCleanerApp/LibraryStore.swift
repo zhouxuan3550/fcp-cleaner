@@ -246,6 +246,13 @@ final class LibraryStore: NSObject {
             NotificationController.shared.requestAuthorizationIfNeeded(enabled: notificationsEnabled)
         }
     }
+    /// 清理前对内置卷创建 APFS 本地快照（外置卷系统机制不可用，自动跳过）。
+    var cleanupSnapshotsEnabled = UserDefaults.standard.object(forKey: "cleanupSnapshotsEnabled") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(cleanupSnapshotsEnabled, forKey: "cleanupSnapshotsEnabled")
+        }
+    }
+    var showsDashboard = false
     var lowSpaceWarningGB = max(10, UserDefaults.standard.integer(forKey: "lowSpaceWarningGB")) {
         didSet {
             UserDefaults.standard.set(lowSpaceWarningGB, forKey: "lowSpaceWarningGB")
@@ -432,6 +439,7 @@ final class LibraryStore: NSObject {
         if !matchesInactivity(record) { inactivityFilter = .all }
         libraryFilter = filter(for: record)
         selectedID = record.id
+        showsDashboard = false
         drainScanQueue()
     }
 

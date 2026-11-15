@@ -39,6 +39,12 @@ struct CleanupHistoryEntry: Codable, Identifiable, Sendable {
     let errorMessages: [String]
     var trashedItems: [CleanupHistoryFile]
     var availableSpaceChange: Int64? = nil
+    /// 清理前创建的 APFS 本地快照时间（仅内置卷、设置开启时存在）。
+    var snapshotDate: Date? = nil
+    /// 引擎执行耗时；旧档案缺字段按 nil 解码，向后兼容。
+    var elapsedSeconds: Double? = nil
+    /// 清理时资源库所在卷的名称；用于历史洞察按卷统计。
+    var volumeName: String? = nil
 }
 
 @Observable @MainActor
@@ -83,7 +89,8 @@ final class CleanupHistoryStore {
         libraryName: String,
         libraryURL: URL,
         plan: CleanupPlan,
-        result: CleanupResult
+        result: CleanupResult,
+        volumeName: String? = nil
     ) {
         let entry = CleanupHistoryEntry(
             id: UUID(),
@@ -96,7 +103,10 @@ final class CleanupHistoryStore {
             errorMessages: result.errors.map(\.localizedDescription),
             trashedItems: result.trashedItems.map {
                 CleanupHistoryFile(originalURL: $0.originalURL, trashURL: $0.trashURL, snapshot: $0.snapshot)
-            }
+            },
+            snapshotDate: result.snapshotDate,
+            elapsedSeconds: result.elapsedSeconds,
+            volumeName: volumeName
         )
         entries.insert(entry, at: 0)
         if entries.count > 200 { entries.removeLast(entries.count - 200) }

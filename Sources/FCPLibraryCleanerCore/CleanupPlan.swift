@@ -292,16 +292,24 @@ public struct CleanupResult: Sendable {
     public let trashedItems: [TrashedItem]
     public let freedAllocatedSize: Int64
     public let errors: [CleanupError]
+    /// 清理前创建的 APFS 本地快照时间（仅内置卷、设置开启时存在）。
+    public var snapshotDate: Date?
+    /// 引擎执行耗时（不含预检与快照）；由协调器在计时后回填。
+    public var elapsedSeconds: Double?
 
     public init(
         movedToTrash: [URL],
         trashedItems: [TrashedItem] = [],
         freedAllocatedSize: Int64,
-        errors: [CleanupError]
+        errors: [CleanupError],
+        snapshotDate: Date? = nil,
+        elapsedSeconds: Double? = nil
     ) {
         self.movedToTrash = movedToTrash
         self.trashedItems = trashedItems
         self.freedAllocatedSize = freedAllocatedSize
         self.errors = errors
+        self.snapshotDate = snapshotDate
+        self.elapsedSeconds = elapsedSeconds
     }
 }

@@ -119,6 +119,53 @@ extension LibraryStore {
         }
     }
 
+    /// 仪表盘：各卷压力（可用容量 + 可清理合计）。探测全部后台执行。
+    struct VolumePressure: Identifiable {
+        let id: URL
+        let name: String
+        let available: Int64?
+        let cleanable: Int64
+    }
+
+    func volumePressures() async -> [VolumePressure] {
+        let grouped = Dictionary(grouping: libraries, by: \ .volumeURL)
+        let names = Dictionary(libraries.map { ($0.volumeURL, $0.volumeName) }, uniquingKeysWith: { first, _ in first })
+        let probes = await Task.detached(priority: .utility) {
+            grouped.keys.compactMap { url -> (URL, Int64?)? in
+                guard let values = try? url.resourceValues(forKeys: [
+                    .volumeAvailableCapacityForImportantUsageKey,
+                    .volumeAvailableCapacityKey,
+                ]) else { return nil }
+                let available = values.volumeAvailableCapacityForImportantUsage
+                    ?? values.volumeAvailableCapacity.map(Int64.init)
+                return (url, available)
+            }
+        }.value
+        return probes.compactMap { url, available in
+            guard let name = names[url] else { return nil }
+            let cleanable = (grouped[url] ?? []).reduce(Int64(0)) { $0 + $1.spaceToFree }
+            return VolumePressure(id: url, name: name, available: available, cleanable: cleanable)
+        }
+        .sorted { ($0.available ?? .max) < ($1.available ?? .max) }
+    }
+
+    /// 仪表盘：最近 7 天释放总量（来自清理历史内存态）。
+    var weeklyFreedSize: Int64 {
+        let cutoff = Date().addingTimeInterval(-7 * 86_400)
+        return cleanupHistory.entries
+            .filter { $0.date >= cutoff }
+            .reduce(Int64(0)) { $0 + $1.freedSize }
+    }
+
+    /// 仪表盘：现在最值得清理的候选（按有效可清理体积排序，仅排序推荐，决策仍是用户）。
+    var topCleanupCandidates: [LibraryRecord] {
+        waitingLibraries
+            .filter { $0.scanResult != nil }
+            .sorted { effectiveCleanableSize(for: $0) > effectiveCleanableSize(for: $1) }
+            .prefix(3)
+            .map(\.self)
+    }
+
     /// 定时检查：自动发现 + 全库增量扫描 + 完成通知。
     /// 产品红线：本路径绝不创建清理计划、绝不调用 CleanupEngine。
     func runScheduledCheck() async {
