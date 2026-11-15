@@ -12,9 +12,9 @@ struct DashboardView: View {
         ScrollView {
             VStack(spacing: 18) {
                 HStack(spacing: 14) {
-                    MetricCard(label: "可清理合计", value: FormatHelpers.bytes(store.totalCleanableSize), icon: "sparkles")
-                    MetricCard(label: "本周已释放", value: FormatHelpers.bytes(store.weeklyFreedSize), icon: "checkmark.circle.fill", emphasized: store.weeklyFreedSize > 0)
-                    MetricCard(label: "资源库", value: store.libraries.count.formatted(), icon: "square.stack.3d.up.fill")
+                    MetricCard(label: String(localized: "可清理合计"), value: FormatHelpers.bytes(store.totalCleanableSize), icon: "sparkles")
+                    MetricCard(label: String(localized: "本周已释放"), value: FormatHelpers.bytes(store.weeklyFreedSize), icon: "checkmark.circle.fill", emphasized: store.weeklyFreedSize > 0)
+                    MetricCard(label: String(localized: "资源库"), value: store.libraries.count.formatted(), icon: "square.stack.3d.up.fill")
                 }
 
                 volumePressureCard

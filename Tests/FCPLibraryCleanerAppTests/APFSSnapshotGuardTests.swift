@@ -137,3 +137,24 @@ struct LocalizationCatalog: Decodable {
         let value: String
     }
 }
+
+extension LocalizationCatalogTests {
+    /// "FCP Cleaner 验证中 " 是废纸篓暂存名的协议常量：跨语言/跨版本必须逐字节
+    /// 匹配，绝不能本地化——否则崩溃恢复在英文环境下失配。此测试扫描源码防再犯。
+    @Test("快照暂存名协议前缀不得被本地化")
+    func stagingPrefixMustStayUnlocalized() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // Tests/FCPLibraryCleanerAppTests
+            .deletingLastPathComponent()   // Tests
+            .deletingLastPathComponent()   // 仓库根
+        for relative in ["Sources/FCPLibraryCleanerApp/TrashPurgeService.swift",
+                         "Sources/FCPLibraryCleanerApp/TrashPurgeJournal.swift"] {
+            let text = try String(contentsOf: root.appendingPathComponent(relative), encoding: .utf8)
+            #expect(text.contains("\"FCP Cleaner 验证中 \"") || text.contains("FCP Cleaner 验证中 "), "协议前缀应保持裸字面量：\(relative)")
+            #expect(!text.contains("String(localized: \"FCP Cleaner 验证中 \""), "协议前缀被本地化了：\(relative)")
+        }
+        let catalogURL = root.appendingPathComponent("Sources/FCPLibraryCleanerApp/Localizable.xcstrings")
+        let catalog = try JSONDecoder().decode(LocalizationCatalog.self, from: Data(contentsOf: catalogURL))
+        #expect(catalog.strings["FCP Cleaner 验证中 "] == nil, "协议前缀不得进入 String Catalog")
+    }
+}
