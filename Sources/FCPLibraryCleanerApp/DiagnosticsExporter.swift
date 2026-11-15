@@ -114,12 +114,16 @@ enum DiagnosticsWriter {
         process.standardError = errorPipe
         do {
             try process.run()
+            // stderr 必须与 stdout 并行排空：串行读取时 stderr 写满 64KB 管道
+            // 会令 log show 进程阻塞，stdout 永不 EOF，导出从此永久挂起。
+            let stderrData = DispatchQueue.global(qos: .utility).sync {
+                errorPipe.fileHandleForReading.readDataToEndOfFile()
+            }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let stderr = errorPipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             let output = String(data: data, encoding: .utf8) ?? ""
             if process.terminationStatus != 0 {
-                let message = String(data: stderr, encoding: .utf8) ?? "未知错误"
+                let message = String(data: stderrData, encoding: .utf8) ?? "未知错误"
                 return "log show 失败（exit \(process.terminationStatus)）：\(message)"
             }
             return output.isEmpty ? "（近 \(minutes) 分钟无日志）" : output

@@ -6,7 +6,6 @@ struct CleanupSummaryLibrary: Identifiable, Sendable {
     let name: String
     let freedSize: Int64
     let itemCount: Int
-    let errorCount: Int
     let errorMessage: String?
     let succeeded: Bool
 }
@@ -19,7 +18,6 @@ struct CleanupSummary: Identifiable, Sendable {
     let totalItemCount: Int
     let categories: Set<CacheCategory>
     let errorCount: Int
-    let errorMessage: String?
     let elapsedSeconds: Double
     let libraries: [CleanupSummaryLibrary]
 }

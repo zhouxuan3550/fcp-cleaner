@@ -15,10 +15,15 @@ BUNDLE_NAME="Matrix Lib.fcpbundle"
 WORKDIR=$(mktemp -d /tmp/fcp-fsmatrix.XXXXXX)
 trap 'for m in "${MOUNTS[@]:-}"; do hdiutil detach "$m" -quiet >/dev/null 2>&1; done; rm -rf "$WORKDIR"' EXIT
 
+SKIP_FORMATS="${SKIP_FORMATS:-}"
 FORMATS=()
 [ "${SKIP_FORMATS#*APFS*}" = "$SKIP_FORMATS" ] && FORMATS+=("APFS")
 [ "${SKIP_FORMATS#*HFS+*}" = "$SKIP_FORMATS" ] && FORMATS+=("HFS+")
 [ "${SKIP_FORMATS#*ExFAT*}" = "$SKIP_FORMATS" ] && FORMATS+=("ExFAT")
+if [ ${#FORMATS[@]} -eq 0 ]; then
+    echo "✗ SKIP_FORMATS 过滤掉了全部格式，无事可做。"
+    exit 1
+fi
 
 SCANNER="$(cd "$(dirname "$0")/.." && pwd)/.build/debug/fcp-library-scanner"
 if [ ! -x "$SCANNER" ]; then
@@ -27,7 +32,10 @@ if [ ! -x "$SCANNER" ]; then
 fi
 
 FAILED=0
-declare -A RESULTS
+# macOS 自带 bash 3.2 不支持 declare -A，用平行数组记录结果。
+RESULT_FS=()
+RESULT_MSG=()
+record_result() { RESULT_FS+=("$1"); RESULT_MSG+=("$2"); }
 
 seed_library() {
     local root="$1/$BUNDLE_NAME"
@@ -52,29 +60,30 @@ run_format() {
     echo "── $fs ──"
     if ! hdiutil create -size ${VOL_SIZE_MB}m -fs "$fs" -type SPARSE \
             -volname "FCP-Matrix-$fs" "$image" >/dev/null 2>&1; then
-        RESULTS[$fs]="SKIP(无法创建镜像)"; return 0
+        record_result "$fs" "SKIP(无法创建镜像)"; return 0
     fi
-    if mount=$(hdiutil attach "$image" -nobrowse -readonly off | awk '/\/Volumes\//{print $NF; exit}'); then
+    if mount=$(hdiutil attach "$image" -nobrowse | awk '/\/Volumes\//{print $NF; exit}'); then
         :
     else
-        RESULTS[$fs]="SKIP(无法挂载)"; return 0
+        record_result "$fs" "SKIP(无法挂载)"; return 0
     fi
     MOUNTS+=("$mount")
 
     seed_library "$mount"
 
-    if ! json=$("$SCANNER" "$mount/$BUNDLE_NAME" --json); then
-        RESULTS[$fs]="FAIL(scanner 报错)"
+    if ! json=$("$SCANNER" "$mount/$BUNDLE_NAME" --json --plan); then
+        record_result "$fs" "FAIL(scanner 报错)"
         FAILED=1
     else
         items=$(python3 -c "import json,sys;d=json.load(sys.stdin);print(len(d.get('plan',{}).get('entries',d.get('cacheItems',[]))))" <<<"$json")
-        cleanable=$(python3 -c "import json,sys;d=json.load(sys.stdin);p=d.get('plan',{});print(p.get('spaceToFree', d.get('totalAllocatedSize',0)))" <<<"$json")
+        # CleanupPlan 的 spaceToFree 是计算属性，JSON 里只有 entries；按条目求和断言。
+        cleanable=$(python3 -c "import json,sys;d=json.load(sys.stdin);print(sum(e.get('item',{}).get('allocatedSize',0) for e in d.get('plan',{}).get('entries',[])))" <<<"$json")
         original_exists=$([ -f "$mount/$BUNDLE_NAME/Event One/Original Media/source.mov" ] && echo yes || echo no)
 
         if [ "$items" = "3" ] && [ "$cleanable" != "0" ] && [ "$original_exists" = "yes" ]; then
-            RESULTS[$fs]="PASS(清理项=3)"
+            record_result "$fs" "PASS(清理项=3)"
         else
-            RESULTS[$fs]="FAIL(清理项=$items 可清空间=$cleanable 原片在=$original_exists)"
+            record_result "$fs" "FAIL(清理项=$items 可清空间=$cleanable 原片在=$original_exists)"
             FAILED=1
         fi
     fi
@@ -89,8 +98,8 @@ done
 
 echo ""
 printf "%-10s %s\n" "格式" "结果"
-for fs in "${FORMATS[@]}"; do
-    printf "%-10s %s\n" "$fs" "${RESULTS[$fs]:-未执行}"
+for i in "${!RESULT_FS[@]}"; do
+    printf "%-10s %s\n" "${RESULT_FS[$i]}" "${RESULT_MSG[$i]}"
 done
 
 exit $FAILED

@@ -240,7 +240,6 @@ extension LibraryStore {
                         name: record.displayName,
                         freedSize: result.freedAllocatedSize,
                         itemCount: result.movedToTrash.count,
-                        errorCount: result.errors.count,
                         errorMessage: result.errors.first?.localizedDescription,
                         succeeded: result.errors.isEmpty
                     ))
@@ -254,7 +253,6 @@ extension LibraryStore {
                         name: record.displayName,
                         freedSize: 0,
                         itemCount: 0,
-                        errorCount: 1,
                         errorMessage: error.localizedDescription,
                         succeeded: false
                     ))
@@ -287,7 +285,6 @@ extension LibraryStore {
                 totalItemCount: cleanedItemCount,
                 categories: categories,
                 errorCount: errorCount,
-                errorMessage: firstErrorMessage,
                 elapsedSeconds: batchSeconds,
                 libraries: summaryLibraries
             )

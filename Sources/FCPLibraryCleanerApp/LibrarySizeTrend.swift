@@ -17,12 +17,9 @@ enum LibrarySizeTrend {
     static let baselineMinAge: TimeInterval = 6 * 86_400
     static let baselineMaxAge: TimeInterval = 14 * 86_400
 
-    /// 与扫描缓存一致的 FNV 路径哈希，避免在 UserDefaults 明文铺路径。
+    /// 与扫描缓存共享同一 FNV 路径哈希实现（见 ScanResultCache.stableKey）。
     static func key(for libraryURL: URL) -> String {
-        let hash = libraryURL.standardizedFileURL.path.utf8.reduce(UInt64(1_469_598_103_934_665_603)) { partial, byte in
-            (partial ^ UInt64(byte)) &* 1_099_511_628_211
-        }
-        return String(hash, radix: 16)
+        ScanResultCache.stableKey(libraryURL.standardizedFileURL.path)
     }
 
     static func samples(for libraryURL: URL, defaults: UserDefaults = .standard) -> [Sample] {
@@ -63,14 +60,15 @@ enum LibrarySizeTrend {
             list.removeFirst(list.count - maxSamplesPerLibrary)
         }
         all[key] = list
-        // 生产路径全量重编码可达数百 KB，放后台串行队列（快照按调用顺序入队，末次写入即最新）；
-        // 注入的测试套件保持同步写，保证 record() 后立即可读。
+        // 生产路径全量重编码可达数百 KB，编码与写入都放后台串行队列
+        // （快照按调用顺序入队，末次写入即最新）；注入的测试套件保持
+        // 同步写，保证 record() 后立即可读。
         if defaults == UserDefaults.standard {
-            if let data = try? JSONEncoder().encode(all) {
-                // UserDefaults 本身线程安全，仅为跨过 Sendable 边界做一次轻包装。
-                let target = UncheckedSendable(defaults)
-                let key = storageKey
-                persistQueue.async {
+            // UserDefaults 本身线程安全，仅为跨过 Sendable 边界做一次轻包装。
+            let target = UncheckedSendable(defaults)
+            let key = storageKey
+            persistQueue.async {
+                if let data = try? JSONEncoder().encode(all) {
                     target.value.set(data, forKey: key)
                 }
             }

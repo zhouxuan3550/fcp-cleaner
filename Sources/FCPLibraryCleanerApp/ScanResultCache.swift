@@ -109,7 +109,7 @@ struct ScanResultCache: Sendable {
     /// 启动时清扫：删除不再对应任何现役资源库的缓存文件（改路径/换盘的历史遗留）。
     /// 纯文件名比对，不触碰任何现役条目。
     func prune(keeping libraryURLs: [URL]) async {
-        let keep = Set(libraryURLs.map { stableKey($0.standardizedFileURL.path) })
+        let keep = Set(libraryURLs.map { Self.stableKey($0.standardizedFileURL.path) })
         let root = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("com.fcpcleaner.app", isDirectory: true)
             .appendingPathComponent("ScanResults", isDirectory: true)
@@ -127,10 +127,12 @@ struct ScanResultCache: Sendable {
         let root = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("com.fcpcleaner.app", isDirectory: true)
             .appendingPathComponent("ScanResults", isDirectory: true)
-        return root.appendingPathComponent(stableKey(libraryURL.standardizedFileURL.path) + ".plist")
+        return root.appendingPathComponent(Self.stableKey(libraryURL.standardizedFileURL.path) + ".plist")
     }
 
-    private func stableKey(_ value: String) -> String {
+    /// FNV-1a 64 路径哈希：避免在文件名/UserDefaults 明文铺路径。
+    /// 算法与输出格式是持久化键的一部分，改动会令历史缓存与采样失联。
+    static func stableKey(_ value: String) -> String {
         let hash = value.utf8.reduce(UInt64(1_469_598_103_934_665_603)) { partial, byte in
             (partial ^ UInt64(byte)) &* 1_099_511_628_211
         }

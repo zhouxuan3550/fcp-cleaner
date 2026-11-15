@@ -130,9 +130,9 @@ struct AppSettings: View {
             Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
                 .toggleStyle(.switch)
             Picker("外观", selection: $store.appearanceMode) {
-                Text("跟随系统").tag(AppearanceMode.system)
-                Text("暗色").tag(AppearanceMode.dark)
-                Text("亮色").tag(AppearanceMode.light)
+                ForEach(AppearanceMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
             }
             .pickerStyle(.segmented)
 

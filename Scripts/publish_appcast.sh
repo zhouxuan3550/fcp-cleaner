@@ -16,7 +16,7 @@ APPCAST="${STAGING}/appcast.xml"
 
 FAILED=0
 
-python3 - "$APPCAST" "$EXPECTED_BUILD" <<'PY'
+python3 - "$APPCAST" "$EXPECTED_BUILD" <<'PY' || FAILED=1
 import re, sys, pathlib
 
 appcast = pathlib.Path(sys.argv[1]).read_text()
@@ -61,7 +61,6 @@ for problem in problems:
     print(f"GATE-FAIL {problem}", file=sys.stderr)
 sys.exit(1 if problems else 0)
 PY
-[ $? -eq 0 ] || FAILED=1
 
 # enclosure 可达性：跟随跳转后必须返回 200
 while IFS= read -r url; do

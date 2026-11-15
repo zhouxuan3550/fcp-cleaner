@@ -5,7 +5,9 @@ import Foundation
 /// 只读监听目录结构，绝不追踪用户媒体内容，也绝不自动清理。
 @MainActor
 final class WorkDirectoryMonitor {
-    private var stream: FSEventStreamRef?
+    // nonisolated(unsafe)：只在主线程变更；deinit 需要跨隔离读取做兜底清理，
+    // deinit 本身与任何访问互斥，无竞争。
+    private nonisolated(unsafe) var stream: FSEventStreamRef?
     private var watchedPaths: [String] = []
     private var debounceTask: Task<Void, Never>?
     private weak var store: LibraryStore?
@@ -66,8 +68,23 @@ final class WorkDirectoryMonitor {
         if let stream {
             FSEventStreamStop(stream)
             FSEventStreamInvalidate(stream)
+            // 排空事件队列后在途回调全部完成，再释放流，避免 takeUnretainedValue
+            // 命中已释放对象（与 FSEventsHistoryProbe 的收尾次序一致）。
+            eventQueue.sync { }
             FSEventStreamRelease(stream)
         }
         stream = nil
+    }
+
+    deinit {
+        // deinit 可直接访问自身存储属性；生命周期兜底——monitor 释放前先停流、
+        // 排空队列再释放，在途回调不会逃逸到已释放的 self。
+        if let stream {
+            FSEventStreamStop(stream)
+            FSEventStreamInvalidate(stream)
+            eventQueue.sync { }
+            FSEventStreamRelease(stream)
+        }
+        debounceTask?.cancel()
     }
 }

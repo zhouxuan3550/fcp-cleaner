@@ -271,33 +271,6 @@ extension LibraryStore {
         if !newRecords.isEmpty { saveRecents() }
     }
 
-    @MainActor
-    private func applyValidatedCandidates(_ candidates: [URL], selectNewest: Bool, source: DiscoverySource) {
-        guard !candidates.isEmpty else { return }
-        var newRecords: [LibraryRecord] = []
-        var recordsByURL = Dictionary(
-            libraries.map { ($0.url.standardizedFileURL, $0) },
-            uniquingKeysWith: { existing, _ in existing }
-        )
-        for url in candidates {
-            let standardizedURL = url.standardizedFileURL
-            if let existing = recordsByURL[standardizedURL] {
-                if selectNewest { selectedID = existing.id }
-                continue
-            }
-            let record = LibraryRecord(url: standardizedURL, discoveredVia: source)
-            libraries.append(record)
-            recordsByURL[standardizedURL] = record
-            newRecords.append(record)
-            if selectNewest { selectedID = record.id }
-        }
-
-        libraries.sort { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
-        if selectedID == nil { selectedID = libraries.first?.id }
-        for record in newRecords { scan(record, force: false) }
-        if !newRecords.isEmpty { saveRecents() }
-    }
-
     nonisolated static func findLibraries(
         in roots: [URL]
     ) -> (byRoot: [URL: [URL]], failedRoots: Set<URL>, orphanCandidates: OrphanCacheDiscovery) {
