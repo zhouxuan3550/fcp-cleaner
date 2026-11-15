@@ -74,7 +74,7 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("现在最值得清理")
                 .font(AppFont.title(.semibold, design: .rounded))
-            let candidates = store.topCleanupCandidates
+            let candidates = store.topCleanupCandidates(pressures: pressures)
             if candidates.isEmpty {
                 Text("暂无达到门槛的候选")
                     .font(AppFont.callout(.medium))

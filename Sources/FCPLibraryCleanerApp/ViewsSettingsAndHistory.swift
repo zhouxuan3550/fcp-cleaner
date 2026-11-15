@@ -304,6 +304,9 @@ struct CleanupHistoryView: View {
         let volumeTotals = Dictionary(grouping: store.entries, by: { $0.volumeName ?? "未知卷" })
             .mapValues { entries in entries.reduce(Int64(0)) { $0 + $1.freedSize } }
             .sorted { $0.value > $1.value }
+        let recentCutoff = Date().addingTimeInterval(-30 * 86_400)
+        let categoryRecent = Dictionary(grouping: store.entries.filter { $0.date >= recentCutoff }.flatMap { $0.categories }, by: { $0 })
+            .mapValues { $0.count }
         let categoryTotals = Dictionary(grouping: store.entries.flatMap { $0.categories }, by: { $0 })
             .mapValues { $0.count }
             .sorted { $0.value > $1.value }
@@ -320,7 +323,11 @@ struct CleanupHistoryView: View {
                     .foregroundStyle(AppColor.secondaryText)
             }
             if !categoryTotals.isEmpty {
-                Text("按类目：\(categoryTotals.map { "\($0.key.chineseName) \($0.value) 次" }.joined(separator: " · "))")
+                let lines = categoryTotals.map { key, total -> String in
+                    let recent = categoryRecent[key] ?? 0
+                    return "\(key.chineseName) 近30天 \(recent) · 累计 \(total)"
+                }
+                Text("按类目：\(lines.joined(separator: " · "))")
                     .font(AppFont.small(.medium))
                     .foregroundStyle(AppColor.secondaryText)
             }

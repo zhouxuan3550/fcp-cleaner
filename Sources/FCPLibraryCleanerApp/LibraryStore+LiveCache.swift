@@ -157,13 +157,30 @@ extension LibraryStore {
             .reduce(Int64(0)) { $0 + $1.freedSize }
     }
 
-    /// 仪表盘：现在最值得清理的候选（按有效可清理体积排序，仅排序推荐，决策仍是用户）。
-    var topCleanupCandidates: [LibraryRecord] {
-        waitingLibraries
+    /// 仪表盘：现在最值得清理的候选。
+    /// 推荐分 = 可清理体积 × 久未使用 × 卷压力（可用越少权重越高）；
+    /// 纯排序启发式——只为把最值得看的排前面，绝不代表任何自动清理。
+    func topCleanupCandidates(pressures: [VolumePressure]) -> [LibraryRecord] {
+        let availableByVolume = Dictionary(
+            uniqueKeysWithValues: pressures.compactMap { pressure in
+                pressure.available.map { (pressure.id, $0) }
+            }
+        )
+        return waitingLibraries
             .filter { $0.scanResult != nil }
-            .sorted { effectiveCleanableSize(for: $0) > effectiveCleanableSize(for: $1) }
+            .sorted { rank($0, availableByVolume: availableByVolume) > rank($1, availableByVolume: availableByVolume) }
             .prefix(3)
             .map(\.self)
+    }
+
+    private func rank(_ record: LibraryRecord, availableByVolume: [URL: Int64]) -> Double {
+        let size = Double(effectiveCleanableSize(for: record))
+        let ageDays = record.lastActivity.map { Date().timeIntervalSince($0) / 86_400 } ?? 90
+        let recency = 0.5 + min(max(ageDays, 0) / 30, 3)      // 未用越久权重越高，封顶 3.5
+        let pressure = availableByVolume[record.volumeURL].map {
+            1 + max(0, 1 - Double($0) / 20_000_000_000)       // 可用 <20GB 时逐步加权，封顶 2
+        } ?? 1
+        return size * recency * pressure
     }
 
     /// 定时检查：自动发现 + 全库增量扫描 + 完成通知。
