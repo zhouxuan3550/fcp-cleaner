@@ -445,9 +445,18 @@ public struct LibraryScanner: Sendable {
 
     private static func directChildren(of url: URL, fileManager: FileManager) throws -> [URL] {
         do {
+            // 预取键必须与下方 resourceValues(for:) 的键集一致：
+            // URL 会缓存预取值，键集不齐时每个子项都要重新发起系统调用。
             return try fileManager.contentsOfDirectory(
                 at: url,
-                includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+                includingPropertiesForKeys: [
+                    .isDirectoryKey,
+                    .isSymbolicLinkKey,
+                    .fileAllocatedSizeKey,
+                    .totalFileAllocatedSizeKey,
+                    .fileSizeKey,
+                    .totalFileSizeKey,
+                ],
                 options: []
             )
         } catch CocoaError.fileReadNoPermission {

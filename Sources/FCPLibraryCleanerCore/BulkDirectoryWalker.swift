@@ -39,7 +39,10 @@ enum BulkDirectoryWalker {
         }
         // 128KB 缓冲整次遍历只分配一次；此前每层递归各分配并清零一次，
         // 数万目录的缓存树会重复付出可观成本。
-        var buffer = [UInt8](repeating: 0, count: 128 * 1024)
+        // 512KB 实测甜点：扩展格式记录约 750B/条，128KB 仅容纳 ~170 条导致
+        // getattrlistbulk 调用次数暴涨（100k 文件扫描 384ms → 48ms，8×）；
+        // 1MB 因超出 L2 反而变慢（63ms）。
+        var buffer = [UInt8](repeating: 0, count: 512 * 1024)
         try walkDirectory(fd: fd, path: path, depth: 0, buffer: &buffer, includePrivateSize: includePrivateSize, includeChangeTime: includeChangeTime, rootDevice: stayOnRootDevice ? rootInfo.st_dev : nil, shouldDescend: shouldDescend, visit: visit)
     }
 
