@@ -43,7 +43,7 @@ struct DashboardView: View {
                             Text(pressure.name)
                                 .font(AppFont.body(.medium))
                             Spacer()
-                            Text("可用 \(pressure.available.map(FormatHelpers.bytes) ?? "未知") · 可清理 \(FormatHelpers.bytes(pressure.cleanable))")
+                            Text(String(format: String(localized: "可用 %@ · 可清理 %@"), String(pressure.available.map(FormatHelpers.bytes) ?? "未知"), FormatHelpers.bytes(pressure.cleanable)))
                                 .font(AppFont.caption(.medium, design: .monospaced))
                                 .foregroundStyle(AppColor.secondaryText)
                         }
@@ -60,7 +60,7 @@ struct DashboardView: View {
                         .frame(height: 8)
                     }
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(pressure.name)：可用 \(pressure.available.map(FormatHelpers.bytes) ?? "未知")，可清理 \(FormatHelpers.bytes(pressure.cleanable))")
+                    .accessibilityLabel(String(format: String(localized: "%@：可用 %@，可清理 %@"), String(pressure.name), String(pressure.available.map(FormatHelpers.bytes) ?? "未知"), FormatHelpers.bytes(pressure.cleanable)))
                 }
             }
         }

@@ -1,385 +1,769 @@
 import AppKit
+
 import SwiftUI
+
 import FCPLibraryCleanerCore
 
+
+
 struct AppSettings: View {
+
     @Bindable var store: LibraryStore
 
+
+
     var body: some View {
+
         VStack(alignment: .leading, spacing: 14) {
+
             Text("设置")
+
                 .font(AppFont.title(.semibold, design: .rounded))
 
-            sectionHeader("扫描")
+
+
+            sectionHeader(String(localized: "扫描"))
+
             HStack {
+
                 Text("工作目录")
+
                     .font(AppFont.body(.semibold))
+
                 Spacer()
+
                 Button("添加") { store.openWorkDirectoryPanel() }
+
                     .buttonStyle(.borderless)
+
             }
+
+
 
             if store.workDirectories.isEmpty {
+
                 Text("未设置")
+
                     .font(.caption)
+
                     .foregroundStyle(AppColor.secondaryText)
+
             } else {
+
                 VStack(spacing: 8) {
+
                     ForEach(store.workDirectories, id: \.self) { url in
+
                         HStack(spacing: 9) {
+
                             Image(systemName: "folder.fill")
+
                                 .foregroundStyle(AppColor.accent)
+
                             VStack(alignment: .leading, spacing: 2) {
+
                                 Text(url.lastPathComponent)
+
                                     .font(AppFont.callout(.medium))
+
                                     .lineLimit(1)
+
                                 Text(url.path)
+
                                     .font(AppFont.caption(design: .monospaced))
+
                                     .foregroundStyle(AppColor.secondaryText)
+
                                     .lineLimit(1)
+
                                     .truncationMode(.middle)
+
                                 if let status = store.workDirectoryStatuses[url] {
+
                                     Text(workDirectoryStatusText(status))
+
                                         .font(AppFont.caption(.medium))
+
                                         .foregroundStyle(status.failed ? AppColor.danger : AppColor.tertiaryText)
+
                                         .lineLimit(1)
+
                                 }
+
                             }
+
                             Spacer(minLength: 4)
+
                             Button {
+
                                 store.removeWorkDirectory(url)
+
                             } label: {
+
                                 Image(systemName: "xmark")
+
                             }
+
                             .buttonStyle(.plain)
+
                             .foregroundStyle(AppColor.secondaryText)
-                            .accessibilityLabel("移除 \(url.lastPathComponent)")
+
+                            .accessibilityLabel(String(format: String(localized: "移除 %@"), String(url.lastPathComponent)))
+
                         }
+
                         .padding(9)
+
                         .background(AppColor.control)
+
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
                     }
+
                 }
+
             }
+
+
 
             if !store.possibleOrphanCaches.isEmpty {
-                DisclosureGroup("疑似孤立缓存（\(store.possibleOrphanCaches.count)）") {
+
+                DisclosureGroup(String(format: String(localized: "疑似孤立缓存（%@）"), String(store.possibleOrphanCaches.count))) {
+
                     ScrollView {
+
                         VStack(spacing: 8) {
+
                             ForEach(store.possibleOrphanCaches) { cache in
+
                                 HStack {
+
                                     VStack(alignment: .leading, spacing: 2) {
+
                                         Text(cache.url.lastPathComponent).lineLimit(1)
-                                        Text(cache.allocatedBytes.map { "识别缓存 \(FormatHelpers.bytes($0))" } ?? "大小不可用")
+
+                                        Text(cache.allocatedBytes.map { String(format: String(localized: "识别缓存 %@"), String(FormatHelpers.bytes($0))) } ?? "大小不可用")
+
                                             .font(.caption)
+
                                             .foregroundStyle(AppColor.secondaryText)
+
                                     }
+
                                     Spacer()
+
                                     Button("显示") { NSWorkspace.shared.activateFileViewerSelecting([cache.url]) }
+
                                         .buttonStyle(.borderless)
+
                                 }
+
                                 .help(cache.url.path)
+
                             }
+
                         }
+
                     }
+
                     .frame(maxHeight: 150)
+
                     .padding(.top, 4)
+
                 }
+
                 .font(AppFont.callout(.medium))
+
                 .help("仅识别工作目录中的疑似缓存文件夹，无法确认其是否被其他资源库使用。")
+
             }
+
+
 
             if !store.ignoredLibraryDirectories.isEmpty {
-                sectionHeader("已忽略目录（自动发现不再扫描）")
+
+                sectionHeader(String(localized: "已忽略目录（自动发现不再扫描）"))
+
                 VStack(spacing: 8) {
+
                     ForEach(store.ignoredLibraryDirectories, id: \.self) { path in
+
                         HStack(spacing: 9) {
+
                             Image(systemName: "bell.slash.fill")
+
                                 .foregroundStyle(AppColor.tertiaryText)
+
                             Text(path)
+
                                 .font(AppFont.caption(design: .monospaced))
+
                                 .foregroundStyle(AppColor.secondaryText)
+
                                 .lineLimit(1)
+
                                 .truncationMode(.middle)
+
                             Spacer(minLength: 4)
+
                             Button("恢复") { store.resumeDirectory(path) }
+
                                 .buttonStyle(.borderless)
+
                                 .font(AppFont.small(.medium))
+
                         }
+
                         .padding(9)
+
                         .background(AppColor.control)
+
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
                     }
+
                 }
+
             }
+
+
 
             Picker("定时检查", selection: $store.scheduledCheckFrequency) {
+
                 ForEach(ScheduledCheckFrequency.allCases) { frequency in
+
                     Text(frequency.title).tag(frequency)
+
                 }
+
             }
+
             .pickerStyle(.segmented)
+
             Text("到点自动发现并增量扫描，完成后仅发送通知，绝不自动清理")
+
                 .font(AppFont.caption(.medium))
+
                 .foregroundStyle(AppColor.tertiaryText)
-            Stepper("磁盘预警：\(store.lowSpaceWarningGB) GB", value: $store.lowSpaceWarningGB, in: 10...500, step: 10)
+
+            Stepper(String(format: String(localized: "磁盘预警：%@ GB"), String(store.lowSpaceWarningGB)), value: $store.lowSpaceWarningGB, in: 10...500, step: 10)
+
                 .font(AppFont.callout(.medium))
 
+
+
             Divider()
-            sectionHeader("清理安全")
+
+            sectionHeader(String(localized: "清理安全"))
+
             Toggle("清理前创建 APFS 快照", isOn: $store.cleanupSnapshotsEnabled)
+
                 .toggleStyle(.switch)
+
             Text("内置卷清理前自动创建本地快照，误删可整体回滚；快照由系统按需自动回收。外置卷的系统机制不可用，仍以废纸篓为回滚保障。")
+
                 .font(AppFont.caption(.medium))
+
                 .foregroundStyle(AppColor.tertiaryText)
+
                 .fixedSize(horizontal: false, vertical: true)
 
+
+
             Divider()
-            sectionHeader("通知与外观")
+
+            sectionHeader(String(localized: "通知与外观"))
+
             Toggle("完成与空间通知", isOn: $store.notificationsEnabled)
+
                 .toggleStyle(.switch)
+
             Picker("外观", selection: $store.appearanceMode) {
+
                 ForEach(AppearanceMode.allCases) { mode in
+
                     Text(mode.title).tag(mode)
+
                 }
+
             }
+
             .pickerStyle(.segmented)
 
+
+
             Divider()
-            sectionHeader("关于")
+
+            sectionHeader(String(localized: "关于"))
+
             BrandLinksView(
+
                 repositoryURL: URL(string: "https://github.com/zhouxuan3550/fcp-cleaner"),
+
                 repositoryName: "FCP Cleaner"
+
             )
+
             Button("检查更新") {
+
                 UpdateController.shared.checkForUpdates()
+
             }
+
             .disabled(!UpdateController.shared.isConfigured)
+
         }
+
         .padding(20)
+
         .frame(width: LayoutMetrics.settingsPopoverWidth)
+
     }
+
+
 
     private func workDirectoryStatusText(_ status: WorkDirectoryStatus) -> String {
-        if status.failed { return "无法访问（检查磁盘连接与权限）" }
-        if status.discoveredCount == 0 { return "此目录内未发现 .fcpbundle" }
+
+        if status.failed { return String(localized: "无法访问（检查磁盘连接与权限）") }
+
+        if status.discoveredCount == 0 { return String(localized: "此目录内未发现 .fcpbundle") }
+
         let time = status.updatedAt.formatted(date: .omitted, time: .shortened)
-        return "发现 \(status.discoveredCount) 个资源库 · \(time)"
+
+        return String(format: String(localized: "发现 %@ 个资源库 · %@"), String(status.discoveredCount), String(time))
+
     }
+
+
 
     private func sectionHeader(_ title: String) -> some View {
+
         Text(title)
+
             .font(AppFont.small(.semibold))
+
             .foregroundStyle(AppColor.tertiaryText)
+
             .textCase(.uppercase)
+
     }
+
 }
 
+
+
 struct CleanupHistoryView: View {
+
     let store: CleanupHistoryStore
+
     var libraryStore: LibraryStore?
+
     @State private var restoreMessage: String?
+
     @State private var isRestoring = false
+
     @State private var entryToPurge: CleanupHistoryEntry?
 
+
+
     var body: some View {
+
         VStack(alignment: .leading, spacing: 12) {
+
             HStack {
+
                 Text("清理记录")
+
                     .font(AppFont.title(.semibold, design: .rounded))
+
                 Spacer()
+
                 if !store.entries.isEmpty {
+
                     Menu {
+
                         Button("导出 CSV") { store.presentExportPanel(as: .csv) }
+
                         Button("导出 JSON") { store.presentExportPanel(as: .json) }
+
                     } label: {
+
                         Image(systemName: "square.and.arrow.up")
+
                             .font(AppFont.callout(.medium))
+
                     }
+
                     .accessibilityLabel("导出清理记录")
+
                     .menuStyle(.borderlessButton)
+
                     .fixedSize()
+
                     Button("清空") { store.clear() }
+
                         .buttonStyle(.borderless)
+
                         .disabled(isRestoring || store.isBusy)
+
                 }
+
             }
+
             if let monthly = monthlySummary {
-                Label("本月已清理 \(monthly.count) 次 · 移入废纸篓 \(FormatHelpers.bytes(monthly.freed))", systemImage: "calendar.badge.checkmark")
+
+                Label(String(format: String(localized: "本月已清理 %@ 次 · 移入废纸篓 %@"), String(monthly.count), String(FormatHelpers.bytes(monthly.freed))), systemImage: "calendar.badge.checkmark")
+
                     .font(AppFont.small(.semibold))
+
                     .foregroundStyle(AppColor.accent)
+
                     .help("按清理记录所在月份统计（当地时间）")
+
             }
+
             if !store.entries.isEmpty {
+
                 insightsSection
+
             }
+
             if let libraryStore {
+
                 interruptedCleanupBanners(libraryStore)
+
             }
+
             if store.entries.isEmpty {
+
                 Text("暂无记录")
+
                     .font(AppFont.callout(.medium))
+
                     .foregroundStyle(AppColor.secondaryText)
+
                     .frame(maxWidth: .infinity, minHeight: 90)
+
             } else {
+
                 ScrollView {
+
                     LazyVStack(spacing: 8) {
+
                         ForEach(store.entries) { entry in
+
                             HStack(spacing: 10) {
+
                                 Image(systemName: entry.errorMessages.isEmpty ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+
                                     .foregroundStyle(entry.errorMessages.isEmpty ? AppColor.success : AppColor.danger)
+
                                 VStack(alignment: .leading, spacing: 3) {
+
                                     Text(entry.libraryName)
+
                                         .font(AppFont.callout(.semibold))
+
                                         .lineLimit(1)
-                                    Text("\(entry.date.formatted(date: .abbreviated, time: .shortened)) · 移入废纸篓 \(FormatHelpers.bytes(entry.freedSize))")
+
+                                    Text(String(format: String(localized: "%@ · 移入废纸篓 %@"), String(entry.date.formatted(date: .abbreviated, time: .shortened)), String(FormatHelpers.bytes(entry.freedSize))))
+
                                         .font(AppFont.small(.medium))
+
                                         .foregroundStyle(AppColor.secondaryText)
+
                                     if let delta = entry.availableSpaceChange {
+
                                         Text("可用空间变化 \(delta < 0 ? "−" : "+")\(FormatHelpers.bytes(delta.magnitude > UInt64(Int64.max) ? Int64.max : Int64(delta.magnitude)))")
+
                                             .font(AppFont.small(.medium))
+
                                             .foregroundStyle(AppColor.secondaryText)
+
                                             .help("此值包含操作期间磁盘上其他活动造成的变化")
+
                                     }
+
                                 }
+
                                 Spacer()
+
                                 if !entry.trashedItems.isEmpty {
+
                                     Button("恢复") {
+
                                         guard !isRestoring else { return }
+
                                         isRestoring = true
+
                                         Task {
+
                                             restoreMessage = await store.restore(entry)
+
                                             isRestoring = false
+
                                         }
+
                                     }
+
                                     .buttonStyle(.borderless)
+
                                     .disabled(isRestoring || store.isBusy)
+
                                     Button("废纸篓") { store.showInTrash(entry) }
+
                                         .buttonStyle(.borderless)
+
                                         .disabled(isRestoring || store.isBusy)
+
                                     if entry.trashedItems.contains(where: { $0.snapshot != nil }) {
+
                                         Button("清空本次") { entryToPurge = entry }
+
                                             .buttonStyle(.borderless)
+
                                             .disabled(isRestoring || store.isBusy)
+
                                     }
+
                                 }
+
                             }
+
                             .padding(10)
+
                             .background(AppColor.control)
+
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
                         }
+
                     }
+
                 }
+
                 .frame(maxHeight: 360)
+
             }
+
             if let restoreMessage {
+
                 Text(restoreMessage)
+
                     .font(AppFont.small(.medium))
+
                     .foregroundStyle(AppColor.secondaryText)
+
             }
+
         }
+
         .padding(18)
+
         .frame(width: LayoutMetrics.historyPopoverWidth)
-        .alert("永久删除本次清理的项目？", isPresented: Binding(
+
+        .alert(String(localized: "永久删除本次清理的项目？"), isPresented: Binding(
+
             get: { entryToPurge != nil },
+
             set: { if !$0 { entryToPurge = nil } }
+
         ), presenting: entryToPurge) { entry in
+
             Button("永久删除", role: .destructive) {
+
                 isRestoring = true
+
                 Task {
+
                     restoreMessage = await store.purge(entry.id)
+
                     isRestoring = false
+
                 }
+
             }
+
             Button("取消", role: .cancel) { }
+
         } message: { _ in
+
             Text("仅清空本次记录中可验证的废纸篓项目，删除后无法恢复。")
+
         }
+
     }
+
+
 
     /// 本月（当地时区）清理汇总：数据全部来自既有历史，无额外持久化。
+
     /// 历史洞察：按卷合计、按类目合计与平均耗时，全部由内存态条目聚合。
+
     @ViewBuilder
+
     private var insightsSection: some View {
-        let volumeTotals = Dictionary(grouping: store.entries, by: { $0.volumeName ?? "未知卷" })
+
+        let volumeTotals = Dictionary(grouping: store.entries, by: { $0.volumeName ?? String(localized: "未知卷") })
+
             .mapValues { entries in entries.reduce(Int64(0)) { $0 + $1.freedSize } }
+
             .sorted { $0.value > $1.value }
+
         let recentCutoff = Date().addingTimeInterval(-30 * 86_400)
+
         let categoryRecent = Dictionary(grouping: store.entries.filter { $0.date >= recentCutoff }.flatMap { $0.categories }, by: { $0 })
+
             .mapValues { $0.count }
+
         let categoryTotals = Dictionary(grouping: store.entries.flatMap { $0.categories }, by: { $0 })
+
             .mapValues { $0.count }
+
             .sorted { $0.value > $1.value }
+
         let durations = store.entries.compactMap(\.elapsedSeconds)
 
+
+
         VStack(alignment: .leading, spacing: 6) {
+
             Text("洞察")
+
                 .font(AppFont.caption(.semibold))
+
                 .foregroundStyle(AppColor.tertiaryText)
+
             if !volumeTotals.isEmpty {
+
                 let top = volumeTotals.prefix(3)
+
                 Text("按卷：\(top.map { "\($0.key) \(FormatHelpers.bytes($0.value))" }.joined(separator: " · "))")
+
                     .font(AppFont.small(.medium))
+
                     .foregroundStyle(AppColor.secondaryText)
+
             }
+
             if !categoryTotals.isEmpty {
+
                 let lines = categoryTotals.map { key, total -> String in
+
                     let recent = categoryRecent[key] ?? 0
-                    return "\(key.chineseName) 近30天 \(recent) · 累计 \(total)"
+
+                    return String(format: String(localized: "%@ 近30天 %@ · 累计 %@"), String(key.chineseName), String(recent), String(total))
+
                 }
+
                 Text("按类目：\(lines.joined(separator: " · "))")
+
                     .font(AppFont.small(.medium))
+
                     .foregroundStyle(AppColor.secondaryText)
+
             }
+
             if durations.count >= 2 {
+
                 let average = durations.reduce(0.0, +) / Double(durations.count)
-                Text("平均执行耗时：\(FormatHelpers.duration(average))（\(durations.count) 次有记录）")
+
+                Text(String(format: String(localized: "平均执行耗时：%@（%@ 次有记录）"), String(FormatHelpers.duration(average)), String(durations.count)))
+
                     .font(AppFont.small(.medium))
+
                     .foregroundStyle(AppColor.secondaryText)
+
             }
+
         }
+
         .padding(.top, 2)
+
     }
+
+
 
     private var monthlySummary: (freed: Int64, count: Int)? {
+
         let calendar = Calendar.current
+
         let monthEntries = store.entries.filter {
+
             calendar.isDate($0.date, equalTo: Date(), toGranularity: .month)
+
         }
+
         guard !monthEntries.isEmpty else { return nil }
+
         return (monthEntries.reduce(0) { $0 + $1.freedSize }, monthEntries.count)
+
     }
 
+
+
     /// 上次清理中断的待清计划入口：重建走普通确认流程，绝不自动清理。
+
     @ViewBuilder
+
     private func interruptedCleanupBanners(_ libraryStore: LibraryStore) -> some View {
+
         if !libraryStore.interruptedCleanups.isEmpty {
+
             VStack(spacing: 8) {
+
                 ForEach(libraryStore.interruptedCleanups) { item in
+
                     HStack(spacing: 9) {
+
                         Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+
                             .foregroundStyle(AppColor.warning)
+
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("上次清理中断：\(item.libraryName)")
+
+                            Text(String(format: String(localized: "上次清理中断：%@"), String(item.libraryName)))
+
                                 .font(AppFont.callout(.semibold))
+
                                 .lineLimit(1)
-                            Text("\(item.pendingCount) 项未完成 · \(FormatHelpers.bytes(item.pendingSize))")
+
+                            Text(String(format: String(localized: "%@ 项未完成 · %@"), String(item.pendingCount), String(FormatHelpers.bytes(item.pendingSize))))
+
                                 .font(AppFont.small(.medium))
+
                                 .foregroundStyle(AppColor.secondaryText)
+
                         }
+
                         Spacer(minLength: 6)
+
                         Button("重建待清计划") { libraryStore.rebuildInterruptedCleanup(item) }
+
                             .buttonStyle(.borderless)
+
                             .foregroundStyle(AppColor.accent)
+
                         Button("忽略") { libraryStore.discardInterruptedCleanup(item) }
+
                             .buttonStyle(.borderless)
+
                             .foregroundStyle(AppColor.secondaryText)
+
                     }
+
                     .padding(10)
+
                     .background(AppColor.control)
+
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
                 }
+
             }
+
         }
+
     }
+
 }

@@ -1,0 +1,3426 @@
+{
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+    "%@ · %@ 项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ items"
+          }
+        }
+      }
+    },
+    "%@ · GitHub 仓库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · GitHub Repository"
+          }
+        }
+      }
+    },
+    "%@ · 移入废纸篓 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · Moved %2$@ to Trash"
+          }
+        }
+      }
+    },
+    "%@ 个" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ libraries"
+          }
+        }
+      }
+    },
+    "%@ 个文件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ files"
+          }
+        }
+      }
+    },
+    "%@ 个资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ libraries"
+          }
+        }
+      }
+    },
+    "%@ 分 %@ 秒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@m %2$@s"
+          }
+        }
+      }
+    },
+    "%@ 分钟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ min"
+          }
+        }
+      }
+    },
+    "%@ 剩余 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ left"
+          }
+        }
+      }
+    },
+    "%@ 天未使用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unused for %@"
+          }
+        }
+      }
+    },
+    "%@ 小时" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hr"
+          }
+        }
+      }
+    },
+    "%@ 小时 %@ 分" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@h %2$@m"
+          }
+        }
+      }
+    },
+    "%@ 秒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ sec"
+          }
+        }
+      }
+    },
+    "%@ 空间不足" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is low on space"
+          }
+        }
+      }
+    },
+    "%@ 近30天 %@ · 累计 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: last 30 days %2$@ · all time %3$@"
+          }
+        }
+      }
+    },
+    "%@ 项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ items"
+          }
+        }
+      }
+    },
+    "%@ 项失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ failed"
+          }
+        }
+      }
+    },
+    "%@ 项未完成 · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ unfinished · %2$@"
+          }
+        }
+      }
+    },
+    "%@，%@ 个资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@ libraries"
+          }
+        }
+      }
+    },
+    "%@，%@ 个资源库，可清理 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@ libraries, %3$@ cleanable"
+          }
+        }
+      }
+    },
+    "%@：可用 %@，可清理 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@ available, %3$@ cleanable"
+          }
+        }
+      }
+    },
+    "1 分钟以内" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under 1 minute"
+          }
+        }
+      }
+    },
+    "7 天内不再提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snooze for 7 days"
+          }
+        }
+      }
+    },
+    "Dry Run: %@ 项，%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dry run: %1$@ items, %2$@"
+          }
+        }
+      }
+    },
+    "FCP Cleaner 定时检查完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FCP Cleaner Scheduled Check Finished"
+          }
+        }
+      }
+    },
+    "FCP Cleaner 扫描资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FCP Cleaner Scanning Libraries"
+          }
+        }
+      }
+    },
+    "FCP Cleaner 批量预检与清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FCP Cleaner Batch Preflight & Cleanup"
+          }
+        }
+      }
+    },
+    "FCP Cleaner 清理完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FCP Cleaner Cleanup Finished"
+          }
+        }
+      }
+    },
+    "FCP Cleaner 清理结束" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FCP Cleaner Cleanup Ended"
+          }
+        }
+      }
+    },
+    "FCP Cleaner 清理资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FCP Cleaner Cleaning Library"
+          }
+        }
+      }
+    },
+    "FCP Cleaner 诊断信息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FCP Cleaner Diagnostics"
+          }
+        }
+      }
+    },
+    "Final Cut Pro 正在使用此资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Final Cut Pro is using this library"
+          }
+        }
+      }
+    },
+    "Final Cut Pro 正在使用此资源库，请先关闭该资源库后再清理。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Final Cut Pro is using this library. Close it in Final Cut Pro before cleaning."
+          }
+        }
+      }
+    },
+    "GitHub 仓库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub Repository"
+          }
+        }
+      }
+    },
+    "log show 失败（exit %@）：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "log show failed (exit %1$@): %2$@"
+          }
+        }
+      }
+    },
+    "log show 无法启动：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not launch log show: %@"
+          }
+        }
+      }
+    },
+    "zip 打包失败：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zip packaging failed: %@"
+          }
+        }
+      }
+    },
+    "上次可访问 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last accessible %@"
+          }
+        }
+      }
+    },
+    "上次清理中断：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last cleanup interrupted: %@"
+          }
+        }
+      }
+    },
+    "不到 1 秒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under 1 second"
+          }
+        }
+      }
+    },
+    "不是有效的 Final Cut Pro 资源库：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not a valid Final Cut Pro library: %@"
+          }
+        }
+      }
+    },
+    "与约一周前的扫描采样相比，资源库总体积的增长量" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Growth versus the scan sample taken about a week ago"
+          }
+        }
+      }
+    },
+    "主目录：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home directory: %@"
+          }
+        }
+      }
+    },
+    "亮色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        }
+      }
+    },
+    "仅为排序推荐；是否清理、何时清理完全由你决定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorting suggestions only — whether and when to clean is entirely up to you"
+          }
+        }
+      }
+    },
+    "仅清空本次记录中可验证的废纸篓项目，删除后无法恢复。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only verifiable Trash items in this record are deleted. This cannot be undone."
+          }
+        }
+      }
+    },
+    "仅识别工作目录中的疑似缓存文件夹，无法确认其是否被其他资源库使用。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only suspected cache folders in work directories are listed; whether other libraries reference them cannot be confirmed."
+          }
+        }
+      }
+    },
+    "从列表移除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from List"
+          }
+        }
+      }
+    },
+    "代理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proxy"
+          }
+        }
+      }
+    },
+    "代理媒体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proxy Media"
+          }
+        }
+      }
+    },
+    "代理媒体: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proxy Media: %@"
+          }
+        }
+      }
+    },
+    "以下判定基于 %@ 的扫描指纹" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The classifications below are based on fingerprints scanned at %@"
+          }
+        }
+      }
+    },
+    "优化" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optimized"
+          }
+        }
+      }
+    },
+    "优化媒体" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optimized Media"
+          }
+        }
+      }
+    },
+    "优化媒体: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optimized Media: %@"
+          }
+        }
+      }
+    },
+    "低于 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below %@"
+          }
+        }
+      }
+    },
+    "低于 %@ 的资源库会显示在这里" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libraries below %@ appear here"
+          }
+        }
+      }
+    },
+    "低于 %@ 的资源库会自动跳过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libraries below %@ are skipped automatically"
+          }
+        }
+      }
+    },
+    "低于门槛" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Below threshold"
+          }
+        }
+      }
+    },
+    "体积趋势" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size Trend"
+          }
+        }
+      }
+    },
+    "体积趋势：共 %@ 次扫描采样，最新 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size trend: %1$@ samples, latest %2$@"
+          }
+        }
+      }
+    },
+    "光流分析" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optical Flow"
+          }
+        }
+      }
+    },
+    "全选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select All"
+          }
+        }
+      }
+    },
+    "全选可清理资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select All Cleanable Libraries"
+          }
+        }
+      }
+    },
+    "全部扫描完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Scans Finished"
+          }
+        }
+      }
+    },
+    "全部移入废纸篓" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move All to Trash"
+          }
+        }
+      }
+    },
+    "共 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total %@"
+          }
+        }
+      }
+    },
+    "共享" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared"
+          }
+        }
+      }
+    },
+    "关于" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        }
+      }
+    },
+    "关闭" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
+    },
+    "关闭通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dismiss Notification"
+          }
+        }
+      }
+    },
+    "其他 %@ 个 Event" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ other Events"
+          }
+        }
+      }
+    },
+    "其他窗口正在处理清理记录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another window is processing history records"
+          }
+        }
+      }
+    },
+    "其他缓存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other Cache"
+          }
+        }
+      }
+    },
+    "内置卷清理前自动创建本地快照，误删可整体回滚；快照由系统按需自动回收。外置卷的系统机制不可用，仍以废纸篓为回滚保障。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before cleaning, a local APFS snapshot is created on the internal disk so mistakes can be rolled back; the system reclaims snapshots as needed. External disks lack this system mechanism — Trash remains the rollback guarantee there."
+          }
+        }
+      }
+    },
+    "分析(受保护)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysis (Protected)"
+          }
+        }
+      }
+    },
+    "分析文件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysis Files"
+          }
+        }
+      }
+    },
+    "分析文件(受保护): %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysis Files (protected): %@"
+          }
+        }
+      }
+    },
+    "到点自动发现并增量扫描，完成后仅发送通知，绝不自动清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discovers and scans incrementally on schedule, then notifies only — never cleans automatically"
+          }
+        }
+      }
+    },
+    "剩余 %@，FCP Cleaner 可清理 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ left · FCP Cleaner can free %@"
+          }
+        }
+      }
+    },
+    "加入批量清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to Batch"
+          }
+        }
+      }
+    },
+    "包含外置缓存 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includes external caches %@"
+          }
+        }
+      }
+    },
+    "原始媒体/工程" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original Media / Projects"
+          }
+        }
+      }
+    },
+    "原始媒体与工程数据: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original Media & Projects: %@"
+          }
+        }
+      }
+    },
+    "双击此处选择" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double-click to choose"
+          }
+        }
+      }
+    },
+    "发现 %@ 个资源库 · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Found %1$@ libraries · %2$@"
+          }
+        }
+      }
+    },
+    "发现后将自动扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning starts automatically after discovery"
+          }
+        }
+      }
+    },
+    "取消" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        }
+      }
+    },
+    "取消全选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deselect All"
+          }
+        }
+      }
+    },
+    "取消勾选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deselect"
+          }
+        }
+      }
+    },
+    "取消忽略" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unignore"
+          }
+        }
+      }
+    },
+    "取消批量选择" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Batch Selection"
+          }
+        }
+      }
+    },
+    "取消选择全部%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deselect all %1$@"
+          }
+        }
+      }
+    },
+    "只显示此磁盘" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This disk only"
+          }
+        }
+      }
+    },
+    "可安全清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Safe to Clean"
+          }
+        }
+      }
+    },
+    "可按 Event 或共享目录取消勾选；确认后仅清理所选条目，全部仍逐项复核指纹" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uncheck by Event or shared folder; only checked items are cleaned after fingerprint re-verification"
+          }
+        }
+      }
+    },
+    "可清理体积" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanable Size"
+          }
+        }
+      }
+    },
+    "可清理空间" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanable Space"
+          }
+        }
+      }
+    },
+    "可清理空间低于 %@ 的项目会自动跳过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libraries below %@ are skipped automatically"
+          }
+        }
+      }
+    },
+    "可清理空间低于 %@，已自动跳过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanable space is below %@ — skipped automatically"
+          }
+        }
+      }
+    },
+    "可用 %@ · 可清理 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ available · %2$@ cleanable"
+          }
+        }
+      }
+    },
+    "右键资源库可选择「7 天内不再提醒」" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right-click a library to snooze reminders for 7 days"
+          }
+        }
+      }
+    },
+    "各卷压力" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume Pressure"
+          }
+        }
+      }
+    },
+    "合计" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total"
+          }
+        }
+      }
+    },
+    "在 Finder 中显示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Finder"
+          }
+        }
+      }
+    },
+    "在 Finder 中显示当前资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the current library in Finder"
+          }
+        }
+      }
+    },
+    "增量复用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cache Reused"
+          }
+        }
+      }
+    },
+    "增长最快" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fastest Growing"
+          }
+        }
+      }
+    },
+    "外置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "External"
+          }
+        }
+      }
+    },
+    "外置盘诊断" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk Diagnostics"
+          }
+        }
+      }
+    },
+    "外置盘诊断中…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnosing disk…"
+          }
+        }
+      }
+    },
+    "外观" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        }
+      }
+    },
+    "大小不可用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size unavailable"
+          }
+        }
+      }
+    },
+    "安全预检与保护机制" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Safety preflight & protections"
+          }
+        }
+      }
+    },
+    "安全预检通过：已检查 Final Cut Pro 占用及磁盘状态，清理前会逐项复核文件指纹，并移入废纸篓。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preflight passed: Final Cut Pro usage and disk state checked, every item re-verified by fingerprint before moving to Trash."
+          }
+        }
+      }
+    },
+    "完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        }
+      }
+    },
+    "完成与空间通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completion & Space Notifications"
+          }
+        }
+      }
+    },
+    "完整重新扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full rescan"
+          }
+        }
+      }
+    },
+    "定时检查" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scheduled Check"
+          }
+        }
+      }
+    },
+    "对指定资源库做增量扫描并等待完成，返回当前可安全清理的空间。名称留空则扫描全部资源库。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incrementally scans the given library and waits for completion, returning the currently cleanable size. Leave the name empty to scan all libraries."
+          }
+        }
+      }
+    },
+    "导出 CSV" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export CSV"
+          }
+        }
+      }
+    },
+    "导出 JSON" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export JSON"
+          }
+        }
+      }
+    },
+    "导出时间：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exported at: %@"
+          }
+        }
+      }
+    },
+    "导出清理记录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export History"
+          }
+        }
+      }
+    },
+    "导出诊断信息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Diagnostics"
+          }
+        }
+      }
+    },
+    "导出诊断信息…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Diagnostics…"
+          }
+        }
+      }
+    },
+    "将已选生成文件移入废纸篓？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move the selected generated files to Trash?"
+          }
+        }
+      }
+    },
+    "将生成文件移入废纸篓" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move generated files to Trash"
+          }
+        }
+      }
+    },
+    "尚未扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not scanned yet"
+          }
+        }
+      }
+    },
+    "工作目录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Work Directories"
+          }
+        }
+      }
+    },
+    "已保护分析文件 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analysis files protected: %@"
+          }
+        }
+      }
+    },
+    "已创建本地快照 %@，系统可按需自动回收" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local snapshot created at %1$@ — reclaimed automatically as needed"
+          }
+        }
+      }
+    },
+    "已就绪" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        }
+      }
+    },
+    "已忽略" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignored"
+          }
+        }
+      }
+    },
+    "已忽略目录（自动发现不再扫描）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignored directories (no longer auto-discovered)"
+          }
+        }
+      }
+    },
+    "已忽略至 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignored until %@"
+          }
+        }
+      }
+    },
+    "已恢复 %@ 项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restored %@ items"
+          }
+        }
+      }
+    },
+    "已恢复 %@ 项，%@ 项失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restored %1$@ items, %2$@ failed"
+          }
+        }
+      }
+    },
+    "已扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanned"
+          }
+        }
+      }
+    },
+    "已检查 %@ 项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked %@ items"
+          }
+        }
+      }
+    },
+    "已检查 Final Cut Pro 是否占用资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked whether Final Cut Pro holds the library open"
+          }
+        }
+      }
+    },
+    "已检查资源库及目标位置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked the library and destination volume"
+          }
+        }
+      }
+    },
+    "已清空 %@ 项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleted %@ items"
+          }
+        }
+      }
+    },
+    "已清空 %@ 项，%@ 项未清空" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleted %1$@ items, %2$@ could not be deleted"
+          }
+        }
+      }
+    },
+    "已跳过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skipped"
+          }
+        }
+      }
+    },
+    "已选 %@ 个资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ libraries selected"
+          }
+        }
+      }
+    },
+    "已选 %@/%@ 项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ of %2$@ items selected"
+          }
+        }
+      }
+    },
+    "已验证" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verified"
+          }
+        }
+      }
+    },
+    "平均执行耗时：%@（%@ 次有记录）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average duration: %1$@ (%2$@ recorded runs)"
+          }
+        }
+      }
+    },
+    "库级共享" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library-level shared"
+          }
+        }
+      }
+    },
+    "应用版本：%@（Build %@）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App version: %1$@ (Build %2$@)"
+          }
+        }
+      }
+    },
+    "废纸篓" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trash"
+          }
+        }
+      }
+    },
+    "废纸篓保护" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trash Protection"
+          }
+        }
+      }
+    },
+    "开始清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Cleaning"
+          }
+        }
+      }
+    },
+    "当前可清理 %@（%@ 个资源库），请打开应用确认后清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ currently cleanable (%2$@ libraries). Open the app to review and clean."
+          }
+        }
+      }
+    },
+    "彻底删除后预计 %@–%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated reclaim after permanent deletion: %1$@–%2$@"
+          }
+        }
+      }
+    },
+    "彻底删除后预计可释放 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated reclaim after permanent deletion: %@"
+          }
+        }
+      }
+    },
+    "待扫描 %@ 个" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ awaiting scan"
+          }
+        }
+      }
+    },
+    "待清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To Clean"
+          }
+        }
+      }
+    },
+    "快照与指纹" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snapshot & Fingerprints"
+          }
+        }
+      }
+    },
+    "忽略" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignore"
+          }
+        }
+      }
+    },
+    "忽略所在目录的全部资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ignore all libraries in this folder"
+          }
+        }
+      }
+    },
+    "总体积" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total Size"
+          }
+        }
+      }
+    },
+    "总览" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overview"
+          }
+        }
+      }
+    },
+    "总览：合计、各卷压力与推荐" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overview: totals, volume pressure and suggestions"
+          }
+        }
+      }
+    },
+    "恢复" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore"
+          }
+        }
+      }
+    },
+    "所选的不是原资源库（%@），请重新选择同一个 .fcpbundle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That is not the original library (%1$@). Pick the same .fcpbundle again."
+          }
+        }
+      }
+    },
+    "打开" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        }
+      }
+    },
+    "打开 %@ 的 GitHub 仓库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the GitHub repository for %1$@"
+          }
+        }
+      }
+    },
+    "打开调色师手册的小红书主页" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the Colorist Handbook on Xiaohongshu"
+          }
+        }
+      }
+    },
+    "扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan"
+          }
+        }
+      }
+    },
+    "扫描中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning"
+          }
+        }
+      }
+    },
+    "扫描中…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning…"
+          }
+        }
+      }
+    },
+    "扫描任务最多同时运行 3 个" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "At most 3 scans run concurrently"
+          }
+        }
+      }
+    },
+    "扫描后文件已发生变化：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files changed since the scan: %@"
+          }
+        }
+      }
+    },
+    "扫描在后台进行，可继续浏览其他资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning runs in the background — keep browsing other libraries"
+          }
+        }
+      }
+    },
+    "扫描失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan failed"
+          }
+        }
+      }
+    },
+    "扫描失败 %@ 个" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ scans failed"
+          }
+        }
+      }
+    },
+    "扫描工作目录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan Work Directories"
+          }
+        }
+      }
+    },
+    "扫描资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan Libraries"
+          }
+        }
+      }
+    },
+    "批量清理 %@ 个资源库？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean %@ libraries?"
+          }
+        }
+      }
+    },
+    "批量清理完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Batch Cleanup Finished"
+          }
+        }
+      }
+    },
+    "拖入 .fcpbundle 资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop .fcpbundle libraries here"
+          }
+        }
+      }
+    },
+    "拖入 .fcpbundle 资源库，或双击选择" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drop .fcpbundle libraries here, or double-click to choose"
+          }
+        }
+      }
+    },
+    "拷贝资源库路径" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy Library Path"
+          }
+        }
+      }
+    },
+    "按 Event 拆分" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By Event"
+          }
+        }
+      }
+    },
+    "按名称" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By Name"
+          }
+        }
+      }
+    },
+    "按大小" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By Size"
+          }
+        }
+      }
+    },
+    "按最近使用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By Recent Use"
+          }
+        }
+      }
+    },
+    "按清理记录所在月份统计（当地时间）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grouped by the month of each cleanup (local time)"
+          }
+        }
+      }
+    },
+    "排序：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort: %@"
+          }
+        }
+      }
+    },
+    "搜索资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search libraries"
+          }
+        }
+      }
+    },
+    "文件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files"
+          }
+        }
+      }
+    },
+    "文件夹" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Folders"
+          }
+        }
+      }
+    },
+    "无法移入废纸篓：%@（%@）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not move to Trash: %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "无法访问（检查磁盘连接与权限）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unreachable — check disk connection and permissions"
+          }
+        }
+      }
+    },
+    "无法重建待清计划" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not rebuild the pending plan"
+          }
+        }
+      }
+    },
+    "日期" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        }
+      }
+    },
+    "显示" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show"
+          }
+        }
+      }
+    },
+    "显示全部磁盘" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show All Disks"
+          }
+        }
+      }
+    },
+    "暂无记录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No records yet"
+          }
+        }
+      }
+    },
+    "暂无达到门槛的候选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No candidates above the threshold"
+          }
+        }
+      }
+    },
+    "暂无需要清理的资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No libraries need cleaning"
+          }
+        }
+      }
+    },
+    "暗色" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        }
+      }
+    },
+    "更多操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Actions"
+          }
+        }
+      }
+    },
+    "最大安全清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maximum Safe Cleanup"
+          }
+        }
+      }
+    },
+    "未发现足够可清理的空间" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enough cleanable space found"
+          }
+        }
+      }
+    },
+    "未知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown"
+          }
+        }
+      }
+    },
+    "未知卷" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown volume"
+          }
+        }
+      }
+    },
+    "未知错误" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown error"
+          }
+        }
+      }
+    },
+    "未设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not set"
+          }
+        }
+      }
+    },
+    "本周 +%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@ this week"
+          }
+        }
+      }
+    },
+    "本月已清理 %@ 次 · 移入废纸篓 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ cleanups this month · %2$@ moved to Trash"
+          }
+        }
+      }
+    },
+    "本机发现" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On This Mac"
+          }
+        }
+      }
+    },
+    "本次扫描没有候选目录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No candidate directories in this scan"
+          }
+        }
+      }
+    },
+    "架构：%@ 核 / %@ 内存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Architecture: %1$@ cores / %2$@ memory"
+          }
+        }
+      }
+    },
+    "查看" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View"
+          }
+        }
+      }
+    },
+    "查看可清理空间" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Cleanable Space"
+          }
+        }
+      }
+    },
+    "检查更新" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for Updates"
+          }
+        }
+      }
+    },
+    "检查更新…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking for Updates…"
+          }
+        }
+      }
+    },
+    "正在处理其他项目" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another operation is in progress"
+          }
+        }
+      }
+    },
+    "正在扫描资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning library"
+          }
+        }
+      }
+    },
+    "正在查找 FCP 资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for FCP libraries"
+          }
+        }
+      }
+    },
+    "正在检查 %@/%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking %1$@/%2$@"
+          }
+        }
+      }
+    },
+    "正在清理 %@/%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleaning %1$@/%2$@"
+          }
+        }
+      }
+    },
+    "正在读取卷容量…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading volume capacity…"
+          }
+        }
+      }
+    },
+    "此值包含操作期间磁盘上其他活动造成的变化" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Includes changes caused by other disk activity during the operation"
+          }
+        }
+      }
+    },
+    "此目录内未发现 .fcpbundle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No .fcpbundle found in this folder"
+          }
+        }
+      }
+    },
+    "每周" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekly"
+          }
+        }
+      }
+    },
+    "每天" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily"
+          }
+        }
+      }
+    },
+    "永久删除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Permanently"
+          }
+        }
+      }
+    },
+    "永久删除本次清理的项目？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permanently delete the items from this cleanup?"
+          }
+        }
+      }
+    },
+    "汇总所有资源库当前可安全清理的空间，并打开 FCP Cleaner 主窗口。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Summarizes the cleanable space across all libraries and opens the main window."
+          }
+        }
+      }
+    },
+    "没有可恢复的项目" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing restorable"
+          }
+        }
+      }
+    },
+    "没有可清空的项目；项目可能已变化或缺少校验信息" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing deletable — items may have changed or lack verification data"
+          }
+        }
+      }
+    },
+    "没有已忽略的资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No ignored libraries"
+          }
+        }
+      }
+    },
+    "没有已跳过的资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No skipped libraries"
+          }
+        }
+      }
+    },
+    "没有扫描任务" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No scan tasks"
+          }
+        }
+      }
+    },
+    "没有访问权限：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No access permission: %@"
+          }
+        }
+      }
+    },
+    "波形缓存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waveform Cache"
+          }
+        }
+      }
+    },
+    "洞察" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insights"
+          }
+        }
+      }
+    },
+    "添加" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "添加资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Library"
+          }
+        }
+      }
+    },
+    "清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean"
+          }
+        }
+      }
+    },
+    "清理前创建 APFS 快照" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create APFS snapshot before cleaning"
+          }
+        }
+      }
+    },
+    "清理前检查未通过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preflight failed"
+          }
+        }
+      }
+    },
+    "清理前逐项复核文件指纹" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every item's fingerprint re-verified before cleaning"
+          }
+        }
+      }
+    },
+    "清理安全" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup Safety"
+          }
+        }
+      }
+    },
+    "清理所选 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean Selected %1$@"
+          }
+        }
+      }
+    },
+    "清理记录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup History"
+          }
+        }
+      }
+    },
+    "清理记录已不存在" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The history record no longer exists"
+          }
+        }
+      }
+    },
+    "清理项目" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cleanup Items"
+          }
+        }
+      }
+    },
+    "清空" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete All"
+          }
+        }
+      }
+    },
+    "清空本次" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete This Record"
+          }
+        }
+      }
+    },
+    "清除搜索" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Search"
+          }
+        }
+      }
+    },
+    "渲染" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Render"
+          }
+        }
+      }
+    },
+    "渲染文件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Render Files"
+          }
+        }
+      }
+    },
+    "渲染文件: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Render Files: %@"
+          }
+        }
+      }
+    },
+    "点按只显示此磁盘的资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Click to show libraries on this disk only"
+          }
+        }
+      }
+    },
+    "版本 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %@"
+          }
+        }
+      }
+    },
+    "现在最值得清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top Candidates Now"
+          }
+        }
+      }
+    },
+    "生成扫描目录树" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generate scan directory tree"
+          }
+        }
+      }
+    },
+    "疑似孤立缓存（%@）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suspected orphan caches (%1$@)"
+          }
+        }
+      }
+    },
+    "磁盘在线 · 只读" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Online · read-only"
+          }
+        }
+      }
+    },
+    "磁盘在线 · 可写" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Online · writable"
+          }
+        }
+      }
+    },
+    "磁盘已断开" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk disconnected"
+          }
+        }
+      }
+    },
+    "磁盘已断开或未挂载" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk disconnected or unmounted"
+          }
+        }
+      }
+    },
+    "磁盘权限" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk Permissions"
+          }
+        }
+      }
+    },
+    "磁盘预警：%@ GB" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disk warning: %@ GB"
+          }
+        }
+      }
+    },
+    "移入废纸篓" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to Trash"
+          }
+        }
+      }
+    },
+    "移入废纸篓 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moved %@ to Trash"
+          }
+        }
+      }
+    },
+    "移入废纸篓 %@ · %@ 个资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moved %1$@ to Trash · %2$@ libraries"
+          }
+        }
+      }
+    },
+    "移入废纸篓 %@ · %@ 项 · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moved %1$@ to Trash · %2$@ items · %3$@"
+          }
+        }
+      }
+    },
+    "移入废纸篓后可恢复" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recoverable after moving to Trash"
+          }
+        }
+      }
+    },
+    "移除 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove %1$@"
+          }
+        }
+      }
+    },
+    "稳定分析" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stabilization"
+          }
+        }
+      }
+    },
+    "等待扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting to Scan"
+          }
+        }
+      }
+    },
+    "筛选：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter: %@"
+          }
+        }
+      }
+    },
+    "系统：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System: %@"
+          }
+        }
+      }
+    },
+    "约 %@ 分钟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %@ min"
+          }
+        }
+      }
+    },
+    "约 %@ 小时 %@ 分钟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %1$@ hr %2$@ min"
+          }
+        }
+      }
+    },
+    "缓存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cache"
+          }
+        }
+      }
+    },
+    "缩略图缓存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thumbnail Cache"
+          }
+        }
+      }
+    },
+    "自动扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto Scan"
+          }
+        }
+      }
+    },
+    "自动扫描 · 安全清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto-scan · Safe cleaning"
+          }
+        }
+      }
+    },
+    "自动扫描未能启动" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auto discovery failed to start"
+          }
+        }
+      }
+    },
+    "自动扫描资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan libraries automatically"
+          }
+        }
+      }
+    },
+    "自动扫描资源库 (空格键)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan libraries automatically (space bar)"
+          }
+        }
+      }
+    },
+    "记录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "History"
+          }
+        }
+      }
+    },
+    "设为工作目录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set as Work Directory"
+          }
+        }
+      }
+    },
+    "设置" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        }
+      }
+    },
+    "设置…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings…"
+          }
+        }
+      }
+    },
+    "识别缓存 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recognized cache %@"
+          }
+        }
+      }
+    },
+    "诊断信息导出失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics export failed"
+          }
+        }
+      }
+    },
+    "诊断信息已导出" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostics exported"
+          }
+        }
+      }
+    },
+    "该资源库一周内体积增长最快" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This library grew the fastest over the past week"
+          }
+        }
+      }
+    },
+    "请至少勾选一个条目" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check at least one item"
+          }
+        }
+      }
+    },
+    "请选择 .fcpbundle 资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose .fcpbundle libraries"
+          }
+        }
+      }
+    },
+    "调色师手册 · 小红书" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colorist Handbook · Xiaohongshu"
+          }
+        }
+      }
+    },
+    "调色师手册开发 · B 站主页" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colorist Handbook Dev · Bilibili"
+          }
+        }
+      }
+    },
+    "调色师手册开发，打开 B 站主页" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colorist Handbook Dev — open the Bilibili page"
+          }
+        }
+      }
+    },
+    "资源库 %@ 个" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ libraries"
+          }
+        }
+      }
+    },
+    "资源库「%@」当前不在线或已从列表移除，请先连接磁盘" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library “%1$@” is offline or was removed. Connect the disk first."
+          }
+        }
+      }
+    },
+    "资源库占用细分：总计 %@。其中渲染文件 %@，代理媒体 %@，优化媒体 %@，受保护分析文件 %@，原始工程素材 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library usage breakdown: %1$@ total — render files %2$@, proxy media %3$@, optimized media %4$@, protected analysis %5$@, original media & projects %6$@"
+          }
+        }
+      }
+    },
+    "资源库名称" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library Name"
+          }
+        }
+      }
+    },
+    "资源库大小" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library Size"
+          }
+        }
+      }
+    },
+    "资源库所在磁盘为只读，无法移入废纸篓。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The library's disk is read-only — cannot move to Trash."
+          }
+        }
+      }
+    },
+    "资源库所在磁盘已离线或无法访问。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The library's disk is offline or unreachable."
+          }
+        }
+      }
+    },
+    "资源库操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library Actions"
+          }
+        }
+      }
+    },
+    "资源库显示名，留空扫描全部" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library display name; leave empty to scan all"
+          }
+        }
+      }
+    },
+    "资源库未能完整扫描，无法创建清理计划：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The library could not be fully scanned; no cleanup plan possible: %@"
+          }
+        }
+      }
+    },
+    "资源库结构无法确认：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library structure could not be confirmed: %@"
+          }
+        }
+      }
+    },
+    "资源库：%@ 个（已扫描 %@，其中增量复用 %@，失败 %@）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libraries: %1$@ total (%2$@ scanned, %3$@ cache reused, %4$@ failed)"
+          }
+        }
+      }
+    },
+    "跟随系统" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System"
+          }
+        }
+      }
+    },
+    "跳过此项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip this item"
+          }
+        }
+      }
+    },
+    "近 %@ 次采样" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last %@ samples"
+          }
+        }
+      }
+    },
+    "进程检查" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Process Check"
+          }
+        }
+      }
+    },
+    "退出" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit"
+          }
+        }
+      }
+    },
+    "选择 Final Cut Pro 资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Final Cut Pro Libraries"
+          }
+        }
+      }
+    },
+    "选择全部%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select all %1$@"
+          }
+        }
+      }
+    },
+    "选择工作目录" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Work Directories"
+          }
+        }
+      }
+    },
+    "选择资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Libraries"
+          }
+        }
+      }
+    },
+    "选择资源库…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Libraries…"
+          }
+        }
+      }
+    },
+    "通知与外观" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications & Appearance"
+          }
+        }
+      }
+    },
+    "重建待清计划" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rebuild Pending Plan"
+          }
+        }
+      }
+    },
+    "重新包含此项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-include this item"
+          }
+        }
+      }
+    },
+    "重新扫描" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rescan"
+          }
+        }
+      }
+    },
+    "重新扫描已设置的工作目录，返回正在扫描的工作目录列表。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-scans the configured work directories and returns the list currently being scanned."
+          }
+        }
+      }
+    },
+    "重新扫描当前资源库" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rescan the current library"
+          }
+        }
+      }
+    },
+    "重新扫描（⌘R）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rescan (⌘R)"
+          }
+        }
+      }
+    },
+    "重新授权" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reauthorize"
+          }
+        }
+      }
+    },
+    "重新授权未完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reauthorization incomplete"
+          }
+        }
+      }
+    },
+    "重新授权访问" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reauthorize Access"
+          }
+        }
+      }
+    },
+    "重新授权资源库访问" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reauthorize Library Access"
+          }
+        }
+      }
+    },
+    "重试失败项 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry %1$@ Failed Items"
+          }
+        }
+      }
+    },
+    "重试失败项目？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry failed items?"
+          }
+        }
+      }
+    },
+    "错误：%@\\n" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error: %@\\n"
+          }
+        }
+      }
+    },
+    "项目已不在废纸篓" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Items are no longer in the Trash"
+          }
+        }
+      }
+    },
+    "预检未通过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preflight failed"
+          }
+        }
+      }
+    },
+    "预检通过" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preflight passed"
+          }
+        }
+      }
+    },
+    "预计耗时 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated duration %@"
+          }
+        }
+      }
+    },
+    "（近 %@ 分钟无日志）" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(No log entries in the last %1$@ minutes)"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

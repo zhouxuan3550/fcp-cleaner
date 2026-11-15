@@ -94,3 +94,46 @@ struct CleanupSnapshotWiringTests {
         #expect(disabled.elapsedSeconds != nil)
     }
 }
+
+struct LocalizationCatalogTests {
+    /// 门禁：目录里每个 zh-Hans 键都必须有非空 en 翻译，且占位符个数一致。
+    /// 新增 UI 文案时若漏翻，这里直接红。
+    @Test("String Catalog 全键具备 en 翻译且占位符一致")
+    func everyKeyHasEnglish() throws {
+        let catalogURL = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // Tests/FCPLibraryCleanerAppTests
+            .deletingLastPathComponent()   // Tests
+            .deletingLastPathComponent()   // 仓库根
+            .appendingPathComponent("Sources/FCPLibraryCleanerApp/Localizable.xcstrings")
+        let catalog = try JSONDecoder().decode(LocalizationCatalog.self, from: Data(contentsOf: catalogURL))
+
+        #expect(catalog.sourceLanguage == "zh-Hans")
+        #expect(catalog.strings.count > 300)
+
+        for (key, entry) in catalog.strings {
+            let en = entry.localizations?["en"]?.stringUnit?.value
+            #expect(en != nil && !(en ?? "").isEmpty, "缺 en 翻译：\(key)")
+            let placeholder = { (s: String) -> Int in
+                s.matches(of: /%@/).count + s.matches(of: /%\d+\$@/).count
+            }
+            #expect(placeholder(key) == placeholder(en ?? ""), "占位符不一致：\(key)")
+        }
+    }
+}
+
+struct LocalizationCatalog: Decodable {
+    let sourceLanguage: String
+    let strings: [String: Entry]
+
+    struct Entry: Decodable {
+        let localizations: [String: Localization]?
+    }
+
+    struct Localization: Decodable {
+        let stringUnit: StringUnit?
+    }
+
+    struct StringUnit: Decodable {
+        let value: String
+    }
+}

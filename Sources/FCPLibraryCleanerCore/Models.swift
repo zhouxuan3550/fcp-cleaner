@@ -1,298 +1,595 @@
 import Foundation
 
+
+
 public enum CacheCategory: String, CaseIterable, Codable, Sendable {
+
     case renderFiles
+
     case proxyMedia
+
     case optimizedMedia
+
     case analysisFiles
+
     case opticalFlow
+
     case stabilization
+
     case thumbnails
+
     case waveform
+
     case otherCache
+
+
 
     public static let cleanableCases: [CacheCategory] = [.renderFiles, .proxyMedia, .optimizedMedia]
 
+
+
     public var displayName: String {
+
         switch self {
+
         case .renderFiles: "Render Files"
+
         case .proxyMedia: "Proxy Media"
+
         case .optimizedMedia: "Optimized Media"
+
         case .analysisFiles: "Analysis Files"
+
         case .opticalFlow: "Optical Flow"
+
         case .stabilization: "Stabilization"
+
         case .thumbnails: "Thumbnail Cache"
+
         case .waveform: "Waveform Cache"
+
         case .otherCache: "Other Regeneratable Cache"
+
         }
+
     }
+
 }
+
+
 
 public enum DetectionConfidence: String, Codable, Sendable {
+
     case confirmed
+
     case likely
+
     case unknown
+
 }
+
+
 
 public enum CacheStorage: String, Codable, Sendable {
+
     case library
+
     case external
+
 }
+
+
 
 public struct CacheItem: Codable, Hashable, Sendable, Identifiable {
+
     public let url: URL
+
     public let category: CacheCategory
+
     public let allocatedSize: Int64
+
     public let logicalSize: Int64
+
     public let confidence: DetectionConfidence
+
     public let ruleID: String
+
     public let storage: CacheStorage
+
     public let fingerprint: FileFingerprint
+
     public let reclaimableEstimate: ReclaimableSpaceEstimate?
 
+
+
     public var id: URL { url }
 
+
+
     public init(
+
         url: URL,
+
         category: CacheCategory,
+
         allocatedSize: Int64,
+
         logicalSize: Int64,
+
         confidence: DetectionConfidence,
+
         ruleID: String,
+
         storage: CacheStorage = .library,
+
         fingerprint: FileFingerprint,
+
         reclaimableEstimate: ReclaimableSpaceEstimate? = nil
+
     ) {
+
         self.url = url
+
         self.category = category
+
         self.allocatedSize = allocatedSize
+
         self.logicalSize = logicalSize
+
         self.confidence = confidence
+
         self.ruleID = ruleID
+
         self.storage = storage
+
         self.fingerprint = fingerprint
+
         self.reclaimableEstimate = reclaimableEstimate
+
     }
+
 }
+
+
 
 public enum ProtectionReason: String, Codable, Sendable {
+
     case libraryDatabase
+
     case eventDatabase
+
     case originalMedia
+
     case symbolicLink
+
     case unknownStructure
+
 }
+
+
 
 public struct ProtectedItem: Codable, Hashable, Sendable, Identifiable {
+
     public let url: URL
+
     public let reason: ProtectionReason
 
+
+
     public var id: URL { url }
+
+
 
     public init(url: URL, reason: ProtectionReason) {
+
         self.url = url
+
         self.reason = reason
+
     }
+
 }
+
+
 
 public enum ObservedCacheCategory: String, Codable, Sendable {
+
     case analysisFiles
+
 }
 
+
+
 /// A recognized generated-data location that remains excluded from every cleanup plan.
+
 public struct ObservedCacheItem: Codable, Hashable, Sendable, Identifiable {
+
     public let url: URL
+
     public let category: ObservedCacheCategory
+
     public let allocatedSize: Int64
+
     public let logicalSize: Int64
+
     public let confidence: DetectionConfidence
+
     public let ruleID: String
+
+
 
     public var id: URL { url }
 
+
+
     public init(
+
         url: URL,
+
         category: ObservedCacheCategory,
+
         allocatedSize: Int64,
+
         logicalSize: Int64,
+
         confidence: DetectionConfidence,
+
         ruleID: String
+
     ) {
+
         self.url = url
+
         self.category = category
+
         self.allocatedSize = allocatedSize
+
         self.logicalSize = logicalSize
+
         self.confidence = confidence
+
         self.ruleID = ruleID
+
     }
+
 }
 
+
+
 public struct ScanIssue: Codable, Hashable, Sendable, Identifiable {
+
     public let url: URL
+
     public let message: String
+
+
 
     public var id: String { "\(url.path):\(message)" }
 
+
+
     public init(url: URL, message: String) {
+
         self.url = url
+
         self.message = message
+
     }
+
 }
+
+
 
 public struct ScanProgress: Sendable, Equatable {
+
     public let files: Int
+
     public let directories: Int
+
     public let allocatedBytes: Int64
 
+
+
     public init(files: Int, directories: Int, allocatedBytes: Int64) {
+
         self.files = files
+
         self.directories = directories
+
         self.allocatedBytes = allocatedBytes
+
     }
+
 }
+
+
 
 /// Display-only totals collected from directories whose fingerprints completed.
+
 public struct ScanPartialResults: Sendable, Equatable {
+
     public let completedDirectories: Int
+
     public let totalDirectories: Int
+
     public let allocatedByCategory: [CacheCategory: Int64]
 
+
+
     public init(completedDirectories: Int, totalDirectories: Int, allocatedByCategory: [CacheCategory: Int64]) {
+
         self.completedDirectories = completedDirectories
+
         self.totalDirectories = totalDirectories
+
         self.allocatedByCategory = allocatedByCategory
+
     }
+
 }
+
+
 
 /// Snapshot of FCP core data captured during a completed scan.
+
 public struct CoreDataSnapshot: Codable, Hashable, Sendable, Identifiable {
+
     public let url: URL
+
     public let size: Int64
+
     public let modificationTime: TimeInterval
 
+
+
     public var id: URL { url }
+
+
 
     public init(url: URL, size: Int64, modificationTime: TimeInterval) {
+
         self.url = url
+
         self.size = size
+
         self.modificationTime = modificationTime
+
     }
+
 }
 
+
+
 public struct DirectoryChangeSnapshot: Codable, Hashable, Sendable, Identifiable {
+
     public let url: URL
+
     public let fingerprint: FileFingerprint
+
+
 
     public var id: URL { url }
 
+
+
     public init(url: URL, fingerprint: FileFingerprint) {
+
         self.url = url
+
         self.fingerprint = fingerprint
+
     }
+
 }
+
+
 
 /// A lightweight validation token for reusing a completed scan. It intentionally tracks only
+
 /// FCP databases and recognized generated-data directories; cleanup still performs a fresh
+
 /// fingerprint check immediately before moving anything.
+
 public struct LibraryChangeToken: Codable, Hashable, Sendable {
+
     public let coreDataSnapshots: [CoreDataSnapshot]
+
     public let generatedDirectories: [DirectoryChangeSnapshot]
 
+
+
     public init(
+
         coreDataSnapshots: [CoreDataSnapshot],
+
         generatedDirectories: [DirectoryChangeSnapshot]
+
     ) {
+
         self.coreDataSnapshots = coreDataSnapshots
+
         self.generatedDirectories = generatedDirectories
+
     }
+
 }
+
+
 
 public struct LibraryScanResult: Codable, Sendable {
+
     public let libraryURL: URL
+
     public let totalAllocatedSize: Int64
+
     public let totalLogicalSize: Int64
+
     public let coreDataSnapshots: [CoreDataSnapshot]
+
     public let cacheItems: [CacheItem]
+
     public let observedCacheItems: [ObservedCacheItem]
+
     public let protectedItems: [ProtectedItem]
+
     public let issues: [ScanIssue]
+
     public let changeToken: LibraryChangeToken?
 
+
+
     public init(
+
         libraryURL: URL,
+
         totalAllocatedSize: Int64,
+
         totalLogicalSize: Int64,
+
         coreDataSnapshots: [CoreDataSnapshot],
+
         cacheItems: [CacheItem],
+
         observedCacheItems: [ObservedCacheItem],
+
         protectedItems: [ProtectedItem],
+
         issues: [ScanIssue],
+
         changeToken: LibraryChangeToken? = nil
+
     ) {
+
         self.libraryURL = libraryURL
+
         self.totalAllocatedSize = totalAllocatedSize
+
         self.totalLogicalSize = totalLogicalSize
+
         self.coreDataSnapshots = coreDataSnapshots
+
         self.cacheItems = cacheItems
+
         self.observedCacheItems = observedCacheItems
+
         self.protectedItems = protectedItems
+
         self.issues = issues
+
         self.changeToken = changeToken
+
     }
+
+
 
     public var confirmedCleanableSize: Int64 {
+
         cacheItems
+
             .filter { $0.confidence == .confirmed }
+
             .reduce(0) { $0 + $1.allocatedSize }
+
     }
+
+
 
     /// A range for permanently deleting all confirmed cache items, when every
+
     /// involved volume provides the required allocation metadata.
+
     public var reclaimableEstimate: ReclaimableSpaceEstimate? {
+
         let confirmed = cacheItems.filter { $0.confidence == .confirmed }
+
         guard !confirmed.isEmpty else { return nil }
+
         var minimum: Int64 = 0
+
         var maximum: Int64 = 0
+
         for item in confirmed {
+
             guard let estimate = item.reclaimableEstimate else { return nil }
+
             let (nextMinimum, minOverflow) = minimum.addingReportingOverflow(estimate.minimumBytes)
+
             let (nextMaximum, maxOverflow) = maximum.addingReportingOverflow(estimate.maximumBytes)
+
             guard !minOverflow, !maxOverflow else { return nil }
+
             minimum = nextMinimum
+
             maximum = nextMaximum
+
         }
+
         return ReclaimableSpaceEstimate(minimumBytes: minimum, maximumBytes: maximum)
+
     }
+
+
 
     public var externalCleanableSize: Int64 {
+
         cacheItems
+
             .filter { $0.confidence == .confirmed && $0.storage == .external }
+
             .reduce(0) { $0 + $1.allocatedSize }
+
     }
+
 }
 
+
+
 public enum CleanupError: Error, LocalizedError, Sendable {
+
     case invalidLibrary(URL)
+
     case libraryInUse
+
     case volumeOffline(URL)
+
     case readOnlyVolume(URL)
+
     case permissionDenied(URL)
+
     case unknownStructure(URL)
+
     case fileChanged(URL)
+
     case scanIncomplete(URL)
+
     case trashFailed(URL, String)
 
+
+
     public var errorDescription: String? {
+
         switch self {
-        case .invalidLibrary(let url): "不是有效的 Final Cut Pro 资源库：\(url.path)"
-        case .libraryInUse: "Final Cut Pro 正在使用此资源库，请先关闭该资源库后再清理。"
-        case .volumeOffline: "资源库所在磁盘已离线或无法访问。"
-        case .readOnlyVolume: "资源库所在磁盘为只读，无法移入废纸篓。"
-        case .permissionDenied(let url): "没有访问权限：\(url.path)"
-        case .unknownStructure(let url): "资源库结构无法确认：\(url.path)"
-        case .fileChanged(let url): "扫描后文件已发生变化：\(url.path)"
-        case .scanIncomplete(let url): "资源库未能完整扫描，无法创建清理计划：\(url.path)"
-        case .trashFailed(let url, let message): "无法移入废纸篓：\(url.path)（\(message)）"
+
+        case .invalidLibrary(let url): String(format: String(localized: "不是有效的 Final Cut Pro 资源库：%@"), String(url.path))
+
+        case .libraryInUse: String(localized: "Final Cut Pro 正在使用此资源库，请先关闭该资源库后再清理。")
+
+        case .volumeOffline: String(localized: "资源库所在磁盘已离线或无法访问。")
+
+        case .readOnlyVolume: String(localized: "资源库所在磁盘为只读，无法移入废纸篓。")
+
+        case .permissionDenied(let url): String(format: String(localized: "没有访问权限：%@"), String(url.path))
+
+        case .unknownStructure(let url): String(format: String(localized: "资源库结构无法确认：%@"), String(url.path))
+
+        case .fileChanged(let url): String(format: String(localized: "扫描后文件已发生变化：%@"), String(url.path))
+
+        case .scanIncomplete(let url): String(format: String(localized: "资源库未能完整扫描，无法创建清理计划：%@"), String(url.path))
+
+        case .trashFailed(let url, let message): String(format: String(localized: "无法移入废纸篓：%@（%@）"), String(url.path), String(message))
+
         }
+
     }
+
 }
