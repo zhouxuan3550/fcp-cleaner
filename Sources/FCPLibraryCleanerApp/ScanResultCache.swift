@@ -53,13 +53,10 @@ struct ScanResultCache: Sendable {
     }
 
     func save(_ result: LibraryScanResult, checkpoint: FSEventsCheckpoint? = nil) async {
-        let token: LibraryChangeToken?
-        if let precomputed = result.changeToken {
-            token = precomputed
-        } else {
-            token = try? await LibraryScanner().changeToken(libraryURL: result.libraryURL)
-        }
-        guard let token else { return }
+        // 扫描结果总是自带变更令牌（performScan 收尾构建，缓存复用路径
+        // 传入的结果同样携带）；缺令牌说明结果不完整，不值得缓存，
+        // 也无需为它重算一遍完整令牌遍历。
+        guard let token = result.changeToken else { return }
         let entry = Entry(
             schemaVersion: Self.schemaVersion,
             token: token,

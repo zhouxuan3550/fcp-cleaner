@@ -50,7 +50,7 @@ struct LibraryStoreStateMachineTests {
 
     @Test("batch selection ignores libraries below the minimum threshold")
     func batchSelectionRejectsBelowThreshold() {
-        let store = LibraryStore.shared
+        let store = LibraryStore()
         let before = store.batchSelectedIDs
 
         // 无扫描结果、体积为零的裸记录必须被拒收——不依赖任何文件系统。

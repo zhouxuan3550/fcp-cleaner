@@ -65,7 +65,7 @@
 			<key>NSMessage</key>
 			<string>scanLibraries</string>
 			<key>NSPortName</key>
-			<string>FCP Cleaner</string>
+			<string>FCP-Cleaner</string>
 			<key>NSSendFileTypes</key>
 			<array>
 				<string>public.file-url</string>

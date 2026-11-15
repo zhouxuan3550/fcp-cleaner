@@ -15,6 +15,8 @@ struct SingleCleanConfirmationSheet: View {
     }
 
     /// 勾选裁剪后的实际执行计划；每一条仍走完整预检与指纹复核。
+    /// 计划条目是目录级（数十量级），filtering 是 O(条目) 的轻量过滤，
+    /// 每次 body 求值重算的成本在微秒级——实测不值得引入状态缓存。
     private var selectedPlan: CleanupPlan {
         confirmation.plan.filtering(keeping: includedURLs)
     }

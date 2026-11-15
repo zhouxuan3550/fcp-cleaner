@@ -13,7 +13,9 @@ private final class VolumeProfileCache: @unchecked Sendable {
         defer { lock.unlock() }
         if let profile = profiles[key] { return profile }
         let profile = make()
-        profiles[key] = profile
+        // DiskArbitration 瞬时失败得到 unknown（整卷降级串行遍历）；这类结果
+        // 不入缓存，下一次解析重试，避免一次抖动把卷永久固化成串行。
+        if profile.kind != .unknown { profiles[key] = profile }
         return profile
     }
 }

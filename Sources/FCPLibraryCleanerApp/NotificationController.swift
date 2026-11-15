@@ -18,6 +18,8 @@ final class NotificationController {
         content.title = errorCount == 0 ? "FCP Cleaner 清理完成" : "FCP Cleaner 清理结束"
         content.body = "移入废纸篓 \(FormatHelpers.bytes(freedSize)) · \(libraryCount) 个资源库" + (errorCount > 0 ? " · \(errorCount) 项失败" : "")
         content.sound = .default
+        // 每次清理用独立 identifier：通知中心保留逐次结果作为历史是有意行为；
+        // 低空间/定时检查才用稳定 identifier 做去重。
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 

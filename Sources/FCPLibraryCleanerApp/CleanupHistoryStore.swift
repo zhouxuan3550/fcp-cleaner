@@ -56,6 +56,9 @@ final class CleanupHistoryStore {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("com.fcpcleaner.app", isDirectory: true)
         storageURL = directory.appendingPathComponent("CleanupHistory.json")
+        // 主线程同步加载是经过权衡的取舍：历史必须先于任何 append/recovery
+        // 就位，异步加载会让「加载完成前的写入」覆盖整份文件（丢数据）；
+        // 200 条上限的历史解码在毫秒级（实测），拆分异步不值得引入时序风险。
         if let data = try? Data(contentsOf: storageURL),
            let decoded = try? JSONDecoder().decode([CleanupHistoryEntry].self, from: data) {
             entries = decoded.sorted { $0.date > $1.date }

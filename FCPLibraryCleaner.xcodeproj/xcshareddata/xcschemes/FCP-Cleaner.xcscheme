@@ -53,7 +53,31 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "072299FC30803A782C55A6E9"
+               BuildableName = "FCP-CleanerCoreTests.xctest"
+               BlueprintName = "FCP-CleanerCoreTests"
+               ReferencedContainer = "container:FCPLibraryCleaner.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "ADC6A9857984225E113221FB"
+               BuildableName = "FCP-CleanerAppTests.xctest"
+               BlueprintName = "FCP-CleanerAppTests"
+               ReferencedContainer = "container:FCPLibraryCleaner.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

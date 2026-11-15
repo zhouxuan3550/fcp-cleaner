@@ -378,6 +378,7 @@ extension LibraryStore {
             record.eventRefreshTask?.cancel()
             record.liveEvents = nil
             record.eventWatchID = UUID()
+            bookmarks.endAccess(key: record.url)
         }
         libraries.removeAll { ids.contains($0.id) }
         batchSelectedIDs.subtract(ids)

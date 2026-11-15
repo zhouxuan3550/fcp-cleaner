@@ -24,7 +24,9 @@ struct RestoredLibrary: Sendable {
 final class SecurityScopedBookmarkManager {
     private static let storageKey = "recentLibraryBookmarks"
     private static let workDirectoryStorageKey = "workDirectoryBookmarks"
-    private var activeURLs = Set<URL>()
+    /// 活跃安全作用域簿记：key = 条目标准化 URL，value = 实际调用
+    /// startAccessing 的解析 URL（外置卷场景两者可能不同）。
+    private var activeScopes: [URL: URL] = [:]
     private var libraryBookmarkData: [URL: Data] = [:]
     private var workDirectoryBookmarkData: [URL: Data] = [:]
 
@@ -78,8 +80,7 @@ final class SecurityScopedBookmarkManager {
 
         var restored: [RestoredLibrary] = []
         for resolved in results.values.compactMap({ $0 }) {
-            _ = resolved.securityURL.startAccessingSecurityScopedResource()
-            activeURLs.insert(resolved.metadata.url)
+            beginAccess(securityURL: resolved.securityURL, key: resolved.metadata.url)
             libraryBookmarkData[resolved.metadata.url] = resolved.bookmarkData
             restored.append(RestoredLibrary(metadata: resolved.metadata, prefetched: resolved.prefetched))
         }
@@ -133,9 +134,7 @@ final class SecurityScopedBookmarkManager {
                 data = cached
             } else {
                 let accessURL = replacementURLs[url]?.standardizedFileURL ?? url
-                _ = accessURL.startAccessingSecurityScopedResource()
-                activeURLs.insert(url)
-                activeURLs.insert(accessURL)
+                beginAccess(securityURL: accessURL, key: url)
                 guard let created = try? accessURL.bookmarkData(
                     options: [.withSecurityScope],
                     includingResourceValuesForKeys: nil,
@@ -179,9 +178,8 @@ final class SecurityScopedBookmarkManager {
         }
         var urls: [URL] = []
         for resolved in results.values.compactMap({ $0 }) {
-            _ = resolved.url.startAccessingSecurityScopedResource()
             let standardizedURL = resolved.url.standardizedFileURL
-            activeURLs.insert(standardizedURL)
+            beginAccess(securityURL: resolved.url, key: standardizedURL)
             workDirectoryBookmarkData[standardizedURL] = resolved.data
             urls.append(standardizedURL)
         }
@@ -196,8 +194,7 @@ final class SecurityScopedBookmarkManager {
             if let cached = workDirectoryBookmarkData[standardizedURL] {
                 data = cached
             } else {
-                _ = standardizedURL.startAccessingSecurityScopedResource()
-                activeURLs.insert(standardizedURL)
+                beginAccess(securityURL: standardizedURL, key: standardizedURL)
                 guard let created = try? standardizedURL.bookmarkData(
                     options: [.withSecurityScope],
                     includingResourceValuesForKeys: nil,
@@ -210,6 +207,21 @@ final class SecurityScopedBookmarkManager {
         }
         workDirectoryBookmarkData = retained
         UserDefaults.standard.set(try? JSONEncoder().encode(stored), forKey: Self.workDirectoryStorageKey)
+    }
+
+    /// 幂等开启安全作用域：同一 key 已开启则跳过。startAccessing 是引用
+    /// 计数的，重复 start 必须配对 stop 才不泄漏；应用语义上作用域随
+    /// 条目存在，因此去重开启、条目移除/替换时经 endAccess 成对关闭。
+    private func beginAccess(securityURL: URL, key url: URL) {
+        guard activeScopes[url] == nil,
+              securityURL.startAccessingSecurityScopedResource() else { return }
+        activeScopes[url] = securityURL
+    }
+
+    /// 条目被移除时关闭其安全作用域；未开启的 key 是无害 no-op。
+    func endAccess(key url: URL) {
+        guard let securityURL = activeScopes.removeValue(forKey: url) else { return }
+        securityURL.stopAccessingSecurityScopedResource()
     }
 
     /// 诊断包用：书签健康度的只读快照。

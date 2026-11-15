@@ -68,6 +68,19 @@ targets:
           - -fapplication-extension
           - -lProExtension
 
+  fcp-library-scanner:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/fcp-library-scanner
+    dependencies:
+      - target: FCPLibraryCleanerCore
+    settings:
+      base:
+        PRODUCT_NAME: fcp-library-scanner
+        MARKETING_VERSION: "4.2.1"
+        CURRENT_PROJECT_VERSION: "421"
+
   FCP-Cleaner:
     type: application
     platform: macOS
@@ -101,13 +114,59 @@ targets:
           - '@executable_path/../Frameworks'
         CODE_SIGN_STYLE: Automatic
 
+  FCP-CleanerCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/FCPLibraryCleanerCoreTests
+    dependencies:
+      - target: FCP-Cleaner
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/FCP Cleaner.app/Contents/MacOS/FCP-Cleaner
+        BUNDLE_LOADER: $(TEST_HOST)
+
+  FCP-CleanerAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/FCPLibraryCleanerAppTests
+    dependencies:
+      - target: FCP-Cleaner
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/FCP Cleaner.app/Contents/MacOS/FCP-Cleaner
+        BUNDLE_LOADER: $(TEST_HOST)
+
 schemes:
   FCP-Cleaner:
     build:
       targets:
         FCP-Cleaner: all
         FCP-Cleaner-Workflow: all
+    test:
+      config: Debug
+      targets:
+        - FCP-CleanerCoreTests
+        - FCP-CleanerAppTests
     run:
       config: Debug
     archive:
       config: Release
+
+  # 本机无 Workflow Extension SDK 时的测试入口：不含扩展 target。
+  # 完整构建仍走 FCP-Cleaner scheme（release.sh）。
+  FCP-Cleaner-Tests:
+    build:
+      targets:
+        FCP-Cleaner: all
+        fcp-library-scanner: all
+    test:
+      config: Debug
+      targets:
+        - FCP-CleanerCoreTests
+        - FCP-CleanerAppTests
+    run:
+      config: Debug

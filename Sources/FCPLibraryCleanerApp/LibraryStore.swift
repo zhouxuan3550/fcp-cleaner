@@ -291,7 +291,9 @@ final class LibraryStore: NSObject {
     /// 菜单项禁用态（诊断导出进行中）。
     var isExportingDiagnostics: Bool { isExportingDiagnosticsInternal }
 
-    private override init() {
+    /// 单例入口是 shared；internal init 供测试构造隔离实例
+    /// （@testable 下可见），避免测试并发修改共享状态。
+    override init() {
         super.init()
         let restored = bookmarks.restore()
         // 卷身份绑定：同一路径当前挂载的若是另一块盘（UUID 不同），拒绝复活旧条目，

@@ -7,7 +7,7 @@ struct VolumeHotPlugTests {
     /// 挂载/卸载联动只作用于该卷上的记录，全程不做真实文件系统探测。
     @Test("unmount keeps the record and flags it offline; mount re-queues an incremental scan")
     func unmountAndRemountLifecycle() {
-        let store = LibraryStore.shared
+        let store = LibraryStore()
         let volumeRoot = "/tmp/fcpc-hotplug-test-vol"
         let record = LibraryRecord(url: URL(fileURLWithPath: volumeRoot + "/项目.fcpbundle"))
         store.libraries.append(record)

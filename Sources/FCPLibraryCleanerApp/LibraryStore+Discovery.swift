@@ -147,6 +147,7 @@ extension LibraryStore {
         workDirectories.removeAll { $0 == url.standardizedFileURL }
         workDirectoryStatuses.removeValue(forKey: url.standardizedFileURL)
         workDirectoryStatuses.removeValue(forKey: url)
+        bookmarks.endAccess(key: url.standardizedFileURL)
         bookmarks.saveWorkDirectories(workDirectories)
         workDirectoryMonitor?.updateWatched(paths: workDirectories.map(\.path))
         discoverLibraries()

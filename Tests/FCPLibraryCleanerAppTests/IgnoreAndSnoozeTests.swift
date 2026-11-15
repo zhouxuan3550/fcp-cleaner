@@ -14,7 +14,7 @@ struct IgnoreAndSnoozeTests {
 
     @Test("snooze marks a record ignored until the deadline; resume clears it")
     func snoozeRoundTrip() {
-        let store = LibraryStore.shared
+        let store = LibraryStore()
         let record = LibraryRecord(url: URL(fileURLWithPath: "/tmp/fcpc-ignore-snooze/项目.fcpbundle"))
         defer { record.ignoredUntil = nil }
 
@@ -29,7 +29,7 @@ struct IgnoreAndSnoozeTests {
 
     @Test("directory-level ignore covers descendants and resume clears the directory entry")
     func directoryIgnoreRoundTrip() {
-        let store = LibraryStore.shared
+        let store = LibraryStore()
         let saved = store.ignoredLibraryDirectories
         defer { store.ignoredLibraryDirectories = saved }
 
@@ -76,7 +76,7 @@ struct IgnoreAndSnoozeTests {
 
     @Test("ignored libraries leave waiting and skipped lists and appear under the ignored filter")
     func filterMembership() {
-        let store = LibraryStore.shared
+        let store = LibraryStore()
         let saved = store.ignoredLibraryDirectories
         defer { store.ignoredLibraryDirectories = saved }
 
