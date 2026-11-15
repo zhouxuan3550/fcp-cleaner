@@ -31,7 +31,7 @@
 5. 分析文件目前只识别、统计和保护，不参与清理。
 6. 清理前检查资源库占用、磁盘在线状态、只读状态和文件变化。
 7. 执行移动前再次计算完整指纹，防止扫描后内容发生变化。
-8. 单个资源库可清理空间低于固定的 200 MB 时自动跳过（2026-08 由 500 MB 下调，产品决策）。
+8. 单个资源库可清理空间低于固定的 200 MB 时自动跳过（沿革见第 4 节）。
 
 禁止清理的典型内容：
 
@@ -157,17 +157,19 @@ FCP 占用检测使用 `NSRunningApplication` 和 `/usr/sbin/lsof`，只阻止 F
 - 中文深色紧凑界面。
 - 应用图标使用用户提供的紫色三星扫帚图，页眉使用独立矢量清理标记。
 
-## 4. 已取消或替代的早期需求
+## 4. 历史决策与已取消需求
 
 其他开发工具不要按照早期文档重新实现以下内容：
 
 - 不再提供 Safe、Standard、Maximum 多档模式。
 - 当前只有一套“最大安全清理”标准。
-- 不提供分类复选框，确认的三个分类全部参与清理。
+- 不提供分类复选框，确认的三个分类全部参与清理（4.2 起确认弹窗内支持按 Event 勾选，只缩不放大）。
 - 不清理 Analysis Files、Optical Flow、Stabilization、Thumbnail 或 Waveform。
-- 不永久删除文件。
+- 不主动永久删除文件；4.2 起历史页提供**确认后的定向永久删除**，仅限本应用移入废纸篓且有身份快照的条目（快照校验 + 中断日志），默认链路仍是 `FileManager.trashItem()`。
 - 不显示大量介绍性文案。
 - 产品名称已经从 `FCP Library Cleaner` 改为 `FCP Cleaner`。
+- 最小可清理门槛 2026-08 由 500 MB 下调至 200 MB（产品决策）。
+- P4-1（卷挂载监听）、P4-3（定时检查）、P4-4（体积趋势）、P4-6（Shortcuts 意图）、P4-7（事务日志）、P4-8（诊断导出）为 4.1 轮编号，对应功能已全部落地，编号仅具历史意义。
 
 如需扩大白名单，必须先取得真实 FCP 目录样本、增加精确结构规则、执行前校验和对应自动测试。禁止仅凭目录名称扩展清理范围。
 
@@ -188,11 +190,15 @@ FCPLibraryCleaner/
 │   ├── FCPLibraryCleanerApp/
 │   └── fcp-library-scanner/
 ├── Tests/
-│   └── FCPLibraryCleanerCoreTests/
+│   ├── FCPLibraryCleanerCoreTests/
+│   └── FCPLibraryCleanerAppTests/
+├── Benchmarks/
 └── Distribution/
     ├── FCP Cleaner.app/
-    └── FCP-Cleaner-3.0.1-arm64.dmg
+    └── FCP-Cleaner-4.2.1-universal.dmg
 ```
+
+`Sources/fcp-library-scanner/` 是独立 CLI（SPM target `fcp-library-scanner`）：对单个 `.fcpbundle` 做只读扫描并以人读/JSON 两种格式输出候选与 dry-run 计划，用于 CI 或终端验证扫描规则，不参与 App 构建（`swift build --product fcp-library-scanner`）。`Benchmarks/ScannerBenchmark.swift` 是 4.2 轮的一次性性能基准脚本（不在任何构建目标内，需手工编译），`Benchmarks/RESULTS.md` 保留其三盘实测数据与限制说明。
 
 ### 5.1 Core 模块
 
@@ -341,7 +347,7 @@ FileManager.trashItem()
 ### 开发构建
 
 ```bash
-cd /Users/macstudio/Documents/VoxCPM2/FCPLibraryCleaner
+cd "/Users/macstudio/Documents/CodeX/FCP Cleaner"
 swift build
 ```
 
@@ -438,7 +444,7 @@ xcodebuild -project FCPLibraryCleaner.xcodeproj -scheme FCP-Cleaner build
 ```text
 你正在维护一个原生 macOS SwiftUI 应用 FCP Cleaner。
 
-项目路径：/Users/macstudio/Documents/VoxCPM2/FCPLibraryCleaner
+项目路径：/Users/macstudio/Documents/CodeX/FCP Cleaner
 
 开始工作前请完整阅读 PROJECT_HANDOFF_ZH.md，并检查当前源码，不要仅依据早期需求文档开发。
 
@@ -446,7 +452,7 @@ xcodebuild -project FCPLibraryCleaner.xcodeproj -scheme FCP-Cleaner build
 
 当前 UI 必须保持简体中文、深色、紧凑，不要增加大量说明文字。应用图标必须继续使用 Assets 中用户提供的紫色三星扫帚图。
 
-修改前先运行 swift test。完成后补充对应测试，确保全部测试通过，再构建 App 和 DMG。不要触碰同级 VoxCPM2 项目的无关文件，也不要使用其 Git Remote 发布本项目。
+修改前先运行 swift test。完成后补充对应测试，确保全部测试通过，再构建 App 和 DMG。不要触碰工作区同级其他项目的无关文件。
 ```
 
 ## 15. 建议的后续工程化工作
