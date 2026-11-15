@@ -104,6 +104,10 @@ public enum FCPStructureRules {
         guard let rule = eventCandidateRules.first(where: { $0.id == ruleID }) else { return false }
         var eventURL = candidateURL
         for _ in rule.relativePath { eventURL.deleteLastPathComponent() }
+        // 内部 Event 必须锚定在 libraryURL 之内——与 library/external 分支一致，
+        // 防止复用的计划条目把磁盘上任意同构目录当成候选。
+        let anchored = eventURL.standardizedFileURL.path
+        guard anchored.hasPrefix(libraryURL.standardizedFileURL.path + "/") else { return false }
         let eventDatabase = eventURL.appendingPathComponent(eventDatabaseName)
         guard fileManager.fileExists(atPath: eventDatabase.path) else { return false }
         return candidateURL.standardizedFileURL == url(base: eventURL, components: rule.relativePath).standardizedFileURL

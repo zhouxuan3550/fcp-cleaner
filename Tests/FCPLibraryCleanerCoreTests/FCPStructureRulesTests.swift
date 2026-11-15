@@ -51,3 +51,25 @@ struct FCPStructureRulesTests {
         #expect(FCPStructureRules.candidateLocation(for: renderFilesDirectory, ruleID: "external.event.does-not-exist") == nil)
     }
 }
+
+extension FCPStructureRulesTests {
+    @Test("event candidate outside the library is rejected even with matching structure")
+    func eventCandidateMustBeAnchoredInsideLibrary() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let library = base.appendingPathComponent("Lib.fcpbundle", isDirectory: true)
+        let decoy = base.appendingPathComponent("Decoy.fcpbundle", isDirectory: true)
+        for root in [library, decoy] {
+            try FileManager.default.createDirectory(
+                at: root.appendingPathComponent("Event A/Render Files"), withIntermediateDirectories: true)
+            try Data("db".utf8).write(
+                to: root.appendingPathComponent("Event A/CurrentVersion.fcpevent"))
+        }
+        defer { try? FileManager.default.removeItem(at: base) }
+
+        let inside = library.appendingPathComponent("Event A/Render Files")
+        let outside = decoy.appendingPathComponent("Event A/Render Files")
+        #expect(FCPStructureRules.matchesConfirmedCandidate(inside, in: library, ruleID: "event.render-files"))
+        // 同构目录 + 相同 fcpevent 标记，但在库外：复用的计划条目绝不能放行。
+        #expect(!FCPStructureRules.matchesConfirmedCandidate(outside, in: library, ruleID: "event.render-files"))
+    }
+}

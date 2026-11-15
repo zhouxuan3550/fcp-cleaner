@@ -122,7 +122,9 @@ public struct CleanupPlan: Codable, Sendable {
     }
 
     static func scanMeasurement(for url: URL) throws -> FingerprintMeasurement {
-        let includeEstimate = try ReclaimableSpaceEstimate.isAPFS(url)
+        // statfs 失败（目录恰在枚举后被删除等）只降级空间估算，绝不让单目录
+        // 以“卷离线”中止整库扫描；指纹阶段对消失目录另有逐项容错。
+        let includeEstimate = (try? ReclaimableSpaceEstimate.isAPFS(url)) == true
         do {
             return try bulkMeasurement(for: url, includeEstimate: includeEstimate)
         } catch BulkDirectoryWalker.Failure.unsupported {

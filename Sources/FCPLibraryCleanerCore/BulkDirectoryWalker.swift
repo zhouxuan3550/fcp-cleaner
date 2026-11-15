@@ -37,10 +37,13 @@ enum BulkDirectoryWalker {
               let path = String(bytes: pathBytes.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, encoding: .utf8) else {
             throw Failure.unsupported
         }
-        try walkDirectory(fd: fd, path: path, depth: 0, includePrivateSize: includePrivateSize, includeChangeTime: includeChangeTime, rootDevice: stayOnRootDevice ? rootInfo.st_dev : nil, shouldDescend: shouldDescend, visit: visit)
+        // 128KB 缓冲整次遍历只分配一次；此前每层递归各分配并清零一次，
+        // 数万目录的缓存树会重复付出可观成本。
+        var buffer = [UInt8](repeating: 0, count: 128 * 1024)
+        try walkDirectory(fd: fd, path: path, depth: 0, buffer: &buffer, includePrivateSize: includePrivateSize, includeChangeTime: includeChangeTime, rootDevice: stayOnRootDevice ? rootInfo.st_dev : nil, shouldDescend: shouldDescend, visit: visit)
     }
 
-    private static func walkDirectory(fd: Int32, path: String, depth: Int, includePrivateSize: Bool, includeChangeTime: Bool, rootDevice: dev_t?, shouldDescend: (Entry) -> Bool, visit: (Entry) throws -> Void) throws {
+    private static func walkDirectory(fd: Int32, path: String, depth: Int, buffer: inout [UInt8], includePrivateSize: Bool, includeChangeTime: Bool, rootDevice: dev_t?, shouldDescend: (Entry) -> Bool, visit: (Entry) throws -> Void) throws {
         guard depth < 1024 else { throw Failure.unreadable("depth") }
         var attributes = attrlist()
         attributes.bitmapcount = UInt16(ATTR_BIT_MAP_COUNT)
@@ -54,7 +57,6 @@ enum BulkDirectoryWalker {
             attributes.fileattr |= UInt32(ATTR_FILE_LINKCOUNT)
             attributes.forkattr = UInt32(ATTR_CMNEXT_PRIVATESIZE)
         }
-        var buffer = [UInt8](repeating: 0, count: 128 * 1024)
         while true {
             let count = buffer.withUnsafeMutableBytes { raw in
                 let options = UInt64(FSOPT_PACK_INVAL_ATTRS | (includePrivateSize ? FSOPT_ATTR_CMN_EXTENDED : 0))
@@ -129,7 +131,7 @@ enum BulkDirectoryWalker {
                             throw Failure.unreadable("directory changed during traversal")
                         }
                         let childPath = path == "/" ? path + name : path + "/" + name
-                        try walkDirectory(fd: child, path: childPath, depth: depth + 1, includePrivateSize: includePrivateSize, includeChangeTime: includeChangeTime, rootDevice: rootDevice, shouldDescend: shouldDescend, visit: visit)
+                        try walkDirectory(fd: child, path: childPath, depth: depth + 1, buffer: &buffer, includePrivateSize: includePrivateSize, includeChangeTime: includeChangeTime, rootDevice: rootDevice, shouldDescend: shouldDescend, visit: visit)
                     }
                     offset += length
                 }

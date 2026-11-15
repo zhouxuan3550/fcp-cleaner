@@ -44,9 +44,15 @@ public struct LibraryScanner: Sendable {
     ) async throws -> LibraryScanResult {
         let standardizedURL = libraryURL.standardizedFileURL
         let limit = maximumConcurrentFingerprints
-        return try await Task.detached(priority: .userInitiated) {
+        // detached 任务不继承调用方取消；显式接通到 ScanControl 与内部检查。
+        let task = Task.detached(priority: .userInitiated) {
             try await Self.performScan(libraryURL: standardizedURL, control: control, fingerprintLimit: limit, onProgress: onProgress, onPartialResults: onPartialResults)
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     /// Builds the validation token used by the app-level scan cache without traversing original
@@ -54,11 +60,16 @@ public struct LibraryScanner: Sendable {
     public func changeToken(libraryURL: URL, control: ScanControl = ScanControl()) async throws -> LibraryChangeToken {
         let standardizedURL = libraryURL.standardizedFileURL
         let limit = maximumConcurrentFingerprints
-        return try await Task.detached(priority: .utility) {
+        let task = Task.detached(priority: .utility) {
             let interval = Self.signposter.beginInterval("ChangeToken")
             defer { Self.signposter.endInterval("ChangeToken", interval) }
             return try await Self.makeChangeToken(libraryURL: standardizedURL, control: control, fingerprintLimit: limit)
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     /// 指纹收集队列的待办项：先做便宜的枚举与分类（几次 stat），把重量级的
@@ -413,7 +424,7 @@ public struct LibraryScanner: Sendable {
 
     private static func validateLibrary(_ url: URL, fileManager: FileManager) throws {
         guard url.pathExtension.lowercased() == "fcpbundle",
-              isRealDirectory(url, fileManager: fileManager) else {
+              CacheClassifier.isRealDirectory(url, fileManager: fileManager) else {
             throw CleanupError.invalidLibrary(url)
         }
         let databaseURL = url.appendingPathComponent(FCPStructureRules.libraryDatabaseName)

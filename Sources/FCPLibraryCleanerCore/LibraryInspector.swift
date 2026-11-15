@@ -29,9 +29,14 @@ public struct LibraryInspector: Sendable {
         maximumEntries: Int = 20_000,
         control: ScanControl = ScanControl()
     ) async throws -> InspectionReport {
-        try await Task.detached(priority: .utility) {
+        let task = Task.detached(priority: .utility) {
             try Self.inspectSynchronously(scanResult: scanResult, maximumEntries: maximumEntries, control: control)
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     private static func inspectSynchronously(

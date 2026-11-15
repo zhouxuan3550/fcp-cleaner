@@ -35,19 +35,31 @@ public struct CleanupEngine: Sendable {
     }
 
     public func preflight(plan: CleanupPlan, verifyContents: Bool = true) async throws {
-        _ = try await Task.detached(priority: .userInitiated) {
+        // detached 任务不继承调用方取消；必须显式接通，否则取消永远到不了
+        // 内部的 Task.checkCancellation()。
+        let task = Task.detached(priority: .userInitiated) {
             try Self.validatePreflight(
                 plan: plan,
                 isLibraryInUse: isLibraryInUse,
                 verifyContents: verifyContents
             )
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     public func execute(plan: CleanupPlan) async throws -> CleanupResult {
-        return try await Task.detached(priority: .userInitiated) {
+        let task = Task.detached(priority: .userInitiated) {
             try Self.executeSynchronously(plan: plan, isLibraryInUse: isLibraryInUse)
-        }.value
+        }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     private static func executeSynchronously(
@@ -57,11 +69,12 @@ public struct CleanupEngine: Sendable {
         let startedAt = ContinuousClock.now
         let signpostState = signposter.beginInterval("CleanupLibrary")
         defer { signposter.endInterval("CleanupLibrary", signpostState) }
-        let libraryVolume = try validatePreflight(
-            plan: plan,
-            isLibraryInUse: isLibraryInUse,
-            verifyContents: false
-        )
+        // 入口只做库级闸门；条目级校验在下方循环内逐条收集——整体预检的
+        // 严格版（validatePreflight）会让单个坏条目的错误逃出 execute()，
+        // 而循环内的 do/catch 才是逐条容错的正确位置。
+        let libraryVolume = try validateLibraryStorage(for: plan)
+        guard !isLibraryInUse(plan.libraryURL) else { throw CleanupError.libraryInUse }
+        try validateCoreData(plan.coreDataSnapshots)
         let fileManager = FileManager.default
         var movedToTrash: [URL] = []
         var trashedItems: [TrashedItem] = []
@@ -137,7 +150,7 @@ public struct CleanupEngine: Sendable {
     @discardableResult
     private static func validateLibraryStorage(for plan: CleanupPlan) throws -> URL {
         let fileManager = FileManager.default
-        guard fileManager.fileExists(atPath: plan.libraryURL.path) else {
+        guard CacheClassifier.isRealDirectory(plan.libraryURL, fileManager: fileManager) else {
             throw CleanupError.volumeOffline(plan.libraryURL)
         }
         let values: URLResourceValues
@@ -160,7 +173,7 @@ public struct CleanupEngine: Sendable {
         fallbackVolume: URL,
         fileManager: FileManager
     ) throws {
-        guard fileManager.fileExists(atPath: entry.item.url.path) else {
+        guard CacheClassifier.isRealDirectory(entry.item.url, fileManager: fileManager) else {
             if entry.item.storage == .external { throw CleanupError.volumeOffline(entry.item.url) }
             throw CleanupError.fileChanged(entry.item.url)
         }
@@ -193,7 +206,7 @@ public struct CleanupEngine: Sendable {
             throw CleanupError.unknownStructure(entry.item.url)
         }
 
-        guard fileManager.fileExists(atPath: entry.item.url.path) else {
+        guard CacheClassifier.isRealDirectory(entry.item.url, fileManager: fileManager) else {
             throw CleanupError.fileChanged(entry.item.url)
         }
 
