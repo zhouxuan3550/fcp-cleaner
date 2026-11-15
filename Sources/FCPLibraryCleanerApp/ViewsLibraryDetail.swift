@@ -1157,48 +1157,39 @@ struct EventBreakdownCard: View {
                     .foregroundStyle(AppColor.tertiaryText)
 
             } else {
-
-                Chart(slices) { slice in
-
-                    BarMark(
-
-                        x: .value(String(localized: "可清理体积"), slice.size),
-
-                        y: .value("Event", slice.id)
-
-                    )
-
-                    .foregroundStyle(AppColor.accent.gradient)
-
-                    .cornerRadius(4)
-
-                }
-
-                .chartXAxis {
-
-                    AxisMarks { value in
-
-                        AxisGridLine()
-
-                        AxisValueLabel {
-
-                            if let bytes = value.as(Int64.self) {
-
-                                Text(FormatHelpers.bytes(bytes))
-
-                                    .font(AppFont.caption(.medium))
-
+                // 自定义行布局（与仪表盘卷压力条同构）：Charts 的分类轴标签
+                // 会压进绘图区与条形重叠，行式布局从结构上消除该问题。
+                let maxSlice = slices.first?.size ?? 0
+                ForEach(slices) { slice in
+                    HStack(spacing: 10) {
+                        Text(slice.id)
+                            .font(AppFont.callout(.medium))
+                            .foregroundStyle(AppColor.primaryText)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .frame(width: 132, alignment: .leading)
+                            .help(slice.id)
+                        GeometryReader { proxy in
+                            let fraction = maxSlice > 0 ? Double(slice.size) / Double(maxSlice) : 0
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(AppColor.control)
+                                Capsule()
+                                    .fill(AppColor.accent.gradient)
+                                    .frame(width: max(4, proxy.size.width * fraction))
                             }
-
                         }
-
+                        .frame(height: 10)
+                        Text(FormatHelpers.bytes(slice.size))
+                            .font(AppFont.caption(.medium, design: .monospaced))
+                            .foregroundStyle(AppColor.secondaryText)
+                            .frame(width: 68, alignment: .trailing)
+                            .monospacedDigit()
                     }
-
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(String(format: String(localized: "%@：可清理 %@"), slice.id, FormatHelpers.bytes(slice.size)))
                 }
-
-                .frame(height: CGFloat(max(slices.count, 1)) * 28 + 8)
-
             }
+
 
         }
 
