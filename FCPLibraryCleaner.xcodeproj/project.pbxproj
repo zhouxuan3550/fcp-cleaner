@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		042B98E78F1A5C8B735E5D62 /* TrashPurgeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100C372B692B159F50318818 /* TrashPurgeService.swift */; };
 		04782B070183732A12AC8CFC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20E90935002C1734277CD748 /* ContentView.swift */; };
+		08F93AAFD832DA9AD98CD6C8 /* APFSSnapshotGuardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BDE87BAC4114956A95218B7 /* APFSSnapshotGuardTests.swift */; };
 		0CFF7E55B2BBD28A40C8EBFE /* FingerprintIntegrityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B2C4D9869D156768150162 /* FingerprintIntegrityTests.swift */; };
 		0D86835BFB211D37C1C7D94A /* DiagnosticsExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3963F0619286368D5FC89E9D /* DiagnosticsExporterTests.swift */; };
 		0ECA0B8DDBD4893F303BC1E4 /* ScheduledCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20B6A0CEA2078BCC8E4A7FF /* ScheduledCheckTests.swift */; };
@@ -97,9 +98,11 @@
 		DF1AE671234B46366D45715B /* VolumeTraversalSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1C6BBE9EC1D38DDAD5E9C6 /* VolumeTraversalSchedulerTests.swift */; };
 		E23FCAD655B06A4B9A780D81 /* LibraryStore+Orphans.swift in Sources */ = {isa = PBXBuildFile; fileRef = CACA09FCE5BFE3645AE314C8 /* LibraryStore+Orphans.swift */; };
 		E592D8BA0B5205A65AE2E7AB /* CacheClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6AD339C930D2AF8BCA3903 /* CacheClassifier.swift */; };
+		E8F48952A63D4FA24BDAFBF4 /* APFSSnapshotGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F4E269A4E1B5A7F7EE5B427 /* APFSSnapshotGuard.swift */; };
 		EE1D8381BB50704A782BA317 /* ReclaimableSpaceEstimate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5137A250A37ECAD699A218 /* ReclaimableSpaceEstimate.swift */; };
 		EE498745B81537AAA82A8CE7 /* LibraryUseDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E97A6204629DCAFA53146A /* LibraryUseDetector.swift */; };
 		F3E2728BD14D09C08CFA7441 /* ScanProgressCoalescer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD611C7E0251B543CD82AB80 /* ScanProgressCoalescer.swift */; };
+		F44DC7AD420A1C46C96E2EB5 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 361854EE84DFC5B84FD9888D /* DashboardView.swift */; };
 		F94C4E4738E699241D2F27C2 /* BulkDirectoryWalker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 201A5453C40D7D718537E0F3 /* BulkDirectoryWalker.swift */; };
 		FB64447B090718D860E07B14 /* libFCPLibraryCleanerCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A80AE49AFEA3673EA904FCF9 /* libFCPLibraryCleanerCore.a */; };
 		FC22CFD02DB7D81D2B7FEA40 /* BrandLinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9231E7E8323CBFDD7BB3E4FC /* BrandLinksView.swift */; };
@@ -181,6 +184,7 @@
 		2C3569A5C7B65F27291AEFEE /* CleanupPlanRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupPlanRecoveryTests.swift; sourceTree = "<group>"; };
 		3120C6460168CB870C02E13C /* TrashItemSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashItemSnapshotTests.swift; sourceTree = "<group>"; };
 		3189BC5DF66913D99AEB4260 /* WorkDirectoryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkDirectoryMonitor.swift; sourceTree = "<group>"; };
+		361854EE84DFC5B84FD9888D /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		3963F0619286368D5FC89E9D /* DiagnosticsExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsExporterTests.swift; sourceTree = "<group>"; };
 		396BFAA139686C75DE11D4D3 /* FSEventsHistoryProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSEventsHistoryProbe.swift; sourceTree = "<group>"; };
 		3EFF56D74707AFC00861081E /* DiagnosticsExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsExporter.swift; sourceTree = "<group>"; };
@@ -202,6 +206,7 @@
 		57785B38A4A3B34ACC8B8838 /* OrphanCacheDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrphanCacheDiscovery.swift; sourceTree = "<group>"; };
 		57962C0AA8B2E44EA3B777FA /* LibraryStore+LiveCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryStore+LiveCache.swift"; sourceTree = "<group>"; };
 		58028BA2863938572DF7D43C /* TrashPurgeServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrashPurgeServiceTests.swift; sourceTree = "<group>"; };
+		5BDE87BAC4114956A95218B7 /* APFSSnapshotGuardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APFSSnapshotGuardTests.swift; sourceTree = "<group>"; };
 		5EE29478B37908BE4CA0870E /* ScanResultCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultCacheTests.swift; sourceTree = "<group>"; };
 		5F4BAEDF30E9682EC3E4064B /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
 		60B2C4D9869D156768150162 /* FingerprintIntegrityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FingerprintIntegrityTests.swift; sourceTree = "<group>"; };
@@ -213,6 +218,7 @@
 		74CEDAF42E2A77D1E115DF2B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7AE52424CEF877E765D8F205 /* LibraryScanQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryScanQueue.swift; sourceTree = "<group>"; };
 		7D262894F14868D71757406F /* FCPStructureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FCPStructureRules.swift; sourceTree = "<group>"; };
+		7F4E269A4E1B5A7F7EE5B427 /* APFSSnapshotGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APFSSnapshotGuard.swift; sourceTree = "<group>"; };
 		81EB5DC90E9B88546895664A /* ScanResultCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultCache.swift; sourceTree = "<group>"; };
 		9176D59863E5F718B2F03C6D /* LibraryStore+Scanning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryStore+Scanning.swift"; sourceTree = "<group>"; };
 		91B6534D3DE04CBC72ACA4AB /* CleanupCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupCoordinatorTests.swift; sourceTree = "<group>"; };
@@ -321,6 +327,7 @@
 		3065CC66F3DE03843B5F4F99 /* FCPLibraryCleanerApp */ = {
 			isa = PBXGroup;
 			children = (
+				7F4E269A4E1B5A7F7EE5B427 /* APFSSnapshotGuard.swift */,
 				551DC8F234B31D7D7EDDA135 /* AppIntents.swift */,
 				9231E7E8323CBFDD7BB3E4FC /* BrandLinksView.swift */,
 				A733653E2977D21F85EA8BCA /* ButtonStyles.swift */,
@@ -330,6 +337,7 @@
 				04ACE23C54E26A89E4A33633 /* CleanupThroughputStore.swift */,
 				F797C3263736A1B2858FA606 /* CleanupTransactionJournal.swift */,
 				20E90935002C1734277CD748 /* ContentView.swift */,
+				361854EE84DFC5B84FD9888D /* DashboardView.swift */,
 				934233315FECA82E62393048 /* DesignTokens.swift */,
 				3EFF56D74707AFC00861081E /* DiagnosticsExporter.swift */,
 				25489A68BC788A62C28C0402 /* FCPLibraryCleanerApp.swift */,
@@ -433,6 +441,7 @@
 		A14034E2F90935684930A0E4 /* FCPLibraryCleanerAppTests */ = {
 			isa = PBXGroup;
 			children = (
+				5BDE87BAC4114956A95218B7 /* APFSSnapshotGuardTests.swift */,
 				43B4B782667237CEA6369720 /* AppIntentsTests.swift */,
 				91B6534D3DE04CBC72ACA4AB /* CleanupCoordinatorTests.swift */,
 				AF7D9B38F58EB856C7C7670F /* CleanupHistoryFileTests.swift */,
@@ -686,6 +695,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E8F48952A63D4FA24BDAFBF4 /* APFSSnapshotGuard.swift in Sources */,
 				491FC2B28AEE0892BCE080C5 /* AppIntents.swift in Sources */,
 				FC22CFD02DB7D81D2B7FEA40 /* BrandLinksView.swift in Sources */,
 				B00D87CDDE7B2F62C62A7636 /* ButtonStyles.swift in Sources */,
@@ -695,6 +705,7 @@
 				AD064462F3DAFF18E9ACDC9C /* CleanupThroughputStore.swift in Sources */,
 				5D466E8EB2CC005ACB48D81A /* CleanupTransactionJournal.swift in Sources */,
 				04782B070183732A12AC8CFC /* ContentView.swift in Sources */,
+				F44DC7AD420A1C46C96E2EB5 /* DashboardView.swift in Sources */,
 				B65ADD2B00691BA749433C79 /* DesignTokens.swift in Sources */,
 				6E7A0DBF69530563B7324DF0 /* DiagnosticsExporter.swift in Sources */,
 				38EE0BFADBE8E33268E48FC8 /* FCPLibraryCleanerApp.swift in Sources */,
@@ -788,6 +799,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				08F93AAFD832DA9AD98CD6C8 /* APFSSnapshotGuardTests.swift in Sources */,
 				486A641075379B6A050A0E79 /* AppIntentsTests.swift in Sources */,
 				7555AF116BA143A59223FF67 /* CleanupCoordinatorTests.swift in Sources */,
 				4F631EAAA169AA0DDFF9FC79 /* CleanupHistoryFileTests.swift in Sources */,
@@ -860,12 +872,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 421;
+				CURRENT_PROJECT_VERSION = 430;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 4.2.1;
+				MARKETING_VERSION = 4.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -883,7 +895,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 421;
+				CURRENT_PROJECT_VERSION = 430;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(WORKFLOW_EXTENSION_SDK_PATH)/usr/include",
@@ -901,7 +913,7 @@
 				);
 				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 4.2.1;
+				MARKETING_VERSION = 4.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-fapplication-extension",
@@ -939,7 +951,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = WorkflowExtension/WorkflowExtension.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 421;
+				CURRENT_PROJECT_VERSION = 430;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(WORKFLOW_EXTENSION_SDK_PATH)/usr/include",
@@ -957,7 +969,7 @@
 				);
 				MACH_O_TYPE = mh_execute;
 				MACOSX_DEPLOYMENT_TARGET = 15.6;
-				MARKETING_VERSION = 4.2.1;
+				MARKETING_VERSION = 4.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-fapplication-extension",
@@ -996,14 +1008,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 421;
+				CURRENT_PROJECT_VERSION = 430;
 				EXECUTABLE_NAME = "FCP-Cleaner";
 				INFOPLIST_FILE = "Config/App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 4.2.1;
+				MARKETING_VERSION = 4.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1019,12 +1031,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 421;
+				CURRENT_PROJECT_VERSION = 430;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 4.2.1;
+				MARKETING_VERSION = 4.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -1058,14 +1070,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 421;
+				CURRENT_PROJECT_VERSION = 430;
 				EXECUTABLE_NAME = "FCP-Cleaner";
 				INFOPLIST_FILE = "Config/App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 4.2.1;
+				MARKETING_VERSION = 4.3.0;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

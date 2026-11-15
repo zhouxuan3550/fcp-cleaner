@@ -8,15 +8,15 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 产品名称 | FCP Cleaner |
-| 当前版本 | 4.2.1（Build 421） |
+| 当前版本 | 4.3.0（Build 430） |
 | 项目路径 | `/Users/macstudio/Documents/CodeX/FCP Cleaner` |
 | 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager、XcodeGen |
 | 最低系统 | 主程序 macOS 15.0；Workflow Extension macOS 15.6 |
 | 当前架构 | universal2（arm64 + x86_64） |
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
-| 最新安装包 | `Distribution/FCP-Cleaner-4.2.1-universal.dmg`（无 Workflow 扩展的预览包，待验收） |
-| 自动测试 | 147 项测试（swift-testing；146 启用 + 1 项 FSEvents 时序测试按预期禁用） |
+| 最新安装包 | `Distribution/FCP-Cleaner-4.3.0-universal.dmg`（无 Workflow 扩展的预览包，待验收） |
+| 自动测试 | 153 项测试（swift-testing；152 启用 + 1 项 FSEvents 时序测试按预期禁用） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
 
@@ -226,6 +226,8 @@ FCPLibraryCleaner/
 | `ViewsSettingsAndHistory.swift` | 设置弹层与清理历史弹层 |
 | `ViewsHeader.swift` | 顶栏（品牌、Finder、历史、设置、自动扫描） |
 | `DesignTokens.swift` | AppColor/AppFont/LayoutMetrics/FormatHelpers 设计令牌 |
+| `APFSSnapshotGuard.swift` | 清理前 APFS 本地快照（内置卷，可关） |
+| `DashboardView.swift` | 总览仪表盘：汇总、卷压力、Top 3 推荐 |
 | `LibraryStore.swift` | 主状态、筛选分层与启动引导（主体拆入下列扩展） |
 | `LibraryStore+Discovery.swift` | 发现：Spotlight / 工作目录 / 手动添加与候选校验 |
 | `LibraryStore+Scanning.swift` | 扫描队列执行与缓存复用 |
@@ -357,7 +359,7 @@ swift build
 swift test
 ```
 
-当前基线：147 项测试全部通过（Core 85 + App 62），其中 1 项 FSEvents 时序测试按预期禁用。
+当前基线：153 项测试全部通过（Core 86 + App 67），其中 1 项 FSEvents 时序测试按预期禁用。
 
 测试重点包括：
 
