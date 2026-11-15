@@ -21,6 +21,20 @@
                ReferencedContainer = "container:FCPLibraryCleaner.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "599286617A9DD793EB0DE88F"
+               BuildableName = "FCP-Cleaner-Workflow.appex"
+               BlueprintName = "FCP-Cleaner-Workflow"
+               ReferencedContainer = "container:FCPLibraryCleaner.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
