@@ -1,3 +1,7 @@
+// [INPUT]: Core 扫描与清理模型、系统权限和 App 持久化服务。
+// [OUTPUT]: 可观察的资源库记录、筛选选择状态与清理确认模型。
+// [POS]: App 状态中心；扫描、发现和清理流程由同名扩展实现。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import Foundation
@@ -270,7 +274,7 @@ enum InactivityFilter: Int, CaseIterable, Identifiable {
 
     var id: Self { self }
 
-    var title: String { self == .all ? "全部时间" : String(format: String(localized: "%@ 天未使用"), String(rawValue)) }
+    var title: String { self == .all ? String(localized: "全部时间") : String(format: String(localized: "%@ 天未使用"), String(rawValue)) }
 
 }
 
@@ -416,6 +420,8 @@ final class LibraryStore: NSObject {
 
     var selectedID: LibraryRecord.ID?
 
+    var lastKeyboardSelectionID: LibraryRecord.ID?
+
     var selectedVolumeURL: URL?
 
     var libraryFilter: LibraryFilter = .waiting
@@ -434,10 +440,6 @@ final class LibraryStore: NSObject {
 
     var searchText = ""
 
-    var showsSettings = false
-
-    var showsHistory = false
-
     var appearanceMode = AppearanceMode(rawValue: UserDefaults.standard.integer(forKey: "appearanceMode")) ?? .dark {
 
         didSet {
@@ -449,6 +451,14 @@ final class LibraryStore: NSObject {
     }
 
     var batchSelectedIDs = Set<LibraryRecord.ID>()
+
+    var canToggleSelectedLibraryInBatch: Bool {
+
+        guard let selected = selectedLibrary, !isPreflighting, !isCleaning else { return false }
+
+        return batchCleanableLibraries.contains { $0.id == selected.id }
+
+    }
 
     var cleanConfirmation: CleanConfirmation?
 
@@ -473,6 +483,14 @@ final class LibraryStore: NSObject {
     var discoveryError: String?
 
     var cleanupNotice: CleanupNotice?
+
+    var pendingCleanupNotices: [CleanupNotice] = []
+
+    var singleCleanupCompleted = 0
+
+    var singleCleanupTotal = 0
+
+    var cleaningLibraryID: LibraryRecord.ID?
 
     var cleanupSummary: CleanupSummary?
 
@@ -852,6 +870,8 @@ final class LibraryStore: NSObject {
 
         selectedID = filteredLibraries.first?.id
 
+        showsDashboard = false
+
     }
 
 
@@ -883,6 +903,29 @@ final class LibraryStore: NSObject {
         showsDashboard = false
 
         drainScanQueue()
+
+    }
+
+    func moveSelection(by step: Int) {
+
+        let grouped = Dictionary(grouping: filteredLibraries, by: \.volumeURL)
+
+        let visible = grouped.sorted { lhs, rhs in
+            let lhsTotal = lhs.value.reduce(0) { $0 + $1.cleanableDisplaySize }
+            let rhsTotal = rhs.value.reduce(0) { $0 + $1.cleanableDisplaySize }
+            if lhsTotal != rhsTotal { return lhsTotal > rhsTotal }
+            return lhs.key.path < rhs.key.path
+        }.flatMap(\.value)
+
+        guard !visible.isEmpty else { return }
+
+        let index = visible.firstIndex { $0.id == selectedID }
+
+        let next = index.map { min(max($0 + step, 0), visible.count - 1) } ?? (step < 0 ? visible.count - 1 : 0)
+
+        select(visible[next])
+
+        lastKeyboardSelectionID = visible[next].id
 
     }
 
@@ -1170,15 +1213,19 @@ final class CleanConfirmation: Identifiable {
 
     let isRetry: Bool
 
+    let initiallyIncludedURLs: Set<URL>?
 
 
-    init(record: LibraryRecord, plan: CleanupPlan, isRetry: Bool = false) {
+
+    init(record: LibraryRecord, plan: CleanupPlan, isRetry: Bool = false, initiallyIncludedURLs: Set<URL>? = nil) {
 
         self.record = record
 
         self.plan = plan
 
         self.isRetry = isRetry
+
+        self.initiallyIncludedURLs = initiallyIncludedURLs
 
     }
 

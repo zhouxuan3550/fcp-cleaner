@@ -1,3 +1,7 @@
+// [INPUT]: LibraryStore 的实时缓存、通知与磁盘监控状态。
+// [OUTPUT]: 缓存失效调度、磁盘诊断和按序展示的清理通知。
+// [POS]: App 运行期状态协作；不参与清理候选的安全判定。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import Foundation
@@ -432,7 +436,9 @@ extension LibraryStore {
 
         noticeDismissalTask?.cancel()
 
-        cleanupNotice = nil
+        cleanupNotice = pendingCleanupNotices.isEmpty ? nil : pendingCleanupNotices.removeFirst()
+
+        if let notice = cleanupNotice { scheduleNoticeDismissal(notice) }
 
     }
 
@@ -440,9 +446,21 @@ extension LibraryStore {
 
     func showCleanupNotice(_ notice: CleanupNotice) {
 
-        noticeDismissalTask?.cancel()
+        guard cleanupNotice == nil else {
+
+            pendingCleanupNotices.append(notice)
+
+            return
+
+        }
 
         cleanupNotice = notice
+
+        scheduleNoticeDismissal(notice)
+
+    }
+
+    private func scheduleNoticeDismissal(_ notice: CleanupNotice) {
 
         noticeDismissalTask = Task { [weak self] in
 
@@ -450,7 +468,7 @@ extension LibraryStore {
 
             guard !Task.isCancelled, self?.cleanupNotice?.id == notice.id else { return }
 
-            self?.cleanupNotice = nil
+            self?.dismissCleanupNotice()
 
         }
 

@@ -8,15 +8,15 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 产品名称 | FCP Cleaner |
-| 当前版本 | 4.3.0（Build 430） |
+| 当前版本 | 4.3.1（Build 431，待验收） |
 | 项目路径 | `/Users/macstudio/Documents/CodeX/FCP Cleaner` |
 | 技术栈 | Swift 6、SwiftUI、AppKit、Swift Package Manager、XcodeGen |
 | 最低系统 | 主程序 macOS 15.0；Workflow Extension macOS 15.6 |
 | 当前架构 | universal2（arm64 + x86_64） |
 | Bundle ID | `com.fcpcleaner.app` |
 | 更新框架 | Sparkle exact 2.9.6（feed 已上线） |
-| 最新安装包 | `Distribution/FCP-Cleaner-4.3.0-universal.dmg`（无 Workflow 扩展的预览包，待验收） |
-| 自动测试 | 153 项测试（swift-testing；152 启用 + 1 项 FSEvents 时序测试按预期禁用） |
+| 最新安装包 | `Distribution/FCP-Cleaner-4.3.1-review-universal.dmg`（本地验收包，含 Workflow 扩展；不发布更新源） |
+| 自动测试 | 159 项测试（swift-testing；158 启用 + 1 项 FSEvents 时序测试按预期禁用） |
 
 产品用途：扫描 Final Cut Pro 的 `.fcpbundle` 资源库，只清理能够明确确认、可由 FCP 重新生成的渲染文件、代理媒体和优化媒体，并将其移动到 macOS 废纸篓。
 
@@ -223,7 +223,7 @@ FCPLibraryCleaner/
 | `ViewsSidebar.swift` | 侧栏列表、筛选、批量操作条（MainWorkspace） |
 | `ViewsLibraryDetail.swift` | 详情面板：指标卡、趋势图、清理操作卡 |
 | `ViewsConfirmationSheets.swift` | 清理确认/批量确认/完成摘要弹窗 |
-| `ViewsSettingsAndHistory.swift` | 设置弹层与清理历史弹层 |
+| `ViewsSettingsAndHistory.swift` | 独立设置窗口与全局清理历史窗口 |
 | `ViewsHeader.swift` | 顶栏（品牌、Finder、历史、设置、自动扫描） |
 | `DesignTokens.swift` | AppColor/AppFont/LayoutMetrics/FormatHelpers 设计令牌 |
 | `APFSSnapshotGuard.swift` | 清理前 APFS 本地快照（内置卷，可关） |
@@ -359,7 +359,7 @@ swift build
 swift test
 ```
 
-当前基线：153 项测试全部通过（Core 86 + App 67），其中 1 项 FSEvents 时序测试按预期禁用。
+当前基线：159 项测试全部通过（Core 86 + App 73），其中 1 项 FSEvents 时序测试按预期禁用。
 
 测试重点包括：
 
@@ -484,3 +484,16 @@ xcodebuild -project FCPLibraryCleaner.xcodeproj -scheme FCP-Cleaner build
 - 永久删除的中断日志记录卷 UUID；重启或挂载通知会尝试恢复，磁盘离线或同路径换盘时保留日志等待原卷。日志仍需并发进程和异常断电条件的进一步审查。
 - 百度网盘同步可能在源码目录短暂产生隐藏的 `*.baiduyun.uploading.cfg`；XcodeGen 源目录配置显式排除这类文件，避免误当资源后在构建时因文件消失失败。
 - 扫描请求队列已抽到 `LibraryScanQueue`，单库与批量清理共用 `CleanupCoordinator`。隔离界面检查覆盖资源库载入、清理确认、疑似缓存列表和历史记录二次确认；没有对真实项目执行清理或永久删除。
+
+## 17. 扫描结果界面交互
+
+- 详情页的清理按钮和可清理合计固定在滚动区底部；批量选择时隐藏单库操作栏，避免覆盖批量操作条。按钮继续调用 `LibraryStore.requestClean`，保留完整预检和确认弹窗。
+- “最大安全清理”按体积从大到小展示各类候选目录。每类默认展示前 10 项，可展开全部；展开其他类时恢复默认数量。
+- 侧栏扫描行在已知 `ScanPartialResults` 总目录数后显示完成比例；未知总量时只显示等待轨道。该进度仅供展示，不参与清理计划。
+- 显式的 `snappy` 与侧栏悬停动画尊重系统“减少动态效果”。新增文案在 `Localizable.xcstrings` 中提供英文翻译。
+- 点击侧栏资源库后，列表获得键盘焦点，可用方向键逐库移动；⌘1–4 切换四个筛选，⌘N 切换当前库的批量勾选。搜索输入期间，方向键由输入框处理。并列大小按路径排序，避免界面顺序在刷新后变化。
+- Event 行可启动原有单库预检，并在确认弹窗中只预勾选同名 Event 的候选目录；共享目录和“其他 Event”汇总行不直接触发清理。确认前用户仍可调整勾选，执行阶段照旧逐项复核。
+- 清理完成通知顺序展示，单库执行按钮显示逐项进度。占用图例悬停显示精确字节；空间估算与清理门槛保持原语义。
+- 浅色空类目行不再整体降低透明度；英文长 Event 名称使用弹性标签宽度，确认弹窗缩短英文计数并提高未选项数字对比度。已用隔离的临时资源库检查浅色英文主界面、设置、空历史、固定操作栏、Event 预选确认、方向键和搜索焦点。最小窗口宽度仍待单独验收。
+- 4.3.1 将设置迁至系统设置窗口，历史迁至独立窗口；主详情用概览、明细、记录三段显示，记录段按资源库路径匹配历史，恢复与清空操作仍在全局历史窗口。已用隔离资源库和模拟历史记录检查中文深色主界面、三段切换、两条单库记录、设置及有数据的历史窗口；未在真实资源库执行清理或永久删除。
+- 4.3.1 本地验收包：`swift test` 通过（73 个测试、21 个测试套件）；Release universal2 构建成功。`Distribution/FCP-Cleaner-4.3.1-review-universal.dmg` 已通过 `hdiutil verify`、只读挂载及包内 `codesign --verify --deep --strict`；主程序与 Workflow 扩展均为 arm64 + x86_64，最低系统分别为 macOS 15.0 与 15.6。SHA-256：`7aa6b25ac2744262ba1efbc8db2bbd39e535f1057e0ac31733d5a46ee90ddd07`。此包使用 ad-hoc 签名，未公证，也未发布到 GitHub。

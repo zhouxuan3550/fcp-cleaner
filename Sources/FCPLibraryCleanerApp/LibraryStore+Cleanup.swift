@@ -1,3 +1,7 @@
+// [INPUT]: LibraryStore 的选择状态、Core 清理计划和 CleanupCoordinator。
+// [OUTPUT]: 单库及批量清理的预检、确认和执行状态流。
+// [POS]: App 清理入口；Event 预选只改变弹窗初始勾选，不绕过预检。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import Foundation
 
 import FCPLibraryCleanerCore
@@ -8,7 +12,7 @@ import FCPLibraryCleanerCore
 
 extension LibraryStore {
 
-    func requestClean(_ record: LibraryRecord) {
+    func requestClean(_ record: LibraryRecord, selectedEventName: String? = nil) {
 
         guard !isPreflighting, !isCleaning else { return }
 
@@ -22,7 +26,23 @@ extension LibraryStore {
 
             guard !plan.entries.isEmpty else { return }
 
-            preflight(record: record, plan: plan, isRetry: false)
+            let initiallyIncludedURLs: Set<URL>?
+
+            if let selectedEventName {
+
+                let matching = CleanupEventSelection.matchingURLs(in: plan, eventName: selectedEventName)
+
+                guard !matching.isEmpty else { return }
+
+                initiallyIncludedURLs = matching
+
+            } else {
+
+                initiallyIncludedURLs = nil
+
+            }
+
+            preflight(record: record, plan: plan, isRetry: false, initiallyIncludedURLs: initiallyIncludedURLs)
 
         } catch {
 
@@ -332,7 +352,7 @@ extension LibraryStore {
 
 
 
-    private func preflight(record: LibraryRecord, plan: CleanupPlan, isRetry: Bool) {
+    private func preflight(record: LibraryRecord, plan: CleanupPlan, isRetry: Bool, initiallyIncludedURLs: Set<URL>? = nil) {
 
         isPreflighting = true
 
@@ -348,7 +368,7 @@ extension LibraryStore {
 
                 cleanupPreparationCompleted = 1
 
-                cleanConfirmation = CleanConfirmation(record: record, plan: plan, isRetry: isRetry)
+                cleanConfirmation = CleanConfirmation(record: record, plan: plan, isRetry: isRetry, initiallyIncludedURLs: initiallyIncludedURLs)
 
             } catch {
 
@@ -610,6 +630,14 @@ extension LibraryStore {
 
         let record = confirmation.record
 
+        let recordID = record.id
+
+        cleaningLibraryID = record.id
+
+        singleCleanupCompleted = 0
+
+        singleCleanupTotal = confirmation.plan.entries.count
+
         record.cleanupBeforeSize = record.scanResult?.totalAllocatedSize
 
         record.cleanupAfterSize = nil
@@ -634,7 +662,16 @@ extension LibraryStore {
 
             do {
 
-                let result = try await cleanupCoordinator.execute(confirmation.plan, volumeID: record.volumeID, snapshotEnabled: cleanupSnapshotsEnabled)
+                let result = try await cleanupCoordinator.execute(
+                    confirmation.plan, volumeID: record.volumeID, snapshotEnabled: cleanupSnapshotsEnabled,
+                    onProgress: { completed, total in
+                        Task { @MainActor in
+                            guard self.cleaningLibraryID == recordID else { return }
+                            self.singleCleanupCompleted = completed
+                            self.singleCleanupTotal = total
+                        }
+                    }
+                )
 
                 record.lastCleanup = result
 
@@ -733,6 +770,12 @@ extension LibraryStore {
             reconcileInterruptedCleanup()
 
             isCleaning = false
+
+            cleaningLibraryID = nil
+
+            singleCleanupCompleted = 0
+
+            singleCleanupTotal = 0
 
         }
 
@@ -916,4 +959,13 @@ extension LibraryStore {
 
     }
 
+}
+
+enum CleanupEventSelection {
+    static func matchingURLs(in plan: CleanupPlan, eventName: String) -> Set<URL> {
+        Set(plan.entries.compactMap { entry -> URL? in
+            let location = FCPStructureRules.candidateLocation(for: entry.item.url, ruleID: entry.item.ruleID)
+            return location?.eventName == eventName ? entry.item.url : nil
+        })
+    }
 }

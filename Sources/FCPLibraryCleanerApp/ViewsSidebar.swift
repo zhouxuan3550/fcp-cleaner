@@ -1,3 +1,7 @@
+// [INPUT]: LibraryStore 的筛选、选择、扫描与批量清理状态。
+// [OUTPUT]: 主工作区、资源库侧栏、单行扫描进度与批量操作入口。
+// [POS]: App 导航层；侧栏选择决定详情内容，不执行文件清理。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import SwiftUI
@@ -7,6 +11,8 @@ import FCPLibraryCleanerCore
 
 
 struct MainWorkspace: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let store: LibraryStore
 
@@ -80,7 +86,7 @@ struct MainWorkspace: View {
 
                 }
 
-                .animation(.snappy(duration: 0.22), value: store.batchSelectedIDs.isEmpty)
+                .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: store.batchSelectedIDs.isEmpty)
 
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -98,6 +104,10 @@ struct MainWorkspace: View {
 
 struct LibrarySidebar: View {
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @FocusState private var isListFocused: Bool
+
     @Bindable var store: LibraryStore
 
     var searchFocused: FocusState<Bool>.Binding
@@ -114,6 +124,8 @@ struct LibrarySidebar: View {
 
             Divider().overlay(AppColor.border)
 
+            ScrollViewReader { scrollProxy in
+
             ScrollView {
 
                 LazyVStack(alignment: .leading, spacing: 3, pinnedViews: .sectionHeaders) {
@@ -124,7 +136,10 @@ struct LibrarySidebar: View {
 
                             ForEach(section.libraries) { library in
 
-                                LibraryRow(library: library, store: store, isFastestGrowing: library.id == fastestGrowingID)
+                                LibraryRow(library: library, store: store, searchFocused: searchFocused,
+                                           listFocused: $isListFocused,
+                                           isFastestGrowing: library.id == fastestGrowingID)
+                                    .id(library.id)
 
                             }
 
@@ -145,6 +160,40 @@ struct LibrarySidebar: View {
             }
 
             .scrollIndicators(.hidden)
+
+            .focusable()
+
+            .focused($isListFocused)
+
+            .onMoveCommand { direction in
+
+                guard !searchFocused.wrappedValue else { return }
+
+                switch direction {
+
+                case .up: store.moveSelection(by: -1)
+
+                case .down: store.moveSelection(by: 1)
+
+                default: break
+
+                }
+
+            }
+
+            .onChange(of: store.lastKeyboardSelectionID) { _, id in
+
+                guard let id else { return }
+
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.16)) {
+
+                    scrollProxy.scrollTo(id, anchor: .center)
+
+                }
+
+            }
+
+            }
 
 
 
@@ -232,7 +281,7 @@ struct LibrarySidebar: View {
 
                     Button {
 
-                        withAnimation(.snappy(duration: 0.2)) {
+                        withAnimation(reduceMotion ? nil : .snappy(duration: 0.2)) {
 
                             store.setFilter(filter)
 
@@ -476,7 +525,7 @@ struct LibrarySidebar: View {
 
                     Button {
 
-                        withAnimation(.snappy(duration: 0.22)) {
+                        withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) {
 
                             store.toggleSelectAllCleanableLibraries()
 
@@ -540,7 +589,13 @@ struct LibrarySidebar: View {
 
             }
 
-            .sorted { $0.totalCleanable > $1.totalCleanable }
+            .sorted {
+
+                if $0.totalCleanable != $1.totalCleanable { return $0.totalCleanable > $1.totalCleanable }
+
+                return $0.volumeURL.path < $1.volumeURL.path
+
+            }
 
     }
 
@@ -654,9 +709,15 @@ struct LibraryRow: View {
 
     let store: LibraryStore
 
+    var searchFocused: FocusState<Bool>.Binding
+
+    var listFocused: FocusState<Bool>.Binding
+
     var isFastestGrowing = false
 
     @State private var isHovered = false
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
 
 
@@ -675,6 +736,12 @@ struct LibraryRow: View {
             Button {
 
                 store.selectedID = library.id
+
+                store.showsDashboard = false
+
+                searchFocused.wrappedValue = false
+
+                listFocused.wrappedValue = true
 
             } label: {
 
@@ -722,6 +789,38 @@ struct LibraryRow: View {
 
                             .lineLimit(1)
 
+                        if library.isScanning {
+
+                            let partial = library.scanPartialResults
+
+                            GeometryReader { geometry in
+
+                                ZStack(alignment: .leading) {
+
+                                    Capsule().fill(AppColor.control)
+
+                                    if let partial, partial.totalDirectories > 0 {
+
+                                        Capsule()
+
+                                            .fill(AppColor.accent)
+
+                                            .frame(width: geometry.size.width * min(1, Double(partial.completedDirectories) / Double(partial.totalDirectories)))
+
+                                    }
+
+                                }
+
+                            }
+
+                                .frame(height: 2)
+
+                                .accessibilityLabel("扫描进度")
+
+                                .accessibilityValue(partial.map { "\($0.completedDirectories)/\($0.totalDirectories)" } ?? String(localized: "准备中"))
+
+                        }
+
                     }
 
                     Spacer(minLength: 6)
@@ -736,6 +835,7 @@ struct LibraryRow: View {
 
             .buttonStyle(.plain)
 
+
         }
 
         .padding(.horizontal, 9)
@@ -748,7 +848,7 @@ struct LibraryRow: View {
 
         .onHover { isHovered = $0 }
 
-        .animation(.easeOut(duration: 0.12), value: isHovered)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isHovered)
 
         .contextMenu {
 
@@ -786,7 +886,7 @@ struct LibraryRow: View {
 
             Button {
 
-                withAnimation(.snappy(duration: 0.22)) {
+                withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) {
 
                     store.toggleBatchSelection(library)
 
@@ -918,6 +1018,8 @@ struct LibraryRow: View {
 
 struct BatchActionBar: View {
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let store: LibraryStore
 
 
@@ -970,7 +1072,7 @@ struct BatchActionBar: View {
 
             Button("取消") {
 
-                withAnimation(.snappy(duration: 0.2)) {
+                withAnimation(reduceMotion ? nil : .snappy(duration: 0.2)) {
 
                     store.batchSelectedIDs.removeAll()
 

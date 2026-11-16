@@ -1,3 +1,7 @@
+// [INPUT]: 已确认的 CleanupPlan、磁盘状态及资源库占用检测。
+// [OUTPUT]: 逐项复核后移入废纸篓的 CleanupResult 与只读进度回调。
+// [POS]: Core 清理执行器；进度只作展示，不改变安全校验顺序。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import Foundation
 import OSLog
 
@@ -51,9 +55,9 @@ public struct CleanupEngine: Sendable {
         }
     }
 
-    public func execute(plan: CleanupPlan) async throws -> CleanupResult {
+    public func execute(plan: CleanupPlan, onProgress: @escaping @Sendable (Int, Int) -> Void = { _, _ in }) async throws -> CleanupResult {
         let task = Task.detached(priority: .userInitiated) {
-            try Self.executeSynchronously(plan: plan, isLibraryInUse: isLibraryInUse)
+            try Self.executeSynchronously(plan: plan, isLibraryInUse: isLibraryInUse, onProgress: onProgress)
         }
         return try await withTaskCancellationHandler {
             try await task.value
@@ -64,7 +68,8 @@ public struct CleanupEngine: Sendable {
 
     private static func executeSynchronously(
         plan: CleanupPlan,
-        isLibraryInUse: @escaping @Sendable (URL) -> Bool
+        isLibraryInUse: @escaping @Sendable (URL) -> Bool,
+        onProgress: @escaping @Sendable (Int, Int) -> Void
     ) throws -> CleanupResult {
         let startedAt = ContinuousClock.now
         let signpostState = signposter.beginInterval("CleanupLibrary")
@@ -82,7 +87,7 @@ public struct CleanupEngine: Sendable {
         var errors: [CleanupError] = []
         var validationThrottle = CleanupValidationThrottle()
 
-        for entry in plan.entries {
+        for (index, entry) in plan.entries.enumerated() {
             try Task.checkCancellation()
             if isLibraryInUse(plan.libraryURL) {
                 errors.append(.libraryInUse)
@@ -113,6 +118,7 @@ public struct CleanupEngine: Sendable {
             } catch {
                 errors.append(.trashFailed(entry.item.url, error.localizedDescription))
             }
+            onProgress(index + 1, plan.entries.count)
         }
 
         let elapsed = ContinuousClock.now - startedAt

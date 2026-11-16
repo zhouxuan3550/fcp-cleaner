@@ -1,3 +1,7 @@
+// [INPUT]: LibraryStore 状态、系统窗口打开入口与 Finder。
+// [OUTPUT]: 主窗口标题栏及历史、设置、扫描操作。
+// [POS]: App 全局导航；历史和设置在独立窗口展示。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import SwiftUI
@@ -7,6 +11,10 @@ import FCPLibraryCleanerCore
 
 
 struct AppHeader: View {
+
+    @Environment(\.openWindow) private var openWindow
+
+    @Environment(\.openSettings) private var openSettings
 
     @Bindable var store: LibraryStore
 
@@ -88,7 +96,7 @@ struct AppHeader: View {
 
             Button {
 
-                store.showsHistory.toggle()
+                openWindow(id: AuxiliaryWindowID.history)
 
             } label: {
 
@@ -100,17 +108,9 @@ struct AppHeader: View {
 
             .accessibilityLabel("记录")
 
-            .popover(isPresented: $store.showsHistory, arrowEdge: .bottom) {
-
-                CleanupHistoryView(store: store.cleanupHistory, libraryStore: store)
-
-            }
-
-
-
             Button {
 
-                store.showsSettings.toggle()
+                openSettings()
 
             } label: {
 
@@ -121,14 +121,6 @@ struct AppHeader: View {
             .buttonStyle(HeaderButtonStyle())
 
             .accessibilityLabel("设置")
-
-            .popover(isPresented: $store.showsSettings, arrowEdge: .bottom) {
-
-                AppSettings(store: store)
-
-            }
-
-
 
             Button {
 

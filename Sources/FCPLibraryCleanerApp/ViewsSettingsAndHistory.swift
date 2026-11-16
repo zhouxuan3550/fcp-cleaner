@@ -1,3 +1,7 @@
+// [INPUT]: LibraryStore 设置状态、CleanupHistoryStore 历史与恢复入口。
+// [OUTPUT]: 独立设置窗口和全局历史窗口内容。
+// [POS]: 全局辅助窗口；历史中的恢复和永久清空沿用既有确认流程。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import SwiftUI
@@ -314,9 +318,11 @@ struct AppSettings: View {
 
         }
 
-        .padding(20)
+        .padding(24)
 
-        .frame(width: LayoutMetrics.settingsPopoverWidth)
+        .frame(maxWidth: 680, alignment: .leading)
+
+        .frame(maxWidth: .infinity)
 
     }
 
@@ -542,7 +548,7 @@ struct CleanupHistoryView: View {
 
                 }
 
-                .frame(maxHeight: 360)
+                .frame(minHeight: 260, maxHeight: .infinity)
 
             }
 
@@ -558,9 +564,9 @@ struct CleanupHistoryView: View {
 
         }
 
-        .padding(18)
+        .padding(24)
 
-        .frame(width: LayoutMetrics.historyPopoverWidth)
+        .frame(minWidth: 620, minHeight: 460, alignment: .topLeading)
 
         .alert(String(localized: "永久删除本次清理的项目？"), isPresented: Binding(
 

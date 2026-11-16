@@ -1,3 +1,7 @@
+// [INPUT]: LibraryStore 的全局界面状态及系统拖放、焦点事件。
+// [OUTPUT]: 主窗口布局、确认弹层与清理通知。
+// [POS]: App 根视图；连接侧栏、详情和全局浮层。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import SwiftUI
@@ -9,6 +13,8 @@ import FCPLibraryCleanerCore
 
 
 struct ContentView: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var store = LibraryStore.shared
 
@@ -84,7 +90,7 @@ struct ContentView: View {
 
                 .transition(.move(edge: .bottom).combined(with: .opacity))
 
-                .animation(.snappy(duration: 0.22), value: store.batchSelectedIDs.isEmpty)
+                .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: store.batchSelectedIDs.isEmpty)
 
                 .zIndex(999)
 
@@ -98,7 +104,7 @@ struct ContentView: View {
 
         .preferredColorScheme(store.appearanceMode.colorScheme)
 
-        .animation(.snappy(duration: 0.28), value: store.cleanupNotice?.id)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: store.cleanupNotice?.id)
 
         .onKeyPress(.space) {
 

@@ -1,6 +1,119 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "概览" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Overview" } } }
+    },
+    "明细" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Details" } } }
+    },
+    "资源库内容" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Library Sections" } } }
+    },
+    "打开完整记录" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Full History" } } }
+    },
+    "全部时间" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "All Time" } } }
+    },
+    "已验证" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Verified" } } }
+    },
+    "1 项" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "1 item" } } }
+    },
+    "1 个文件" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "1 file" } } }
+    },
+    "%@：可清理 %@" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@: %2$@ cleanable" } } }
+    },
+    "%@：无候选" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%@: no candidates" } } }
+    },
+    "%@：展开查看明细" : {
+      "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%@: expand details" } } }
+    },
+    "选择此 Event 清理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select this Event for cleanup"
+          }
+        }
+      }
+    },
+    "切换当前资源库的批量勾选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toggle current library for batch cleanup"
+          }
+        }
+      }
+    },
+    "筛选" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
+          }
+        }
+      }
+    },
+    "精确大小：%@ 字节" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exact size: %@ bytes"
+          }
+        }
+      }
+    },
+    "展开全部 %@ 项" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show all %@ items"
+          }
+        }
+      }
+    },
+    "收起明细" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show fewer"
+          }
+        }
+      }
+    },
+    "扫描进度" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan progress"
+          }
+        }
+      }
+    },
+    "准备中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing"
+          }
+        }
+      }
+    },
     "%@ · %@ 项" : {
       "localizations" : {
         "en" : {
@@ -1466,7 +1579,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ of %2$@ items selected"
+            "value" : "%1$@/%2$@ selected"
           }
         }
       }

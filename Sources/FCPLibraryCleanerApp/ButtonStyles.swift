@@ -1,3 +1,7 @@
+// [INPUT]: SwiftUI 按钮状态、AppColor 与系统减少动态效果偏好。
+// [OUTPUT]: 队列、标题、主要操作及确认弹窗按钮样式。
+// [POS]: App 共用控件样式；动画尊重辅助功能设置。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import SwiftUI
 
 struct QueueActionButtonStyle: ButtonStyle {
@@ -19,7 +23,7 @@ struct QueueActionButtonStyle: ButtonStyle {
             )
             .scaleEffect(configuration.isPressed && enabled && !reduceMotion ? 0.96 : 1.0)
             .opacity(enabled ? 1 : 0.45)
-            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.16), value: configuration.isPressed)
     }
 }
 
@@ -40,7 +44,7 @@ struct HeaderButtonStyle: ButtonStyle {
                 fallbackColor: emphasized ? AppColor.accent : AppColor.control
             )
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1.0)
-            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.16), value: configuration.isPressed)
     }
 }
 
@@ -59,7 +63,7 @@ struct PrimaryActionButtonStyle: ButtonStyle {
             .shadow(color: AppColor.accent.opacity(enabled ? 0.3 : 0), radius: 8, y: 3)
             .scaleEffect(configuration.isPressed && enabled && !reduceMotion ? 0.96 : 1.0)
             .opacity(enabled ? (configuration.isPressed ? 0.75 : 1) : 0.38)
-            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.16), value: configuration.isPressed)
     }
 }
 
@@ -76,7 +80,7 @@ struct SheetSecondaryButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1.0)
             .opacity(configuration.isPressed ? 0.75 : 1)
-            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.16), value: configuration.isPressed)
     }
 }
 
@@ -93,6 +97,6 @@ struct SheetDestructiveButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.96 : 1.0)
             .opacity(configuration.isPressed ? 0.75 : 1)
-            .animation(.snappy(duration: 0.16), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.16), value: configuration.isPressed)
     }
 }

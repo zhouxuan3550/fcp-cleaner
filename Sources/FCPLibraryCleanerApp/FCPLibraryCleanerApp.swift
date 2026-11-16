@@ -1,3 +1,7 @@
+// [INPUT]: LibraryStore、系统菜单与应用生命周期事件。
+// [OUTPUT]: 主窗口、菜单栏面板与键盘命令。
+// [POS]: App 入口；把系统命令转发给现有状态流。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import SwiftUI
@@ -10,6 +14,10 @@ extension Notification.Name {
 
     static let focusLibrarySearch = Notification.Name("com.fcpcleaner.focusLibrarySearch")
 
+}
+
+enum AuxiliaryWindowID {
+    static let history = "cleanup-history"
 }
 
 
@@ -48,7 +56,7 @@ struct FCPLibraryCleanerApp: App {
 
         .commands {
 
-            CommandGroup(after: .newItem) {
+            CommandGroup(replacing: .newItem) {
 
                 Button("选择资源库…") {
 
@@ -81,6 +89,18 @@ struct FCPLibraryCleanerApp: App {
                 .keyboardShortcut("a", modifiers: [.command])
 
                 .disabled(!LibraryStore.shared.hasSelectableBatchCandidates)
+
+                Button("切换当前资源库的批量勾选") {
+
+                    let store = LibraryStore.shared
+
+                    if let selected = store.selectedLibrary { store.toggleBatchSelection(selected) }
+
+                }
+
+                .keyboardShortcut("n", modifiers: [.command])
+
+                .disabled(!LibraryStore.shared.canToggleSelectedLibraryInBatch)
 
 
 
@@ -122,15 +142,19 @@ struct FCPLibraryCleanerApp: App {
 
             }
 
-            CommandGroup(replacing: .appSettings) {
+            CommandMenu("筛选") {
 
-                Button("设置…") {
+                Button("待清理") { LibraryStore.shared.setFilter(.waiting) }
+                    .keyboardShortcut("1", modifiers: [.command])
 
-                    LibraryStore.shared.showsSettings.toggle()
+                Button("扫描中") { LibraryStore.shared.setFilter(.scanning) }
+                    .keyboardShortcut("2", modifiers: [.command])
 
-                }
+                Button("已跳过") { LibraryStore.shared.setFilter(.skipped) }
+                    .keyboardShortcut("3", modifiers: [.command])
 
-                .keyboardShortcut(",", modifiers: [.command])
+                Button("已忽略") { LibraryStore.shared.setFilter(.ignored) }
+                    .keyboardShortcut("4", modifiers: [.command])
 
             }
 
@@ -158,6 +182,22 @@ struct FCPLibraryCleanerApp: App {
 
         }
 
+        Settings {
+            ScrollView {
+                AppSettings(store: LibraryStore.shared)
+            }
+            .frame(minWidth: 520, minHeight: 540)
+            .background(AppColor.workspace)
+            .preferredColorScheme(LibraryStore.shared.appearanceMode.colorScheme)
+        }
+
+        Window("清理记录", id: AuxiliaryWindowID.history) {
+            CleanupHistoryView(store: LibraryStore.shared.cleanupHistory, libraryStore: LibraryStore.shared)
+                .background(AppColor.workspace)
+                .preferredColorScheme(LibraryStore.shared.appearanceMode.colorScheme)
+        }
+        .defaultSize(width: 720, height: 560)
+
 
 
         MenuBarExtra("FCP Cleaner", systemImage: "sparkles") {
@@ -175,6 +215,8 @@ struct FCPLibraryCleanerApp: App {
 
 
 private struct MenuBarPanel: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Bindable var store: LibraryStore
 
@@ -200,7 +242,7 @@ private struct MenuBarPanel: View {
 
                     .contentTransition(.numericText())
 
-                    .animation(.snappy, value: store.totalCleanableSize)
+                    .animation(reduceMotion ? nil : .snappy, value: store.totalCleanableSize)
 
             }
 

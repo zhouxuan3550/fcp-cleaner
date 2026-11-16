@@ -1,3 +1,7 @@
+// [INPUT]: 清理计划、预检结果、LibraryStore 的确认与执行入口。
+// [OUTPUT]: 单库和批量确认、清理结果及通知视图。
+// [POS]: App 破坏性操作的最终确认界面。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import SwiftUI
@@ -7,6 +11,8 @@ import FCPLibraryCleanerCore
 
 
 struct SingleCleanConfirmationSheet: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let confirmation: CleanConfirmation
 
@@ -18,7 +24,19 @@ struct SingleCleanConfirmationSheet: View {
 
     /// 用户取消勾选的条目（Event/共享目录级）。默认全选，只允许缩小清理范围。
 
-    @State private var excluded: Set<URL> = []
+    @State private var excluded: Set<URL>
+
+    init(confirmation: CleanConfirmation, store: LibraryStore) {
+
+        self.confirmation = confirmation
+
+        self.store = store
+
+        let allURLs = Set(confirmation.plan.entries.map(\.item.url))
+
+        _excluded = State(initialValue: allURLs.subtracting(confirmation.initiallyIncludedURLs ?? allURLs))
+
+    }
 
 
 
@@ -158,13 +176,11 @@ struct SingleCleanConfirmationSheet: View {
 
                                     Spacer(minLength: 6)
 
-                                    Text(String(format: String(localized: "%@ 个文件"), String(item.entry.item.fingerprint.entryCount)))
+                                    Text(item.entry.item.fingerprint.entryCount == 1 ? String(localized: "1 个文件") : String(format: String(localized: "%@ 个文件"), String(item.entry.item.fingerprint.entryCount)))
 
                                         .font(AppFont.small(.medium))
 
-                                        .foregroundStyle(AppColor.tertiaryText)
-
-                                        .opacity(excluded.contains(item.id) ? 0.4 : 1)
+                                        .foregroundStyle(AppColor.secondaryText)
 
                                     Text(FormatHelpers.bytes(item.entry.item.allocatedSize))
 
@@ -172,7 +188,6 @@ struct SingleCleanConfirmationSheet: View {
 
                                         .foregroundStyle(AppColor.secondaryText)
 
-                                        .opacity(excluded.contains(item.id) ? 0.4 : 1)
 
                                 }
 
@@ -222,7 +237,7 @@ struct SingleCleanConfirmationSheet: View {
 
                             .contentTransition(.numericText())
 
-                            .animation(.snappy(duration: 0.2), value: selectedPlan.spaceToFree)
+                            .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: selectedPlan.spaceToFree)
 
                     }
 
@@ -412,7 +427,7 @@ struct SingleCleanConfirmationSheet: View {
 
                 .contentTransition(.numericText())
 
-                .animation(.snappy(duration: 0.2), value: includedTotal)
+                .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: includedTotal)
 
         }
 
@@ -946,9 +961,7 @@ struct SecurityPreflightFlowView: View {
 
     var body: some View {
 
-        VStack(alignment: .leading, spacing: 6) {
-
-            HStack(spacing: 5) {
+        HStack(spacing: 5) {
 
                 Image(systemName: "checkmark.shield.fill")
 
@@ -970,24 +983,6 @@ struct SecurityPreflightFlowView: View {
 
                     .foregroundStyle(AppColor.success)
 
-            }
-
-
-
-            VStack(alignment: .leading, spacing: 4) {
-
-                stepRow(icon: "lock.shield", title: String(localized: "进程检查"), desc: String(localized: "已检查 Final Cut Pro 是否占用资源库"))
-
-                stepRow(icon: "externaldrive.badge.checkmark", title: String(localized: "磁盘权限"), desc: String(localized: "已检查资源库及目标位置"))
-
-                stepRow(icon: "doc.badge.gearshape", title: String(localized: "快照与指纹"), desc: String(localized: "清理前逐项复核文件指纹"))
-
-                stepRow(icon: "trash", title: String(localized: "废纸篓保护"), desc: String(localized: "移入废纸篓后可恢复"))
-
-            }
-
-            .padding(.top, 2)
-
         }
 
         .padding(10)
@@ -996,47 +991,11 @@ struct SecurityPreflightFlowView: View {
 
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
 
         .accessibilityLabel("安全预检通过：已检查 Final Cut Pro 占用及磁盘状态，清理前会逐项复核文件指纹，并移入废纸篓。")
 
-    }
-
-
-
-    private func stepRow(icon: String, title: String, desc: String) -> some View {
-
-        HStack(spacing: 6) {
-
-            Image(systemName: "checkmark.circle.fill")
-
-                .font(AppFont.caption())
-
-                .foregroundStyle(AppColor.success)
-
-            Text(title)
-
-                .font(AppFont.caption(.semibold))
-
-                .foregroundStyle(AppColor.primaryText)
-
-            Text("·")
-
-                .font(AppFont.caption())
-
-                .foregroundStyle(AppColor.tertiaryText)
-
-            Text(desc)
-
-                .font(AppFont.caption())
-
-                .foregroundStyle(AppColor.secondaryText)
-
-                .lineLimit(1)
-
-            Spacer(minLength: 0)
-
-        }
+        .help("安全预检通过：已检查 Final Cut Pro 占用及磁盘状态，清理前会逐项复核文件指纹，并移入废纸篓。")
 
     }
 

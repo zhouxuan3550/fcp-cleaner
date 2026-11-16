@@ -1,3 +1,7 @@
+// [INPUT]: CleanupCoordinator 的可注入快照与清理执行接口。
+// [OUTPUT]: 快照日期和耗时透传的隔离测试。
+// [POS]: App 清理协调测试；只访问临时样本。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import Foundation
 import Testing
 import FCPLibraryCleanerCore
@@ -82,7 +86,7 @@ struct CleanupSnapshotWiringTests {
     func coordinatorCarriesSnapshotDate() async throws {
         let stamp = Date(timeIntervalSince1970: 1_760_000_000)
         let coordinator = CleanupCoordinator(
-            perform: { _ in CleanupResult(movedToTrash: [], freedAllocatedSize: 0, errors: []) },
+            perform: { _, _ in CleanupResult(movedToTrash: [], freedAllocatedSize: 0, errors: []) },
             prepareSnapshot: { _ in stamp })
 
         let enabled = try await coordinator.execute(try plan(), volumeID: nil, snapshotEnabled: true)

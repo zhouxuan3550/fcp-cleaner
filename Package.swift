@@ -13,7 +13,7 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle.git", exact: "2.9.6"),
     ],
     targets: [
-        .target(name: "FCPLibraryCleanerCore"),
+        .target(name: "FCPLibraryCleanerCore", exclude: ["AGENTS.md"]),
         .executableTarget(
             name: "fcp-library-scanner",
             dependencies: ["FCPLibraryCleanerCore"]
@@ -23,7 +23,8 @@ let package = Package(
             dependencies: [
                 "FCPLibraryCleanerCore",
                 .product(name: "Sparkle", package: "Sparkle"),
-            ]
+            ],
+            exclude: ["AGENTS.md"]
         ),
         .testTarget(
             name: "FCPLibraryCleanerCoreTests",
@@ -31,7 +32,8 @@ let package = Package(
         ),
         .testTarget(
             name: "FCPLibraryCleanerAppTests",
-            dependencies: ["FCPLibraryCleanerApp"]
+            dependencies: ["FCPLibraryCleanerApp"],
+            exclude: ["AGENTS.md"]
         ),
     ]
 )

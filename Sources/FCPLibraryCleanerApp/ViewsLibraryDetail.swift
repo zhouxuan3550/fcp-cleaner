@@ -1,3 +1,7 @@
+// [INPUT]: SwiftUI 状态、资源库扫描结果与 LibraryStore 的清理预检入口。
+// [OUTPUT]: 分段资源库详情、扫描结果、候选目录与固定清理操作栏。
+// [POS]: App 详情界面；只展示扫描数据，清理决策交给 LibraryStore。
+// [PROTOCOL]: Update this header on change, then check AGENTS.md
 import AppKit
 
 import Charts
@@ -464,6 +468,8 @@ struct ScanningView: View {
 
 struct ScanCounter: View {
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let value: String
 
     let label: String
@@ -482,7 +488,7 @@ struct ScanCounter: View {
 
                 .contentTransition(.numericText())
 
-                .animation(.snappy(duration: 0.25), value: value)
+                .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: value)
 
             Text(label)
 
@@ -548,82 +554,154 @@ struct ScanErrorView: View {
 
 struct ScanResultsView: View {
 
+    private enum Section: CaseIterable {
+        case overview, details, records
+
+        var title: String {
+            switch self {
+            case .overview: String(localized: "概览")
+            case .details: String(localized: "明细")
+            case .records: String(localized: "记录")
+            }
+        }
+    }
+
+    @State private var section: Section = .overview
+
     @Bindable var library: LibraryRecord
 
     let result: LibraryScanResult
 
     let store: LibraryStore
 
-
-
     var body: some View {
 
-        ScrollView {
-
-            VStack(spacing: 18) {
-
-                HStack(spacing: 14) {
-
-                    MetricCard(label: String(localized: "资源库大小"), value: FormatHelpers.bytes(result.totalAllocatedSize), icon: "internaldrive")
-
-                    MetricCard(label: String(localized: "可安全清理"), value: FormatHelpers.bytes(result.confirmedCleanableSize), icon: "sparkles", emphasized: true)
-
-                    MetricCard(label: String(localized: "清理项目"), value: result.cacheItems.count.formatted(), icon: "folder.badge.minus")
-
+        VStack(spacing: 0) {
+            HStack {
+                Picker("资源库内容", selection: $section) {
+                    ForEach(Section.allCases, id: \.self) { item in
+                        Text(item.title).tag(item)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 360)
+                .accessibilityLabel("资源库内容")
+                Spacer()
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 16)
+            .padding(.bottom, 4)
 
-
-
-                SizeTrendCard(libraryURL: library.url)
-
-
-
-                StorageBreakdownBar(result: result)
-
-
-
-                EventBreakdownCard(result: result)
-
-
-
-                if result.externalCleanableSize > 0 {
-
-                    Label(String(format: String(localized: "包含外置缓存 %@"), String(FormatHelpers.bytes(result.externalCleanableSize))), systemImage: "externaldrive.fill")
-
-                        .font(AppFont.small(.medium))
-
-                        .foregroundStyle(AppColor.accent)
-
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
+            ScrollView {
+                VStack(spacing: 18) {
+                    switch section {
+                    case .overview:
+                        HStack(spacing: 14) {
+                            MetricCard(label: String(localized: "资源库大小"), value: FormatHelpers.bytes(result.totalAllocatedSize), icon: "internaldrive")
+                            MetricCard(label: String(localized: "可安全清理"), value: FormatHelpers.bytes(result.confirmedCleanableSize), icon: "sparkles", emphasized: true)
+                            MetricCard(label: String(localized: "清理项目"), value: result.cacheItems.count.formatted(), icon: "folder.badge.minus")
+                        }
+                        SizeTrendCard(libraryURL: library.url)
+                        StorageBreakdownBar(result: result)
+                        EventBreakdownCard(library: library, result: result, store: store)
+                    case .details:
+                        if result.externalCleanableSize > 0 {
+                            Label(String(format: String(localized: "包含外置缓存 %@"), String(FormatHelpers.bytes(result.externalCleanableSize))), systemImage: "externaldrive.fill")
+                                .font(AppFont.small(.medium))
+                                .foregroundStyle(AppColor.accent)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        CleanupList(result: result, scannedAt: library.lastScanned)
+                    case .records:
+                        LibraryHistoryPanel(library: library, store: store)
+                    }
+                    if section != .records {
+                        CleanupStatus(library: library, store: store)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(22)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .onChange(of: library.id) { _, _ in section = .overview }
 
+        .safeAreaInset(edge: .bottom, spacing: 0) {
 
+            if store.batchSelectedIDs.isEmpty && section != .records {
 
-                HStack(alignment: .top, spacing: 14) {
-
-                    CleanupList(result: result, scannedAt: library.lastScanned)
-
-                    CleanupActionCard(library: library, result: result, store: store)
-
-                        .frame(width: LayoutMetrics.cleanupActionCardWidth)
-
-                }
-
-
-
-                CleanupStatus(library: library, store: store)
+                CleanupActionBar(library: library, result: result, store: store)
 
             }
 
-            .padding(22)
-
         }
-
-        .scrollIndicators(.hidden)
 
     }
 
+}
+
+private struct LibraryHistoryPanel: View {
+    @Environment(\.openWindow) private var openWindow
+    let library: LibraryRecord
+    let store: LibraryStore
+
+    private var entries: [CleanupHistoryEntry] {
+        let libraryPath = library.url.standardizedFileURL.resolvingSymlinksInPath().path
+        return store.cleanupHistory.entries.filter {
+            $0.libraryURL.standardizedFileURL.resolvingSymlinksInPath().path == libraryPath
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("清理记录")
+                    .font(AppFont.title(.semibold, design: .rounded))
+                Spacer()
+                Button("打开完整记录") { openWindow(id: AuxiliaryWindowID.history) }
+                    .buttonStyle(.borderless)
+            }
+
+            if entries.isEmpty {
+                Text("暂无记录")
+                    .foregroundStyle(AppColor.secondaryText)
+                    .frame(maxWidth: .infinity, minHeight: 120)
+            } else {
+                LazyVStack(spacing: 8) {
+                    ForEach(entries) { entry in
+                        HStack(spacing: 10) {
+                            Image(systemName: entry.errorMessages.isEmpty ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                                .foregroundStyle(entry.errorMessages.isEmpty ? AppColor.success : AppColor.danger)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.date.formatted(date: .abbreviated, time: .shortened))
+                                    .font(AppFont.callout(.semibold))
+                                Text(String(format: String(localized: "移入废纸篓 %@"), String(FormatHelpers.bytes(entry.freedSize))))
+                                    .font(AppFont.small(.medium))
+                                    .foregroundStyle(AppColor.secondaryText)
+                                if let error = entry.errorMessages.first {
+                                    Text(error)
+                                        .font(AppFont.small(.medium))
+                                        .foregroundStyle(AppColor.danger)
+                                        .lineLimit(2)
+                                }
+                            }
+                            Spacer()
+                            Text(String(format: String(localized: "%@ 项"), String(entry.itemCount)))
+                                .font(AppFont.small(.medium))
+                                .foregroundStyle(AppColor.tertiaryText)
+                        }
+                        .padding(12)
+                        .background(AppColor.panel)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
+                }
+            }
+
+            CleanupStatus(library: library, store: store)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
 }
 
 
@@ -802,6 +880,12 @@ struct SizeTrendCard: View {
 
 struct StorageBreakdownBar: View {    let result: LibraryScanResult
 
+    private struct Legend: Identifiable {
+        let id: String
+        let color: Color
+        let bytes: Int64
+    }
+
     let renderSize: Int64
 
     let proxySize: Int64
@@ -811,6 +895,16 @@ struct StorageBreakdownBar: View {    let result: LibraryScanResult
     let protectedAnalysisSize: Int64
 
     let otherOrMediaSize: Int64
+
+    private var legends: [Legend] {
+        var values: [Legend] = []
+        if renderSize > 0 { values.append(Legend(id: String(localized: "渲染"), color: AppColor.accent, bytes: renderSize)) }
+        if proxySize > 0 { values.append(Legend(id: String(localized: "代理"), color: AppColor.chartProxyMedia, bytes: proxySize)) }
+        if optimizedSize > 0 { values.append(Legend(id: String(localized: "优化"), color: AppColor.chartOptimizedMedia, bytes: optimizedSize)) }
+        if protectedAnalysisSize > 0 { values.append(Legend(id: String(localized: "分析(受保护)"), color: AppColor.tertiaryText.opacity(0.8), bytes: protectedAnalysisSize)) }
+        values.append(Legend(id: String(localized: "原始媒体/工程"), color: AppColor.tertiaryText, bytes: otherOrMediaSize))
+        return values
+    }
 
 
 
@@ -920,36 +1014,16 @@ struct StorageBreakdownBar: View {    let result: LibraryScanResult
 
 
 
-            HStack(spacing: 16) {
-
-                if renderSize > 0 {
-
-                    legendItem(color: AppColor.accent, label: String(localized: "渲染"), bytes: renderSize)
-
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    ForEach(legends) { legend in legendItem(legend) }
+                    Spacer(minLength: 0)
                 }
+                .fixedSize(horizontal: true, vertical: false)
 
-                if proxySize > 0 {
-
-                    legendItem(color: AppColor.chartProxyMedia, label: String(localized: "代理"), bytes: proxySize)
-
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 8) {
+                    ForEach(legends) { legend in legendItem(legend) }
                 }
-
-                if optimizedSize > 0 {
-
-                    legendItem(color: AppColor.chartOptimizedMedia, label: String(localized: "优化"), bytes: optimizedSize)
-
-                }
-
-                if protectedAnalysisSize > 0 {
-
-                    legendItem(color: AppColor.tertiaryText.opacity(0.8), label: String(localized: "分析(受保护)"), bytes: protectedAnalysisSize)
-
-                }
-
-                legendItem(color: AppColor.tertiaryText, label: String(localized: "原始媒体/工程"), bytes: otherOrMediaSize)
-
-                Spacer(minLength: 0)
-
             }
 
             .font(AppFont.small(.medium))
@@ -984,27 +1058,29 @@ struct StorageBreakdownBar: View {    let result: LibraryScanResult
 
 
 
-    private func legendItem(color: Color, label: String, bytes: Int64) -> some View {
+    private func legendItem(_ legend: Legend) -> some View {
 
         HStack(spacing: 5) {
 
             Circle()
 
-                .fill(color)
+                .fill(legend.color)
 
                 .frame(width: 6, height: 6)
 
-            Text(label)
+            Text(legend.id)
 
                 .foregroundStyle(AppColor.secondaryText)
 
-            Text(FormatHelpers.bytes(bytes))
+            Text(FormatHelpers.bytes(legend.bytes))
 
                 .monospacedDigit()
 
                 .foregroundStyle(AppColor.primaryText)
 
         }
+
+        .help(String(format: String(localized: "精确大小：%@ 字节"), String(legend.bytes.formatted())))
 
     }
 
@@ -1013,6 +1089,8 @@ struct StorageBreakdownBar: View {    let result: LibraryScanResult
 
 
 struct MetricCard: View {
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let label: String
 
@@ -1084,7 +1162,7 @@ struct MetricCard: View {
 
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-        .animation(.snappy, value: value)
+        .animation(reduceMotion ? nil : .snappy, value: value)
 
     }
 
@@ -1098,7 +1176,11 @@ struct MetricCard: View {
 
 struct EventBreakdownCard: View {
 
+    let library: LibraryRecord
+
     let result: LibraryScanResult
+
+    let store: LibraryStore
 
 
 
@@ -1106,7 +1188,11 @@ struct EventBreakdownCard: View {
 
         let id: String
 
+        let title: String
+
         let size: Int64
+
+        let eventName: String?
 
     }
 
@@ -1114,27 +1200,39 @@ struct EventBreakdownCard: View {
 
     private var slices: [Slice] {
 
-        var totals: [String: Int64] = [:]
+        var totals: [String?: Int64] = [:]
 
         for item in result.cacheItems {
 
-            let event = FCPStructureRules.candidateLocation(for: item.url, ruleID: item.ruleID)?.eventName ?? String(localized: "库级共享")
+            let event = FCPStructureRules.candidateLocation(for: item.url, ruleID: item.ruleID)?.eventName
 
             totals[event, default: 0] += item.allocatedSize
 
         }
 
-        let sorted = totals.sorted { $0.value > $1.value }
+        let sorted = totals.sorted {
 
-        guard sorted.count > 8 else { return sorted.map { Slice(id: $0.key, size: $0.value) } }
+            if $0.value != $1.value { return $0.value > $1.value }
 
-        let head = sorted.prefix(7).map { Slice(id: $0.key, size: $0.value) }
+            return ($0.key ?? "") < ($1.key ?? "")
+
+        }
+
+        func slice(_ event: String?, size: Int64) -> Slice {
+
+            Slice(id: event.map { "event:\($0)" } ?? "shared", title: event ?? String(localized: "库级共享"), size: size, eventName: event)
+
+        }
+
+        guard sorted.count > 8 else { return sorted.map { slice($0.key, size: $0.value) } }
+
+        let head = sorted.prefix(7).map { slice($0.key, size: $0.value) }
 
         let rest = sorted.dropFirst(7)
 
         let tail = rest.reduce(Int64(0)) { $0 + $1.value }
 
-        return head + [Slice(id: String(format: String(localized: "其他 %@ 个 Event"), String(rest.count)), size: tail)]
+        return head + [Slice(id: "other", title: String(format: String(localized: "其他 %@ 个 Event"), String(rest.count)), size: tail, eventName: nil)]
 
     }
 
@@ -1161,32 +1259,18 @@ struct EventBreakdownCard: View {
                 // 会压进绘图区与条形重叠，行式布局从结构上消除该问题。
                 let maxSlice = slices.first?.size ?? 0
                 ForEach(slices) { slice in
-                    HStack(spacing: 10) {
-                        Text(slice.id)
-                            .font(AppFont.callout(.medium))
-                            .foregroundStyle(AppColor.primaryText)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .frame(width: 132, alignment: .leading)
-                            .help(slice.id)
-                        GeometryReader { proxy in
-                            let fraction = maxSlice > 0 ? Double(slice.size) / Double(maxSlice) : 0
-                            ZStack(alignment: .leading) {
-                                Capsule().fill(AppColor.control)
-                                Capsule()
-                                    .fill(AppColor.accent.gradient)
-                                    .frame(width: max(4, proxy.size.width * fraction))
-                            }
+                    if let eventName = slice.eventName {
+                        Button {
+                            store.requestClean(library, selectedEventName: eventName)
+                        } label: {
+                            sliceRow(slice, maximum: maxSlice)
                         }
-                        .frame(height: 10)
-                        Text(FormatHelpers.bytes(slice.size))
-                            .font(AppFont.caption(.medium, design: .monospaced))
-                            .foregroundStyle(AppColor.secondaryText)
-                            .frame(width: 68, alignment: .trailing)
-                            .monospacedDigit()
+                        .buttonStyle(.plain)
+                        .disabled(store.isPreflighting || store.isCleaning || library.spaceToFree < LibraryStore.minimumCleanableSize)
+                        .help("选择此 Event 清理")
+                    } else {
+                        sliceRow(slice, maximum: maxSlice)
                     }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(String(format: String(localized: "%@：可清理 %@"), slice.id, FormatHelpers.bytes(slice.size)))
                 }
             }
 
@@ -1201,6 +1285,36 @@ struct EventBreakdownCard: View {
 
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
+    }
+
+    private func sliceRow(_ slice: Slice, maximum: Int64) -> some View {
+        HStack(spacing: 10) {
+            Text(slice.title)
+                .font(AppFont.callout(.medium))
+                .foregroundStyle(AppColor.primaryText)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(minWidth: 80, idealWidth: 132, maxWidth: 180, alignment: .leading)
+                .help(slice.title)
+            GeometryReader { proxy in
+                let fraction = maximum > 0 ? Double(slice.size) / Double(maximum) : 0
+                ZStack(alignment: .leading) {
+                    Capsule().fill(AppColor.control)
+                    Capsule()
+                        .fill(AppColor.accent.gradient)
+                        .frame(width: max(4, proxy.size.width * fraction))
+                }
+            }
+            .frame(height: 10)
+            Text(FormatHelpers.bytes(slice.size))
+                .font(AppFont.caption(.medium, design: .monospaced))
+                .foregroundStyle(AppColor.secondaryText)
+                .fixedSize(horizontal: true, vertical: false)
+                .monospacedDigit()
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(format: String(localized: "%@：可清理 %@"), String(slice.title), String(FormatHelpers.bytes(slice.size))))
     }
 
 }
@@ -1222,6 +1336,12 @@ struct CleanupList: View {
     private let itemsByCategory: [CacheCategory: [CacheItem]]
 
     @State private var expandedCategory: CacheCategory?
+
+    @State private var showsAllItems = false
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let previewLimit = 10
 
 
 
@@ -1247,7 +1367,17 @@ struct CleanupList: View {
 
         self.categorySummary = summary
 
-        self.itemsByCategory = items
+        self.itemsByCategory = items.mapValues { candidates in
+
+            candidates.sorted {
+
+                if $0.allocatedSize != $1.allocatedSize { return $0.allocatedSize > $1.allocatedSize }
+
+                return $0.url.path < $1.url.path
+
+            }
+
+        }
 
     }
 
@@ -1301,6 +1431,8 @@ struct CleanupList: View {
 
                         .font(AppFont.body(.medium))
 
+                        .foregroundStyle(isEmpty ? AppColor.secondaryText : AppColor.primaryText)
+
                     Spacer()
 
                     if isEmpty {
@@ -1309,7 +1441,7 @@ struct CleanupList: View {
 
                             .font(AppFont.callout(design: .monospaced))
 
-                            .foregroundStyle(AppColor.tertiaryText)
+                            .foregroundStyle(AppColor.secondaryText)
 
                     } else {
 
@@ -1333,9 +1465,11 @@ struct CleanupList: View {
 
                 .onTapGesture { if !isEmpty {
 
-                    withAnimation(.snappy(duration: 0.18)) {
+                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.18)) {
 
                         expandedCategory = isExpanded ? nil : category
+
+                        showsAllItems = false
 
                     }
 
@@ -1343,19 +1477,17 @@ struct CleanupList: View {
 
                 .accessibilityAddTraits(isEmpty ? [] : .isButton)
 
-                .accessibilityLabel("\(category.chineseName)，\(isEmpty ? "无候选" : "可展开查看明细")")
+                .accessibilityLabel(isEmpty
+                    ? String(format: String(localized: "%@：无候选"), String(category.chineseName))
+                    : String(format: String(localized: "%@：展开查看明细"), String(category.chineseName)))
 
                 .padding(.vertical, 10)
-
-                .opacity(isEmpty ? 0.45 : 1)
-
-
 
                 if isExpanded, let items = itemsByCategory[category] {
 
                     VStack(alignment: .leading, spacing: 8) {
 
-                        ForEach(items) { item in
+                        ForEach(showsAllItems ? items : Array(items.prefix(previewLimit))) { item in
 
                             VStack(alignment: .leading, spacing: 3) {
 
@@ -1379,7 +1511,7 @@ struct CleanupList: View {
 
                                         .foregroundStyle(AppColor.accent)
 
-                                    Text(item.confidence == .confirmed ? "已验证" : item.confidence.rawValue)
+                                    Text(item.confidence == .confirmed ? String(localized: "已验证") : item.confidence.rawValue)
 
                                         .font(AppFont.caption(.medium))
 
@@ -1391,7 +1523,7 @@ struct CleanupList: View {
 
                                         .foregroundStyle(AppColor.secondaryText)
 
-                                    Text(String(format: String(localized: "%@ 项"), String(item.fingerprint.entryCount)))
+                                    Text(item.fingerprint.entryCount == 1 ? String(localized: "1 项") : String(format: String(localized: "%@ 项"), String(item.fingerprint.entryCount)))
 
                                         .font(AppFont.caption(.medium, design: .monospaced))
 
@@ -1408,6 +1540,24 @@ struct CleanupList: View {
                             .background(AppColor.control.opacity(0.5))
 
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                        }
+
+                        if items.count > previewLimit {
+
+                            Button(showsAllItems ? String(localized: "收起明细") : String(format: String(localized: "展开全部 %@ 项"), String(items.count))) {
+
+                                withAnimation(reduceMotion ? nil : .snappy(duration: 0.18)) {
+
+                                    showsAllItems.toggle()
+
+                                }
+
+                            }
+
+                            .buttonStyle(.borderless)
+
+                            .foregroundStyle(AppColor.accent)
 
                         }
 
@@ -1441,17 +1591,13 @@ struct CleanupList: View {
 
 
 
-struct CleanupActionCard: View {
+struct CleanupActionBar: View {
 
     let library: LibraryRecord
 
     let result: LibraryScanResult
 
     let store: LibraryStore
-
-    @ScaledMetric(relativeTo: .largeTitle) private var heroNumberSize: CGFloat = 32
-
-
 
     private var protectedAnalysisSize: Int64 {
 
@@ -1471,39 +1617,39 @@ struct CleanupActionCard: View {
 
     var body: some View {
 
-        VStack(alignment: .leading, spacing: 13) {
+        HStack(spacing: 16) {
 
-            Text("可清理空间")
+            VStack(alignment: .leading, spacing: 3) {
 
-                .font(AppFont.callout(.medium))
-
-                .foregroundStyle(AppColor.secondaryText)
-
-            Text(FormatHelpers.bytes(library.spaceToFree))
-
-                .font(.system(size: heroNumberSize, weight: .bold, design: .rounded))
-
-                .monospacedDigit()
-
-                .contentTransition(.numericText())
-
-                .shadow(color: AppColor.accent.opacity(0.35), radius: 12)
-
-                .animation(.snappy, value: library.spaceToFree)
-
-            if library.pendingFreedSize == 0, let estimate = result.reclaimableEstimate {
-
-                Text(reclaimEstimateText(estimate))
+                Text("可清理空间")
 
                     .font(AppFont.small(.medium))
 
                     .foregroundStyle(AppColor.secondaryText)
 
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(FormatHelpers.bytes(library.spaceToFree))
+
+                    .font(AppFont.heading(.bold, design: .rounded))
+
+                    .monospacedDigit()
+
+                if library.pendingFreedSize == 0, let estimate = result.reclaimableEstimate {
+
+                    Text(reclaimEstimateText(estimate))
+
+                        .font(AppFont.caption(.medium))
+
+                        .foregroundStyle(AppColor.tertiaryText)
+
+                        .lineLimit(1)
+
+                        .help(reclaimEstimateText(estimate))
+
+                }
 
             }
 
-            Spacer(minLength: 5)
+            Spacer(minLength: 0)
 
             Button(actionTitle) {
 
@@ -1513,57 +1659,27 @@ struct CleanupActionCard: View {
 
             .buttonStyle(PrimaryActionButtonStyle(enabled: !isBelowThreshold && !store.isPreflighting && !store.isCleaning))
 
+            .frame(width: LayoutMetrics.cleanupActionCardWidth)
+
             .disabled(isBelowThreshold || store.isPreflighting || store.isCleaning)
 
-            .help(isBelowThreshold ? String(format: String(localized: "可清理空间低于 %@，已自动跳过"), String(FormatHelpers.bytes(LibraryStore.minimumCleanableSize))) : "将生成文件移入废纸篓")
+            .help(actionHelp)
 
 
-
-            if isBelowThreshold && !store.isPreflighting && !store.isCleaning {
-
-                Label(String(format: String(localized: "低于 %@ 的资源库会自动跳过"), String(FormatHelpers.bytes(LibraryStore.minimumCleanableSize))), systemImage: "info.circle")
-
-                    .font(AppFont.small(.medium))
-
-                    .foregroundStyle(AppColor.tertiaryText)
-
-                    .lineLimit(1)
-
-            }
-
-
-
-            if protectedAnalysisSize > 0 {
-
-                Label(String(format: String(localized: "已保护分析文件 %@"), String(FormatHelpers.bytes(protectedAnalysisSize))), systemImage: "lock.fill")
-
-                    .font(AppFont.small(.medium))
-
-                    .foregroundStyle(AppColor.tertiaryText)
-
-                    .lineLimit(1)
-
-            }
-
-            if let seconds = store.estimatedCleanupDuration(forBytes: library.spaceToFree, volumeID: library.volumeID) {
-
-                Label(String(format: String(localized: "预计耗时 %@"), String(FormatHelpers.estimatedTime(seconds))), systemImage: "clock")
-
-                    .font(AppFont.small(.medium))
-
-                    .foregroundStyle(AppColor.tertiaryText)
-
-                    .lineLimit(1)
-
-            }
 
         }
 
-        .padding(20)
+        .padding(.horizontal, 22)
 
-        .background(AppColor.panel)
+        .padding(.vertical, 12)
 
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(maxWidth: .infinity)
+
+        .background(AppColor.workspace)
+
+        .overlay(alignment: .top) { Divider().overlay(AppColor.border) }
+
+        .help(protectedAnalysisSize > 0 ? String(format: String(localized: "已保护分析文件 %@"), String(FormatHelpers.bytes(protectedAnalysisSize))) : "")
 
     }
 
@@ -1601,6 +1717,12 @@ struct CleanupActionCard: View {
 
         }
 
+        if store.isCleaning && store.cleaningLibraryID == library.id {
+
+            return String(format: String(localized: "正在清理 %@/%@"), String(store.singleCleanupCompleted), String(store.singleCleanupTotal))
+
+        }
+
         if isBelowThreshold {
 
             return String(format: String(localized: "低于 %@"), String(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)))
@@ -1608,6 +1730,24 @@ struct CleanupActionCard: View {
         }
 
         return String(localized: "开始清理")
+
+    }
+
+    private var actionHelp: String {
+
+        if isBelowThreshold {
+
+            return String(format: String(localized: "可清理空间低于 %@，已自动跳过"), String(FormatHelpers.bytes(LibraryStore.minimumCleanableSize)))
+
+        }
+
+        if let seconds = store.estimatedCleanupDuration(forBytes: library.spaceToFree, volumeID: library.volumeID) {
+
+            return String(format: String(localized: "预计耗时 %@"), String(FormatHelpers.estimatedTime(seconds)))
+
+        }
+
+        return String(localized: "将生成文件移入废纸篓")
 
     }
 
